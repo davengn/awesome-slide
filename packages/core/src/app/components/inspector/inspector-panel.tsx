@@ -4,6 +4,7 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
+  Crop,
   ImageIcon,
   Italic,
   X,
@@ -637,6 +638,7 @@ function ImageField({
               className="flex-1"
               onClick={() => openCrop(anchor as HTMLImageElement)}
             >
+              <Crop className="size-3.5" />
               {t.inspector.crop}
             </Button>
           )}

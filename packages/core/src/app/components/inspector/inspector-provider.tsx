@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { type SlideComment, useComments } from '@/lib/inspector/use-comments';
 import { type Edit, type EditOp, type EditResult, useEditor } from '@/lib/inspector/use-editor';
 import { useLocale } from '@/lib/use-locale';
-import { ImageCropDialog } from './image-crop-dialog';
+import { ImageCropDialog, type ImageCropRect } from './image-crop-dialog';
 
 export type SelectedTarget = {
   line: number;
@@ -101,6 +101,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
     targetHeight: number;
     initialFit: 'cover' | 'contain';
     initialPosition: { x: number; y: number };
+    initialRect: ImageCropRect | null;
   } | null>(null);
   const t = useLocale();
 
@@ -558,6 +559,7 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
       targetHeight: anchor.offsetHeight || anchor.getBoundingClientRect().height,
       initialFit: cs.objectFit === 'contain' ? 'contain' : 'cover',
       initialPosition: parseObjectPosition(cs.objectPosition),
+      initialRect: parseObjectViewBox(cs.getPropertyValue('object-view-box')),
     });
   }, []);
 
@@ -615,18 +617,30 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
           targetHeight={cropTarget.targetHeight}
           initialFit={cropTarget.initialFit}
           initialPosition={cropTarget.initialPosition}
+          initialRect={cropTarget.initialRect}
           onClose={() => setCropTarget(null)}
           onApply={(result) => {
             const { line, column, anchor } = cropTarget;
             if (anchor.isConnected) {
-              bufferOps(line, column, anchor, [
+              const ops: EditOp[] = [
                 { kind: 'set-style', key: 'objectFit', value: result.fit },
-                {
+                { kind: 'set-style', key: 'objectPosition', value: '50% 50%' },
+              ];
+              if (result.fit === 'cover') {
+                const { x, y, width, height } = result.rect;
+                const top = round2(y);
+                const left = round2(x);
+                const right = round2(100 - x - width);
+                const bottom = round2(100 - y - height);
+                ops.push({
                   kind: 'set-style',
-                  key: 'objectPosition',
-                  value: `${round2(result.x)}% ${round2(result.y)}%`,
-                },
-              ]);
+                  key: 'objectViewBox',
+                  value: `inset(${top}% ${right}% ${bottom}% ${left}%)`,
+                });
+              } else {
+                ops.push({ kind: 'set-style', key: 'objectViewBox', value: null });
+              }
+              bufferOps(line, column, anchor, ops);
             }
             setCropTarget(null);
           }}
@@ -638,6 +652,45 @@ export function InspectorProvider({ slideId, children }: { slideId: string; chil
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+function parseObjectViewBox(value: string): ImageCropRect | null {
+  const v = value?.trim();
+  if (!v || v === 'none') return null;
+  const m = v.match(/^inset\(([^)]+)\)$/);
+  if (!m?.[1]) return null;
+  const nums = m[1]
+    .trim()
+    .split(/\s+/)
+    .map((p) => {
+      const n = p.match(/^(-?\d+(?:\.\d+)?)%$/);
+      return n?.[1] ? Number(n[1]) : null;
+    });
+  if (nums.some((n) => n === null)) return null;
+  let top: number, right: number, bottom: number, left: number;
+  if (nums.length === 1) {
+    top = right = bottom = left = nums[0] as number;
+  } else if (nums.length === 2) {
+    top = bottom = nums[0] as number;
+    right = left = nums[1] as number;
+  } else if (nums.length === 3) {
+    top = nums[0] as number;
+    right = left = nums[1] as number;
+    bottom = nums[2] as number;
+  } else if (nums.length === 4) {
+    top = nums[0] as number;
+    right = nums[1] as number;
+    bottom = nums[2] as number;
+    left = nums[3] as number;
+  } else {
+    return null;
+  }
+  const x = left;
+  const y = top;
+  const width = 100 - left - right;
+  const height = 100 - top - bottom;
+  if (width <= 0 || height <= 0) return null;
+  return { x, y, width, height };
 }
 
 function parseObjectPosition(value: string): { x: number; y: number } {
