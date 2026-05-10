@@ -110,7 +110,7 @@ export function ThumbnailRail({
                   </span>
                   <div
                     className={cn(
-                      'relative shrink-0 overflow-hidden rounded-[4px] border bg-card motion-safe:transition-all',
+                      'relative shrink-0 overflow-hidden rounded-[4px] border bg-card motion-safe:transition-[border-color,box-shadow]',
                       active
                         ? 'border-brand shadow-[0_0_0_1px_var(--brand)]'
                         : 'border-hairline group-hover/thumb:border-foreground/25',
@@ -263,7 +263,7 @@ function ThumbContents({
       </span>
       <div
         className={cn(
-          'relative shrink-0 overflow-hidden rounded-[4px] border bg-card motion-safe:transition-all',
+          'relative shrink-0 overflow-hidden rounded-[4px] border bg-card motion-safe:transition-[border-color,box-shadow]',
           active
             ? 'border-brand shadow-[0_0_0_1px_var(--brand)]'
             : 'border-hairline group-hover/thumb:border-foreground/25',
