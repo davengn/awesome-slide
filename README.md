@@ -2,6 +2,10 @@
 
 # open-slide
 
+[![GitHub stars](https://img.shields.io/github/stars/1weiho/open-slide?style=social)](https://github.com/1weiho/open-slide/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/1weiho/open-slide?style=social)](https://github.com/1weiho/open-slide/network/members)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **The slide framework built for agents.** Describe your deck in natural language — your coding agent writes the React. open-slide handles the canvas, scaling, navigation, hot reload, and present mode so the agent can focus on content.
 
 Every slide renders into a fixed **1920 × 1080** canvas. Pages are arbitrary React components, not a constrained DSL.
@@ -80,6 +84,12 @@ pnpm build    # builds all packages
 pnpm check    # type-checks all packages
 pnpm lint     # lints via biome
 ```
+
+## Star history
+
+If open-slide is useful to you, please [star the repo on GitHub](https://github.com/1weiho/open-slide) — it helps other people find the project.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=1weiho/open-slide&type=Date)](https://star-history.com/#1weiho/open-slide&Date)
 
 ## Support
 
