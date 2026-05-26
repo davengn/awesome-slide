@@ -34,7 +34,9 @@ If the build is for a public share rather than internal review, you can hide
 the slide browser and on-canvas UI in `awesome-slide.config.ts`:
 
 ```ts
-const config: OpenSlideConfig = {
+import type { AwesomeSlideConfig } from '@awesome-slide/core';
+
+const config: AwesomeSlideConfig = {
   build: {
     showSlideBrowser: false,
     showSlideUi: false,

@@ -1,5 +1,4 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadUserConfig, openSlidePlugin } from './open-slide-plugin.ts';
@@ -7,7 +6,9 @@ import { loadUserConfig, openSlidePlugin } from './open-slide-plugin.ts';
 const tempDirs: string[] = [];
 
 async function tempWorkspace(): Promise<string> {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'awesome-slide-plugin-'));
+  const tmpRoot = path.join(process.cwd(), 'node_modules', '.tmp');
+  await mkdir(tmpRoot, { recursive: true });
+  const dir = await mkdtemp(path.join(tmpRoot, 'awesome-slide-plugin-'));
   tempDirs.push(dir);
   return dir;
 }

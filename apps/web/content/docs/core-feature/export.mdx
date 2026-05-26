@@ -3,7 +3,7 @@ title: Export
 description: One command to a self-contained static HTML site or PDF.
 ---
 
-`open-slide build` produces a plain static site under `dist/`. The output is
+`awesome-slide build` produces a plain static site under `dist/`. The output is
 zero-runtime — everything renders on the client, but no server is needed.
 
 ## Static HTML
@@ -32,12 +32,12 @@ The build pipeline only includes:
 - The runtime — viewer, scaler, present mode (configurable; see below).
 
 You can trim the surface area for a public share by toggling fields in
-`open-slide.config.ts`:
+`awesome-slide.config.ts`:
 
 ```ts
-import type { OpenSlideConfig } from '@open-slide/core';
+import type { AwesomeSlideConfig } from '@awesome-slide/core';
 
-const config: OpenSlideConfig = {
+const config: AwesomeSlideConfig = {
   build: {
     showSlideBrowser: false,    // hide the deck index
     showSlideUi: false,         // hide on-canvas UI (toolbar etc.)

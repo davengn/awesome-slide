@@ -24,6 +24,8 @@
 | T020 US1 inventory update | PASS | Standard app title, locale app titles, README copy, docs entry pages, landing chrome, and runtime help/error copy now use canonical brand naming. Remaining legacy matches are compatibility, asset filenames, or later-story work. |
 | T021 CLI scaffold test | PASS | `pnpm.cmd vitest run packages/cli/src/init.test.ts` passes with coverage for canonical starter scripts, dependency, config filename, README, and welcome slide copy. |
 | T029 CLI scaffold quickstart | PASS | Built `@awesome-slide/cli`, then ran `node packages/cli/dist/cli.js init node_modules/.tmp/awesome-slide-quickstart-20260526102808 --no-install --no-git --name quickstart-deck --use-pnpm`; generated files use `awesome-slide`, `@awesome-slide/core@^1.7.0`, `awesome-slide.config.ts`, `@awesome-slide/core/env`, and Awesome Slide README/welcome copy. |
+| T030-T032 US3 compatibility tests | PASS | `pnpm.cmd vitest run packages/core/src/vite/open-slide-plugin.test.ts packages/core/src/vite/current-plugin.test.ts packages/core/src/cli/run.test.ts packages/core/src/app/lib/compat-storage.test.ts` passes: 4 files, 14 tests. |
+| T033-T043 US3 implementation validation | PASS | `pnpm.cmd vitest run packages/core/src/vite/open-slide-plugin.test.ts packages/core/src/vite/current-plugin.test.ts packages/core/src/cli/run.test.ts packages/core/src/app/lib/compat-storage.test.ts packages/core/src/editing/revert-asset.test.ts packages/core/src/vite/design-plugin.test.ts` passes: 6 files, 38 tests. CLI/reference docs and built-in skill docs have no unclassified `open-slide` matches. |
 
 ## CLI Scaffold Quickstart
 

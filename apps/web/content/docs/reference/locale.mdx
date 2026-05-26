@@ -15,10 +15,10 @@ that lives in your own React code.
 ## Presets
 
 ```ts title="awesome-slide.config.ts"
-import type { OpenSlideConfig } from '@awesome-slide/core';
+import type { AwesomeSlideConfig } from '@awesome-slide/core';
 import { zhTW } from '@awesome-slide/core/locale';
 
-const config: OpenSlideConfig = {
+const config: AwesomeSlideConfig = {
   locale: zhTW,
 };
 
@@ -47,7 +47,7 @@ the build cleanly. Provide your own object as long as it matches the
 `Locale` type from `@awesome-slide/core`.
 
 ```ts title="awesome-slide.config.ts"
-import type { OpenSlideConfig, Locale } from '@awesome-slide/core';
+import type { AwesomeSlideConfig, Locale } from '@awesome-slide/core';
 import { en } from '@awesome-slide/core/locale';
 
 const fr: Locale = {
@@ -61,7 +61,7 @@ const fr: Locale = {
   },
 };
 
-const config: OpenSlideConfig = { locale: fr };
+const config: AwesomeSlideConfig = { locale: fr };
 export default config;
 ```
 

@@ -11,13 +11,13 @@ import {
   OPEN_SLIDE_PROTOCOL_PREFIX,
   OPEN_SLIDE_VIRTUAL_PREFIX,
 } from '../brand.ts';
-import type { OpenSlideConfig } from '../config.ts';
+import type { AwesomeSlideConfig, OpenSlideConfig } from '../config.ts';
 
-export type { OpenSlideConfig };
+export type { AwesomeSlideConfig, OpenSlideConfig };
 
 export type OpenSlidePluginOptions = {
   userCwd: string;
-  config: OpenSlideConfig;
+  config: AwesomeSlideConfig;
 };
 
 const SLIDES_VMOD = `${AWESOME_SLIDE_VIRTUAL_PREFIX}/slides`;
@@ -330,7 +330,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
   };
 }
 
-export async function loadUserConfig(userCwd: string): Promise<OpenSlideConfig> {
+export async function loadUserConfig(userCwd: string): Promise<AwesomeSlideConfig> {
   const canonicalFile = path.join(userCwd, AWESOME_SLIDE_CONFIG_FILE);
   const legacyFile = path.join(userCwd, OPEN_SLIDE_CONFIG_FILE);
   const canonicalExists = existsSync(canonicalFile);
@@ -348,5 +348,5 @@ export async function loadUserConfig(userCwd: string): Promise<OpenSlideConfig> 
     userCwd,
     'silent',
   );
-  return (loaded?.config ?? {}) as OpenSlideConfig;
+  return (loaded?.config ?? {}) as AwesomeSlideConfig;
 }

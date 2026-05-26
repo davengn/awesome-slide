@@ -1,5 +1,1 @@
-import type { OpenSlideConfig } from '@open-slide/core';
-
-const openSlideConfig: OpenSlideConfig = {};
-
-export default openSlideConfig;
+export { default } from './awesome-slide.config';

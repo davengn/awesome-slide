@@ -12,7 +12,12 @@ export function Nav({ githubStars }: { githubStars?: string | null }) {
           href="/"
           className="flex items-center gap-3 font-[family-name:var(--font-mono)] text-[13px] tracking-[0.04em]"
         >
-          <img src="/open-slide.png" alt="" aria-hidden className="block h-6 w-6 rounded-[4px]" />
+          <img
+            src="/awesome-slide.png"
+            alt=""
+            aria-hidden
+            className="block h-6 w-6 rounded-[4px]"
+          />
           <span className="text-[color:var(--color-text)]">Awesome Slide</span>
         </Link>
 

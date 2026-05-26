@@ -1,4 +1,9 @@
-import { type DesignSystem, type Page, type SlideMeta, useSlidePageNumber } from '@open-slide/core';
+import {
+  type DesignSystem,
+  type Page,
+  type SlideMeta,
+  useSlidePageNumber,
+} from '@awesome-slide/core';
 import type { ReactNode } from 'react';
 
 export const design: DesignSystem = {
@@ -117,7 +122,7 @@ const Footer = ({ section }: { section: string }) => {
         <span style={{ color: 'var(--osd-accent)', marginRight: 12 }}>●</span>
         {section}
         <span style={{ color: rule, margin: '0 18px' }}>·</span>
-        <span style={{ color: text2 }}>open-slide</span>
+        <span style={{ color: text2 }}>Awesome Slide</span>
       </span>
       <span style={{ fontVariantNumeric: 'tabular-nums' }}>
         {String(current).padStart(2, '0')} / {String(total).padStart(2, '0')}
@@ -175,7 +180,7 @@ const Cover: Page = () => (
         <span
           style={{ display: 'inline-block', animation: 'osa-typeIn 900ms steps(28, end) both' }}
         >
-          Inside open-slide
+          Inside Awesome Slide
         </span>
         <span
           aria-hidden
@@ -412,7 +417,7 @@ const FileContract: Page = () => {
         <>
           <Token c={violet}>import type</Token> {'{'} <Token c={warm}>DesignSystem</Token>,{' '}
           <Token c={warm}>Page</Token>, <Token c={warm}>SlideMeta</Token> {'}'}{' '}
-          <Token c={violet}>from</Token> <Token c={mint}>'@open-slide/core'</Token>
+          <Token c={violet}>from</Token> <Token c={mint}>'@awesome-slide/core'</Token>
           {';'}
         </>
       ),
@@ -657,7 +662,7 @@ const Discovery: Page = () => {
           >
             virtual module
           </div>
-          <div style={{ color: 'var(--osd-accent)' }}>virtual:open-slide/slides</div>
+          <div style={{ color: 'var(--osd-accent)' }}>virtual:awesome-slide/slides</div>
           <div style={{ height: 14 }} />
           <div style={{ color: muted, fontSize: 20 }}>
             export const slideIds
@@ -694,17 +699,17 @@ const FlowArrow = ({ delay = 0 }: { delay?: number }) => (
 const VirtualModules: Page = () => {
   const mods = [
     {
-      id: 'virtual:open-slide/slides',
+      id: 'virtual:awesome-slide/slides',
       tint: 'var(--osd-accent)',
       bullets: ['slideIds: string[]', 'loadSlide(id) → import(...)', 'one async chunk per slide'],
     },
     {
-      id: 'virtual:open-slide/config',
+      id: 'virtual:awesome-slide/config',
       tint: mint,
       bullets: ['runtime feature flags', 'showSlideBrowser, showSlideUi', 'allowHtmlDownload'],
     },
     {
-      id: 'virtual:open-slide/folders',
+      id: 'virtual:awesome-slide/folders',
       tint: warm,
       bullets: ['reads .folders.json', 'folder tree + slide → folder map', 'powers the sidebar UI'],
     },
@@ -804,7 +809,7 @@ const VitePluginHooks: Page = () => {
       desc: 'set isDev flag · allow fs access to userCwd',
       tint: 'var(--osd-accent)',
     },
-    { name: 'resolveId()', desc: 'claim the three virtual:open-slide/* ids', tint: mint },
+    { name: 'resolveId()', desc: 'claim the three virtual:awesome-slide/* ids', tint: mint },
     { name: 'load()', desc: 'generate slideIds + loadSlide() switch on the fly', tint: warm },
     {
       name: 'configureServer()',
@@ -821,7 +826,7 @@ const VitePluginHooks: Page = () => {
       <div style={{ height: 24 }} />
       <p style={{ fontSize: 30, color: text2, lineHeight: 1.5, margin: 0, maxWidth: 1600 }}>
         <code style={{ fontFamily: 'var(--osd-font-display)', color: 'var(--osd-accent)' }}>
-          openSlidePlugin()
+          awesomeSlidePlugin()
         </code>{' '}
         returns a tiny Vite plugin object — no esbuild transforms, no compiler hacks. Just glue.
       </p>
@@ -1149,7 +1154,7 @@ const HotReload: Page = () => {
         Edit a slide file → <span style={{ color: 'var(--osd-accent)' }}>Fast Refresh</span>. Add or
         remove a slide folder → the watcher invalidates{' '}
         <code style={{ fontFamily: 'var(--osd-font-display)', color: mint }}>
-          virtual:open-slide/slides
+          virtual:awesome-slide/slides
         </code>{' '}
         and triggers a<span style={{ color: warm }}> full reload</span>.
       </p>
@@ -1455,7 +1460,7 @@ const Inspector: Page = () => {
             </span>
             {'\n'}
             <span style={{ color: muted }}>&gt;</span>
-            {'\n  '}Inside open-slide
+            {'\n  '}Inside Awesome Slide
             {'\n'}
             <span style={{ color: muted }}>&lt;/</span>
             <span style={{ color: violet }}>h1</span>
@@ -1601,14 +1606,14 @@ const PresentMode: Page = () => {
 const Cli: Page = () => {
   const cmds = [
     {
-      cmd: 'open-slide dev',
+      cmd: 'awesome-slide dev',
       desc: 'createServer() → Vite dev with the plugin',
       tint: 'var(--osd-accent)',
     },
-    { cmd: 'open-slide build', desc: 'viteBuild() → static SPA in dist/', tint: mint },
-    { cmd: 'open-slide preview', desc: 'serve dist/ for local check', tint: warm },
+    { cmd: 'awesome-slide build', desc: 'viteBuild() → static SPA in dist/', tint: mint },
+    { cmd: 'awesome-slide preview', desc: 'serve dist/ for local check', tint: warm },
     {
-      cmd: 'npx @open-slide/cli init',
+      cmd: 'npx @awesome-slide/cli init',
       desc: 'scaffold a new project from packages/cli/template/',
       tint: violet,
     },
@@ -1765,7 +1770,7 @@ const Closing: Page = () => {
   );
 };
 
-export const meta: SlideMeta = { title: 'Inside open-slide', createdAt: '2026-05-05T17:45:52Z' };
+export const meta: SlideMeta = { title: 'Inside Awesome Slide', createdAt: '2026-05-05T17:45:52Z' };
 
 export default [
   Cover,

@@ -1,19 +1,19 @@
 import type { Locale } from './locale/types';
 
-export type OpenSlideBuildConfig = {
+export type AwesomeSlideBuildConfig = {
   showSlideBrowser?: boolean;
   showSlideUi?: boolean;
   allowHtmlDownload?: boolean;
 };
 
-export type OpenSlideConfig = {
+export type AwesomeSlideConfig = {
   slidesDir?: string;
   themesDir?: string;
   assetsDir?: string;
   port?: number;
   locale?: Locale;
-  build?: OpenSlideBuildConfig;
+  build?: AwesomeSlideBuildConfig;
 };
 
-export type AwesomeSlideBuildConfig = OpenSlideBuildConfig;
-export type AwesomeSlideConfig = OpenSlideConfig;
+export type OpenSlideBuildConfig = AwesomeSlideBuildConfig;
+export type OpenSlideConfig = AwesomeSlideConfig;

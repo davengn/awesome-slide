@@ -44,11 +44,21 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-canvas: var(--canvas);
+  --color-surface-soft: var(--surface-soft);
+  --color-inverse-canvas: var(--inverse-canvas);
+  --color-inverse-ink: var(--inverse-ink);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-soft: var(--brand-soft);
+  --color-block-lime: var(--block-lime);
+  --color-block-lilac: var(--block-lilac);
+  --color-block-cream: var(--block-cream);
+  --color-block-mint: var(--block-mint);
+  --color-block-pink: var(--block-pink);
+  --color-block-coral: var(--block-coral);
+  --color-block-navy: var(--block-navy);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.85);
@@ -73,6 +83,9 @@
   --background: oklch(0.985 0.004 75);
   --foreground: oklch(0.2 0.012 60);
   --canvas: oklch(0.974 0.005 75);
+  --inverse-canvas: oklch(0.18 0.04 278);
+  --inverse-ink: oklch(0.985 0 0);
+  --surface-soft: oklch(0.955 0.006 100);
 
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.2 0.012 60);
@@ -99,6 +112,32 @@
   --brand: oklch(0.555 0.185 28);
   --brand-foreground: oklch(0.985 0.004 75);
   --brand-soft: oklch(0.555 0.185 28 / 0.1);
+  --block-lime: oklch(0.9 0.12 124);
+  --block-lilac: oklch(0.88 0.08 310);
+  --block-cream: oklch(0.94 0.04 86);
+  --block-mint: oklch(0.9 0.07 170);
+  --block-pink: oklch(0.89 0.08 350);
+  --block-coral: oklch(0.78 0.12 42);
+  --block-navy: oklch(0.23 0.08 275);
+
+  --as-canvas: var(--canvas);
+  --as-ink: var(--foreground);
+  --as-inverse-canvas: var(--inverse-canvas);
+  --as-inverse-ink: var(--inverse-ink);
+  --as-surface: var(--card);
+  --as-surface-soft: var(--surface-soft);
+  --as-hairline: var(--hairline);
+  --as-primary: var(--primary);
+  --as-primary-text: var(--primary-foreground);
+  --as-focus: var(--ring);
+  --as-danger: var(--destructive);
+  --as-block-lime: var(--block-lime);
+  --as-block-lilac: var(--block-lilac);
+  --as-block-cream: var(--block-cream);
+  --as-block-mint: var(--block-mint);
+  --as-block-pink: var(--block-pink);
+  --as-block-coral: var(--block-coral);
+  --as-block-navy: var(--block-navy);
 
   --chart-1: oklch(0.555 0.185 28);
   --chart-2: oklch(0.55 0.1 60);
@@ -123,6 +162,9 @@
   --background: oklch(0.155 0.005 70);
   --foreground: oklch(0.945 0.005 80);
   --canvas: oklch(0.135 0.005 70);
+  --inverse-canvas: oklch(0.94 0.005 80);
+  --inverse-ink: oklch(0.18 0.008 70);
+  --surface-soft: oklch(0.245 0.006 70);
 
   --card: oklch(0.195 0.006 70);
   --card-foreground: oklch(0.945 0.005 80);
@@ -147,6 +189,13 @@
   --brand: oklch(0.66 0.19 28);
   --brand-foreground: oklch(0.155 0.005 70);
   --brand-soft: oklch(0.66 0.19 28 / 0.18);
+  --block-lime: oklch(0.76 0.11 124);
+  --block-lilac: oklch(0.7 0.08 310);
+  --block-cream: oklch(0.78 0.04 86);
+  --block-mint: oklch(0.74 0.07 170);
+  --block-pink: oklch(0.72 0.08 350);
+  --block-coral: oklch(0.66 0.12 42);
+  --block-navy: oklch(0.23 0.08 275);
 
   --chart-1: oklch(0.66 0.19 28);
   --chart-2: oklch(0.7 0.1 60);
@@ -195,7 +244,7 @@
       "cv11" on,
       "calt" on,
       "tnum" off;
-    letter-spacing: -0.005em;
+    letter-spacing: 0;
   }
   ::selection {
     background: var(--brand-soft);

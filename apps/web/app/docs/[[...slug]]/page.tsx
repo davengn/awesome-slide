@@ -22,17 +22,19 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const markdownUrl = getPageMarkdownUrl(page).url;
 
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full}>
-      <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription className="mb-0">{page.data.description}</DocsDescription>
-      <div className="flex flex-row gap-2 items-center border-b pb-6">
+    <DocsPage toc={page.data.toc} full={page.data.full} className="max-w-[880px]">
+      <DocsTitle className="text-balance font-medium tracking-normal">{page.data.title}</DocsTitle>
+      <DocsDescription className="mb-0 max-w-2xl text-[15px] leading-7">
+        {page.data.description}
+      </DocsDescription>
+      <div className="flex flex-row items-center gap-2 border-b border-[oklch(0.86_0.008_70)] pb-6">
         <MarkdownCopyButton markdownUrl={markdownUrl} />
         <ViewOptionsPopover
           markdownUrl={markdownUrl}
           githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/docs/${page.path}`}
         />
       </div>
-      <DocsBody>
+      <DocsBody className="text-[15px] leading-7">
         <MDX
           components={getMDXComponents({
             a: createRelativeLink(source, page),

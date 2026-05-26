@@ -9,11 +9,7 @@ import { currentPlugin } from './current-plugin.ts';
 import { designPlugin } from './design-plugin.ts';
 import { locTagsPlugin } from './loc-tags-plugin.ts';
 import { notesPlugin } from './notes-plugin.ts';
-import {
-  loadUserConfig,
-  type OpenSlideConfig,
-  openSlidePlugin,
-} from './open-slide-plugin.ts';
+import { type AwesomeSlideConfig, loadUserConfig, openSlidePlugin } from './open-slide-plugin.ts';
 import { themesPlugin } from './themes-plugin.ts';
 
 function findPackageRoot(fromFile: string): string {
@@ -30,7 +26,7 @@ const APP_ROOT = path.join(PKG_ROOT, 'src', 'app');
 
 export type CreateViteConfigOptions = {
   userCwd: string;
-  config?: OpenSlideConfig;
+  config?: AwesomeSlideConfig;
   mode?: 'serve' | 'build';
 };
 

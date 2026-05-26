@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: appName,
   keywords: [
-    'open-slide',
+    'awesome-slide',
     'slides',
     'presentation framework',
     'React slides',

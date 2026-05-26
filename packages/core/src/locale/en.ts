@@ -240,6 +240,7 @@ export const en: Locale = {
     commentsApplyHintPrefix: 'Run ',
     commentsApplyHintSuffix: ' in your agent to apply these.',
     commentDeleteAria: 'Delete',
+    commentsButtonAria: 'Toggle slide comments',
     saveFailed: "Couldn't save:",
   },
 

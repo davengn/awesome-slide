@@ -1,4 +1,4 @@
-import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@awesome-slide/core';
 
 export const meta: SlideMeta = {
   title: 'Vercel Labs · 2026',
@@ -218,7 +218,7 @@ const FooterRule = ({ note }: { note?: string }) => (
       }}
     />
     <span className="vl-fade" style={{ animationDelay: '600ms' }}>
-      open-slide · vercel labs
+      Awesome Slide · vercel labs
     </span>
     <span className="vl-fade" style={{ animationDelay: '700ms' }}>
       {note ?? '▲ github.com/vercel-labs'}

@@ -492,15 +492,15 @@ function RenameCard({
 
   const isImage = asset.mime.startsWith('image/');
   return (
-    <div className="relative flex flex-col overflow-hidden rounded-xl border-2 border-primary bg-card shadow-sm">
-      <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:16px_16px]">
+    <div className="relative flex flex-col overflow-hidden rounded-[8px] border border-brand bg-card shadow-floating">
+      <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:14px_14px]">
         {isImage ? (
           <img src={asset.url} alt="" className="size-full object-contain" draggable={false} />
         ) : (
           <FileIcon className="size-10 text-muted-foreground" />
         )}
       </div>
-      <div className="border-t bg-card px-2 py-2">
+      <div className="border-t border-hairline bg-card px-2 py-2">
         <input
           ref={inputRef}
           value={value}
@@ -519,7 +519,7 @@ function RenameCard({
             }
           }}
           maxLength={120}
-          className="w-full rounded-md border bg-background px-2 py-1 text-sm outline-none ring-ring/40 focus:ring-2"
+          className="w-full rounded-[6px] border border-border bg-background px-2 py-1 text-[12.5px] outline-none ring-ring/40 focus:ring-2"
         />
       </div>
     </div>

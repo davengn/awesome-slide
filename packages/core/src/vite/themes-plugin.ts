@@ -4,11 +4,11 @@ import path from 'node:path';
 import fg from 'fast-glob';
 import { normalizePath, type Plugin } from 'vite';
 import { AWESOME_SLIDE_VIRTUAL_PREFIX, OPEN_SLIDE_VIRTUAL_PREFIX } from '../brand.ts';
-import type { OpenSlideConfig } from '../config.ts';
+import type { AwesomeSlideConfig } from '../config.ts';
 
 export type ThemesPluginOptions = {
   userCwd: string;
-  config: OpenSlideConfig;
+  config: AwesomeSlideConfig;
 };
 
 const THEMES_VMOD = `${AWESOME_SLIDE_VIRTUAL_PREFIX}/themes`;
