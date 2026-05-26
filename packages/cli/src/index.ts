@@ -180,15 +180,15 @@ export async function run(argv: string[]): Promise<void> {
 
   const program = new Command();
   program
-    .name('open-slide')
-    .description('Scaffold and manage open-slide workspaces.')
+    .name('awesome-slide')
+    .description('Scaffold and manage Awesome Slide workspaces.')
     .version(version, '-v, --version', 'print version')
     .helpOption('-h, --help', 'show help')
-    .showHelpAfterError(chalk.dim('(run `open-slide --help` for usage)'));
+    .showHelpAfterError(chalk.dim('(run `awesome-slide --help` for usage)'));
 
   program
     .command('init')
-    .description('Create a new open-slide workspace')
+    .description('Create a new Awesome Slide workspace')
     .argument('[dir]', 'target directory', undefined)
     .option('-f, --force', 'overwrite non-empty target directory', false)
     .option('-n, --name <name>', 'override package name (defaults to folder name)')

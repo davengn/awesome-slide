@@ -4,7 +4,7 @@ description: The shape the runtime expects from each slides/<id>/index.tsx.
 ---
 
 ```tsx title="slides/<id>/index.tsx"
-import type { Page, SlideMeta } from '@open-slide/core';
+import type { Page, SlideMeta } from '@awesome-slide/core';
 
 const Cover: Page = () => <div>{/* ... */}</div>;
 
@@ -59,7 +59,7 @@ itself. See [SlideTransition](/docs/reference/slide-transitions) for the full
 schema and a tasteful family of defaults.
 
 ```ts
-import type { SlideTransition } from '@open-slide/core';
+import type { SlideTransition } from '@awesome-slide/core';
 
 export const transition: SlideTransition = {
   duration: 200,
@@ -68,14 +68,14 @@ export const transition: SlideTransition = {
 };
 ```
 
-## Imports from `@open-slide/core`
+## Imports from `@awesome-slide/core`
 
 ```ts
 import {
   CANVAS_WIDTH,        // 1920
   CANVAS_HEIGHT,       // 1080
   ImagePlaceholder,    // sized empty placeholder — see /docs/reference/image-placeholder
-} from '@open-slide/core';
+} from '@awesome-slide/core';
 import type {
   Page,
   SlideMeta,
@@ -83,5 +83,5 @@ import type {
   SlideTransition,     // per-page / module-level animations — see /docs/reference/slide-transitions
   TransitionPhase,
   ImagePlaceholderProps,
-} from '@open-slide/core';
+} from '@awesome-slide/core';
 ```

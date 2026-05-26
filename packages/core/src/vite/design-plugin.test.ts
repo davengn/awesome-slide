@@ -41,6 +41,21 @@ const Cover: Page = () => (
 export default [Cover];
 `;
 
+const CANONICAL_SLIDE_WITHOUT_DESIGN = `import type { Page } from '@awesome-slide/core';
+
+const Cover: Page = () => (
+  <div style={{
+    width: '100%',
+    height: '100%',
+    background: '#111111',
+  }}>
+    Hi
+  </div>
+);
+
+export default [Cover];
+`;
+
 describe('parseSlideDesign', () => {
   it('extracts design from a slide that declares one', () => {
     const r = parseSlideDesign(SLIDE_WITH_DESIGN);
@@ -132,11 +147,20 @@ describe('applyDesignWrite — slide without design', () => {
     expect(parsed.design).toEqual(defaultDesign);
   });
 
-  it('adds a fresh @open-slide/core type import when none exists', () => {
+  it('adds DesignSystem to an existing @awesome-slide/core import', () => {
+    const r = applyDesignWrite(CANONICAL_SLIDE_WITHOUT_DESIGN, defaultDesign);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.created).toBe(true);
+    expect(r.source).toContain("from '@awesome-slide/core'");
+    expect(r.source).toContain('type DesignSystem');
+    expect(r.source).toContain('const design: DesignSystem =');
+  });
+
+  it('adds a fresh @awesome-slide/core type import when none exists', () => {
     const slide = `const Cover = () => <div>Hi</div>;\nexport default [Cover];\n`;
     const r = applyDesignWrite(slide, defaultDesign);
     if (!r.ok) throw new Error(r.error);
-    expect(r.source).toContain("import type { DesignSystem } from '@open-slide/core'");
+    expect(r.source).toContain("import type { DesignSystem } from '@awesome-slide/core'");
     expect(r.source).toContain('const design: DesignSystem =');
     const parsed = parseSlideDesign(r.source);
     if (!parsed.ok) throw new Error('inserted design is not parseable');

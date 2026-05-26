@@ -12,11 +12,11 @@
 
 **Purpose**: Create the tracking artifacts needed to avoid unsafe global replacements and to keep validation evidence in one place.
 
-- [ ] T001 Create the rebrand inventory file with the required schema and category list in `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
-- [ ] T002 [P] Create the Awesome Slide design-system source of truth from the design contract in `references/AWESOME_SLIDE_DESIGN_SYSTEM.md`
-- [ ] T003 [P] Create the brand migration and compatibility source of truth from the migration contract in `references/AWESOME_SLIDE_BRAND_MIGRATION.md`
-- [ ] T004 [P] Create the validation log for checks, quickstart results, accessibility review, and viewport review in `specs/001-rebrand-awesome-slide/validation-notes.md`
-- [ ] T005 Run the initial legacy-brand search from `specs/001-rebrand-awesome-slide/quickstart.md` and paste unclassified matches into `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
+- [X] T001 Create the rebrand inventory file with the required schema and category list in `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
+- [X] T002 [P] Create the Awesome Slide design-system source of truth from the design contract in `references/AWESOME_SLIDE_DESIGN_SYSTEM.md`
+- [X] T003 [P] Create the brand migration and compatibility source of truth from the migration contract in `references/AWESOME_SLIDE_BRAND_MIGRATION.md`
+- [X] T004 [P] Create the validation log for checks, quickstart results, accessibility review, and viewport review in `specs/001-rebrand-awesome-slide/validation-notes.md`
+- [X] T005 Run the initial legacy-brand search from `specs/001-rebrand-awesome-slide/quickstart.md` and paste unclassified matches into `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
 
 ---
 
@@ -26,13 +26,13 @@
 
 **Critical**: No user story work should begin until this phase is complete.
 
-- [ ] T006 Classify package metadata, root scripts, repository docs, and GitHub matches in `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
-- [ ] T007 [P] Classify runtime UI, locale, internal protocol, runtime path, and storage-key matches in `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
-- [ ] T008 [P] Classify CLI, starter template, demo, skills, web docs, and marketing matches in `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
-- [ ] T009 Record compatibility-window decisions for package, binary, config, virtual module, HMR, runtime path, local storage, and docs URL surfaces in `references/AWESOME_SLIDE_BRAND_MIGRATION.md`
-- [ ] T010 Define final color, typography, spacing, radius, shadow, focus, motion, component treatment, responsive, and accessibility rules in `references/AWESOME_SLIDE_DESIGN_SYSTEM.md`
-- [ ] T011 Add centralized runtime brand constants for canonical and legacy names in `packages/core/src/brand.ts`
-- [ ] T012 Export runtime brand constants and compatibility type aliases from `packages/core/src/index.ts`
+- [X] T006 Classify package metadata, root scripts, repository docs, and GitHub matches in `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
+- [X] T007 [P] Classify runtime UI, locale, internal protocol, runtime path, and storage-key matches in `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
+- [X] T008 [P] Classify CLI, starter template, demo, skills, web docs, and marketing matches in `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
+- [X] T009 Record compatibility-window decisions for package, binary, config, virtual module, HMR, runtime path, local storage, and docs URL surfaces in `references/AWESOME_SLIDE_BRAND_MIGRATION.md`
+- [X] T010 Define final color, typography, spacing, radius, shadow, focus, motion, component treatment, responsive, and accessibility rules in `references/AWESOME_SLIDE_DESIGN_SYSTEM.md`
+- [X] T011 Add centralized runtime brand constants for canonical and legacy names in `packages/core/src/brand.ts`
+- [X] T012 Export runtime brand constants and compatibility type aliases from `packages/core/src/index.ts`
 
 **Checkpoint**: Inventory, design rules, and naming rules are ready for implementation.
 
@@ -46,17 +46,17 @@
 
 ### Tests for User Story 1
 
-- [ ] T013 [P] [US1] Add locale product-name coverage for all bundled locales in `packages/core/src/locale/brand.test.ts`
+- [X] T013 [P] [US1] Add locale product-name coverage for all bundled locales in `packages/core/src/locale/brand.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] Update locale app titles and product copy in `packages/core/src/locale/en.ts`, `packages/core/src/locale/ja.ts`, `packages/core/src/locale/zh-cn.ts`, and `packages/core/src/locale/zh-tw.ts`
-- [ ] T015 [US1] Update runtime app metadata and shell title usage in `packages/core/src/app/index.html` and `packages/core/src/app/app.tsx`
-- [ ] T016 [P] [US1] Update docs entry-page brand copy in `apps/web/content/docs/index.mdx`, `apps/web/content/docs/getting-started.mdx`, and `apps/web/content/docs/meta.json`
-- [ ] T017 [P] [US1] Update root and package README brand copy in `README.md`, `packages/core/README.md`, and `packages/cli/README.md`
-- [ ] T018 [US1] Update landing-page brand chrome in `apps/web/components/landing/nav.tsx`, `apps/web/components/landing/hero.tsx`, `apps/web/components/landing/get-started.tsx`, and `apps/web/components/landing/footer.tsx`
-- [ ] T019 [US1] Update visible help, error, and runtime copy in `packages/core/src/cli/run.ts`, `packages/core/src/cli/sync.ts`, `packages/core/src/app/routes/slide.tsx`, and `packages/core/src/app/lib/page-context.tsx`
-- [ ] T020 [US1] Re-run the inventory scan and update User Story 1 statuses in `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
+- [X] T014 [US1] Update locale app titles and product copy in `packages/core/src/locale/en.ts`, `packages/core/src/locale/ja.ts`, `packages/core/src/locale/zh-cn.ts`, and `packages/core/src/locale/zh-tw.ts`
+- [X] T015 [US1] Update runtime app metadata and shell title usage in `packages/core/src/app/index.html` and `packages/core/src/app/app.tsx`
+- [X] T016 [P] [US1] Update docs entry-page brand copy in `apps/web/content/docs/index.mdx`, `apps/web/content/docs/getting-started.mdx`, and `apps/web/content/docs/meta.json`
+- [X] T017 [P] [US1] Update root and package README brand copy in `README.md`, `packages/core/README.md`, and `packages/cli/README.md`
+- [X] T018 [US1] Update landing-page brand chrome in `apps/web/components/landing/nav.tsx`, `apps/web/components/landing/hero.tsx`, `apps/web/components/landing/get-started.tsx`, and `apps/web/components/landing/footer.tsx`
+- [X] T019 [US1] Update visible help, error, and runtime copy in `packages/core/src/cli/run.ts`, `packages/core/src/cli/sync.ts`, `packages/core/src/app/routes/slide.tsx`, and `packages/core/src/app/lib/page-context.tsx`
+- [X] T020 [US1] Re-run the inventory scan and update User Story 1 statuses in `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
 
 **Checkpoint**: Standard app and docs surfaces show the new product identity and the inventory explains every intentional legacy reference.
 

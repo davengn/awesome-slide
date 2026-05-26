@@ -1,11 +1,11 @@
-export const appName = 'open-slide';
-export const siteUrl = 'https://open-slide.dev';
+export const appName = 'Awesome Slide';
+export const siteUrl = 'https://awesome-slide.dev';
 export const docsRoute = '/docs';
 export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';
 
 export const gitConfig = {
   user: '1weiho',
-  repo: 'open-slide',
+  repo: 'awesome-slide',
   branch: 'main',
 };

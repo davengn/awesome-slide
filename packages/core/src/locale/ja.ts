@@ -36,7 +36,7 @@ export const ja: Locale = {
   },
 
   home: {
-    appTitle: 'open-slide',
+    appTitle: 'Awesome Slide',
     draft: '下書き',
     duplicate: '複製',
     themes: 'テーマ',

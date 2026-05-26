@@ -14,3 +14,6 @@ export type OpenSlideConfig = {
   locale?: Locale;
   build?: OpenSlideBuildConfig;
 };
+
+export type AwesomeSlideBuildConfig = OpenSlideBuildConfig;
+export type AwesomeSlideConfig = OpenSlideConfig;

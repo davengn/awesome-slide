@@ -1,9 +1,10 @@
 {
-  "name": "@open-slide/cli",
+  "name": "@awesome-slide/cli",
   "version": "1.2.5",
-  "description": "Scaffold an open-slide workspace with Claude Code skills preconfigured.",
+  "description": "Scaffold an Awesome Slide workspace with agent skills preconfigured.",
   "type": "module",
   "bin": {
+    "awesome-slide": "dist/cli.js",
     "open-slide": "dist/cli.js"
   },
   "files": [
@@ -31,14 +32,14 @@
     "name": "1weiho",
     "url": "https://github.com/1weiho"
   },
-  "homepage": "https://open-slide.dev",
+  "homepage": "https://awesome-slide.dev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/1weiho/open-slide.git",
+    "url": "git+https://github.com/1weiho/awesome-slide.git",
     "directory": "packages/cli"
   },
   "bugs": {
-    "url": "https://github.com/1weiho/open-slide/issues"
+    "url": "https://github.com/1weiho/awesome-slide/issues"
   },
   "publishConfig": {
     "access": "public"

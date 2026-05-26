@@ -1,11 +1,11 @@
-# @open-slide/cli
+# @awesome-slide/cli
 
-Scaffold a workspace for [open-slide](https://github.com/1weiho/open-slide) — a React-based slide framework with Claude Code skills preconfigured.
+Scaffold an Awesome Slide workspace with agent skills preconfigured.
 
 ## Usage
 
 ```bash
-npx @open-slide/cli init my-slide
+npx @awesome-slide/cli init my-slide
 cd my-slide
 pnpm install
 pnpm dev
@@ -13,26 +13,31 @@ pnpm dev
 
 This creates a workspace containing:
 
-- `slides/getting-started/` — a starter slide you can edit or delete.
-- `package.json` — depends on `@open-slide/core`, which provides the runtime (home page, slide viewer, fullscreen mode) and the `open-slide` CLI.
-- `open-slide.config.ts` — optional typed config (slidesDir, port).
-- `.claude/skills/` and `.agents/skills/` — Claude Code skills (`create-slide`, `apply-comments`, …).
-- `CLAUDE.md` — agent guide for authoring slides.
+- `slides/getting-started/`: a starter slide you can edit or delete.
+- `package.json`: depends on `@awesome-slide/core`.
+- `awesome-slide.config.ts`: optional typed config.
+- `.claude/skills/` and `.agents/skills/`: bundled agent skills.
+- `CLAUDE.md` and `AGENTS.md`: agent guides for authoring slides.
 
-You won't see any Vite, React, or tsconfig files in the workspace. They live inside `@open-slide/core` and you never touch them.
+You will not see Vite, React, or tsconfig files in the workspace. They live
+inside `@awesome-slide/core`.
 
 ## Commands
 
 | Command | Description |
 | --- | --- |
-| `open-slide init [dir]` | Scaffold a new workspace in `dir` (defaults to current dir). |
-| `open-slide init --force` | Scaffold into a non-empty directory. |
-| `open-slide init --name <name>` | Override the generated `package.json` name. |
+| `awesome-slide init [dir]` | Scaffold a new workspace in `dir`. |
+| `awesome-slide init --force` | Scaffold into a non-empty directory. |
+| `awesome-slide init --name <name>` | Override the generated `package.json` name. |
 
-(Once installed in the workspace, `@open-slide/core` provides `open-slide dev`, `open-slide build`, and `open-slide preview` via its own bin.)
+The legacy `open-slide` bin remains available during the migration window.
 
 ## Authoring
 
-Inside the scaffolded workspace, slides live under `slides/<kebab-case-id>/index.tsx` and default-export an array of `Page` components. Each page renders into a fixed 1920×1080 canvas; the framework handles scaling.
+Inside the scaffolded workspace, slides live under
+`slides/<kebab-case-id>/index.tsx` and default-export an array of `Page`
+components. Each page renders into a fixed 1920 x 1080 canvas; the framework
+handles scaling.
 
-Ask Claude Code to "make slides about X" and the `create-slide` skill will take it from there.
+Ask your coding agent to make slides about a topic and the `create-slide` skill
+will take it from there.

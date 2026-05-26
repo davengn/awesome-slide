@@ -1,5 +1,6 @@
+import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
-import { parsePort } from './run.ts';
+import { createRuntimeProgram, parsePort } from './run.ts';
 
 describe('parsePort', () => {
   it('accepts valid integer ports', () => {
@@ -22,5 +23,25 @@ describe('parsePort', () => {
 
   it('rejects non-integer numbers', () => {
     expect(() => parsePort('80.5')).toThrow(/Invalid port/);
+  });
+});
+
+describe('runtime CLI branding', () => {
+  it('uses awesome-slide in help output', () => {
+    const help = createRuntimeProgram('0.0.0', '/tmp/skills').helpInformation();
+
+    expect(help).toContain('Usage: awesome-slide');
+    expect(help).toContain('Sync built-in skills from @awesome-slide/core');
+  });
+
+  it('exposes canonical and legacy binaries', async () => {
+    const pkg = JSON.parse(
+      await readFile(new URL('../../package.json', import.meta.url), 'utf8'),
+    ) as { bin: Record<string, string> };
+
+    expect(pkg.bin).toMatchObject({
+      'awesome-slide': './bin.js',
+      'open-slide': './bin.js',
+    });
   });
 });

@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { FolderIconChip, SLIDE_DND_MIME } from '../components/sidebar/folder-item';
 import { DRAFT_ID } from '../components/sidebar/sidebar';
 import { SlideCanvas } from '../components/slide-canvas';
+import { readStorageWithLegacy, writeStorageWithLegacy } from '../lib/compat-storage';
 import { SlidePageProvider } from '../lib/page-context';
 import type { Folder, FolderIcon, SlideModule } from '../lib/sdk';
 import { loadSlide, slideCreatedAt } from '../lib/slides';
@@ -45,12 +46,13 @@ type SortKey = 'created-desc' | 'created-asc' | 'title-asc' | 'title-desc';
 const SORT_KEYS: readonly SortKey[] = ['created-desc', 'created-asc', 'title-asc', 'title-desc'];
 
 const DEFAULT_SORT: SortKey = 'created-desc';
-const SORT_STORAGE_KEY = 'open-slide:home-sort';
+const SORT_STORAGE_KEY = 'awesome-slide:home-sort';
+const LEGACY_SORT_STORAGE_KEY = 'open-slide:home-sort';
 
 function readSortPref(): SortKey {
   if (typeof window === 'undefined') return DEFAULT_SORT;
   try {
-    const raw = window.localStorage.getItem(SORT_STORAGE_KEY);
+    const raw = readStorageWithLegacy(window.localStorage, SORT_STORAGE_KEY, LEGACY_SORT_STORAGE_KEY);
     if (raw && (SORT_KEYS as readonly string[]).includes(raw)) return raw as SortKey;
   } catch {}
   return DEFAULT_SORT;
@@ -61,7 +63,7 @@ function useSortPref(): [SortKey, (next: SortKey) => void] {
   const update = (next: SortKey) => {
     setSortKey(next);
     try {
-      window.localStorage.setItem(SORT_STORAGE_KEY, next);
+      writeStorageWithLegacy(window.localStorage, SORT_STORAGE_KEY, LEGACY_SORT_STORAGE_KEY, next);
     } catch {}
   };
   return [sortKey, update];

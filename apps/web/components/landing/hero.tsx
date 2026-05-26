@@ -35,7 +35,7 @@ export function Hero() {
             className="flex flex-wrap items-center gap-x-6 gap-y-4 rise"
             style={{ animationDelay: '320ms' }}
           >
-            <CopyCommand command="npx @open-slide/cli init" />
+            <CopyCommand command="npx @awesome-slide/cli init" />
             <a
               href="/docs"
               onClick={() => posthog.capture('docs_link_clicked', { location: 'hero' })}

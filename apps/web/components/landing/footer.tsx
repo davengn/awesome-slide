@@ -5,7 +5,7 @@ export function Footer() {
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
           <div className="flex items-center gap-3 font-[family-name:var(--font-mono)] text-[13px]">
             <img src="/open-slide.png" alt="" aria-hidden className="h-6 w-6 rounded-[4px]" />
-            <span className="tracking-[-0.01em]">open-slide</span>
+            <span className="tracking-[-0.01em]">Awesome Slide</span>
           </div>
           <p className="text-[14px] leading-[1.6] text-[color:var(--color-muted)] max-w-[38ch]">
             A React-first slide framework authored by AI agents. MIT licensed, built for the long
@@ -23,23 +23,23 @@ export function Footer() {
         <FooterCol
           title="Packages"
           links={[
-            ['@open-slide/core', 'https://www.npmjs.com/package/@open-slide/core'],
-            ['@open-slide/cli', 'https://www.npmjs.com/package/@open-slide/cli'],
+            ['@awesome-slide/core', 'https://www.npmjs.com/package/@awesome-slide/core'],
+            ['@awesome-slide/cli', 'https://www.npmjs.com/package/@awesome-slide/cli'],
           ]}
         />
         <FooterCol
           title="Elsewhere"
           links={[
-            ['GitHub', 'https://github.com/1weiho/open-slide'],
-            ['npm', 'https://www.npmjs.com/package/@open-slide/core'],
-            ['Issues', 'https://github.com/1weiho/open-slide/issues'],
+            ['GitHub', 'https://github.com/1weiho/awesome-slide'],
+            ['npm', 'https://www.npmjs.com/package/@awesome-slide/core'],
+            ['Issues', 'https://github.com/1weiho/awesome-slide/issues'],
           ]}
         />
       </div>
 
       <div className="border-t border-[color:var(--color-rule)]">
         <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
-          <span>© open-slide · MIT</span>
+          <span>© Awesome Slide · MIT</span>
           <span>
             Crafted with 🤍 by{' '}
             <a

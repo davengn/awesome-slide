@@ -9,7 +9,11 @@ import { currentPlugin } from './current-plugin.ts';
 import { designPlugin } from './design-plugin.ts';
 import { locTagsPlugin } from './loc-tags-plugin.ts';
 import { notesPlugin } from './notes-plugin.ts';
-import { loadUserConfig, type OpenSlideConfig, openSlidePlugin } from './open-slide-plugin.ts';
+import {
+  loadUserConfig,
+  type OpenSlideConfig,
+  openSlidePlugin,
+} from './open-slide-plugin.ts';
 import { themesPlugin } from './themes-plugin.ts';
 
 function findPackageRoot(fromFile: string): string {
@@ -76,15 +80,15 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
         'class-variance-authority',
         'emoji-picker-react',
       ],
-      // The app source ships inside node_modules/@open-slide/core/src/app, so
+      // The app source ships inside node_modules/@awesome-slide/core/src/app, so
       // Vite's dep scanner traverses it as if it were a third-party dep and
       // tries to bundle our virtual imports with esbuild. Mark them external.
       esbuildOptions: {
         plugins: [
           {
-            name: 'open-slide:virtual-externals',
+            name: 'awesome-slide:virtual-externals',
             setup(build) {
-              build.onResolve({ filter: /^virtual:open-slide\// }, (args) => ({
+              build.onResolve({ filter: /^virtual:(awesome-slide|open-slide)\// }, (args) => ({
                 path: args.path,
                 external: true,
               }));

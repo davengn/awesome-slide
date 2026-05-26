@@ -1,4 +1,4 @@
-import config from 'virtual:open-slide/config';
+import config from 'virtual:awesome-slide/config';
 import { en } from '../../locale/en';
 import type { Locale, Plural } from '../../locale/types';
 

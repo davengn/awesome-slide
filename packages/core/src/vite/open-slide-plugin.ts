@@ -3,6 +3,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
 import { loadConfigFromFile, type Plugin, type ViteDevServer } from 'vite';
+import {
+  AWESOME_SLIDE_CONFIG_FILE,
+  AWESOME_SLIDE_PROTOCOL_PREFIX,
+  AWESOME_SLIDE_VIRTUAL_PREFIX,
+  OPEN_SLIDE_CONFIG_FILE,
+  OPEN_SLIDE_PROTOCOL_PREFIX,
+  OPEN_SLIDE_VIRTUAL_PREFIX,
+} from '../brand.ts';
 import type { OpenSlideConfig } from '../config.ts';
 
 export type { OpenSlideConfig };
@@ -12,11 +20,19 @@ export type OpenSlidePluginOptions = {
   config: OpenSlideConfig;
 };
 
-const CONFIG_FILE = 'open-slide.config.ts';
-
-const SLIDES_VMOD = 'virtual:open-slide/slides';
-const CONFIG_VMOD = 'virtual:open-slide/config';
-const FOLDERS_VMOD = 'virtual:open-slide/folders';
+const SLIDES_VMOD = `${AWESOME_SLIDE_VIRTUAL_PREFIX}/slides`;
+const CONFIG_VMOD = `${AWESOME_SLIDE_VIRTUAL_PREFIX}/config`;
+const FOLDERS_VMOD = `${AWESOME_SLIDE_VIRTUAL_PREFIX}/folders`;
+const LEGACY_SLIDES_VMOD = `${OPEN_SLIDE_VIRTUAL_PREFIX}/slides`;
+const LEGACY_CONFIG_VMOD = `${OPEN_SLIDE_VIRTUAL_PREFIX}/config`;
+const LEGACY_FOLDERS_VMOD = `${OPEN_SLIDE_VIRTUAL_PREFIX}/folders`;
+const SLIDES_VMODS = [SLIDES_VMOD, LEGACY_SLIDES_VMOD] as const;
+const CONFIG_VMODS = [CONFIG_VMOD, LEGACY_CONFIG_VMOD] as const;
+const FOLDERS_VMODS = [FOLDERS_VMOD, LEGACY_FOLDERS_VMOD] as const;
+const SLIDE_CHANGED_EVENTS = [
+  `${AWESOME_SLIDE_PROTOCOL_PREFIX}:slide-changed`,
+  `${OPEN_SLIDE_PROTOCOL_PREFIX}:slide-changed`,
+] as const;
 
 type FoldersManifest = {
   folders: unknown[];
@@ -44,6 +60,10 @@ async function readFoldersManifest(file: string): Promise<FoldersManifest> {
 
 function resolved(id: string): string {
   return `\0${id}`;
+}
+
+function matchesVirtual(id: string, ids: readonly string[]): boolean {
+  return ids.some((virtualId) => id === virtualId || id === resolved(virtualId));
 }
 
 async function findSlides(userCwd: string, slidesDir: string): Promise<string[]> {
@@ -141,13 +161,15 @@ async function generateSlidesModule(
     ? `
 const slideImportTokens = ${importTokens};
 if (import.meta.hot) {
-  import.meta.hot.on('open-slide:slide-changed', (data) => {
-    const ids = Array.isArray(data?.slideIds) ? data.slideIds : data?.slideId ? [data.slideId] : [];
-    const token = Date.now();
-    for (const id of ids) {
-      if (Object.prototype.hasOwnProperty.call(slideImportTokens, id)) slideImportTokens[id] = token;
-    }
-  });
+  for (const eventName of ${JSON.stringify(SLIDE_CHANGED_EVENTS)}) {
+    import.meta.hot.on(eventName, (data) => {
+      const ids = Array.isArray(data?.slideIds) ? data.slideIds : data?.slideId ? [data.slideId] : [];
+      const token = Date.now();
+      for (const id of ids) {
+        if (Object.prototype.hasOwnProperty.call(slideImportTokens, id)) slideImportTokens[id] = token;
+      }
+    });
+  }
 }
 `
     : '';
@@ -160,7 +182,7 @@ if (import.meta.hot) {
     })
     .join('\n');
 
-  return `// virtual:open-slide/slides — generated
+  return `// ${SLIDES_VMOD} - generated
 export const slideIds = ${ids};
 export const slideThemes = ${themesJson};
 export const slideCreatedAt = ${createdAtJson};
@@ -197,20 +219,24 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     if (slideChangeTimer) clearTimeout(slideChangeTimer);
     slideChangeTimer = setTimeout(() => {
       slideChangeTimer = null;
-      const mod = server.moduleGraph.getModuleById(resolved(SLIDES_VMOD));
-      if (mod) server.moduleGraph.invalidateModule(mod);
+      for (const virtualId of SLIDES_VMODS) {
+        const mod = server.moduleGraph.getModuleById(resolved(virtualId));
+        if (mod) server.moduleGraph.invalidateModule(mod);
+      }
       const slideIds = Array.from(pendingSlideChanges);
       pendingSlideChanges.clear();
-      server.ws.send({
-        type: 'custom',
-        event: 'open-slide:slide-changed',
-        data: { slideIds },
-      });
+      for (const event of SLIDE_CHANGED_EVENTS) {
+        server.ws.send({
+          type: 'custom',
+          event,
+          data: { slideIds },
+        });
+      }
     }, 100);
   };
 
   return {
-    name: 'open-slide',
+    name: 'awesome-slide',
     config(_c, env) {
       isDev = env.command === 'serve';
       return {
@@ -218,17 +244,17 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       };
     },
     resolveId(id) {
-      if (id === SLIDES_VMOD) return resolved(SLIDES_VMOD);
-      if (id === CONFIG_VMOD) return resolved(CONFIG_VMOD);
-      if (id === FOLDERS_VMOD) return resolved(FOLDERS_VMOD);
+      if (SLIDES_VMODS.includes(id as (typeof SLIDES_VMODS)[number])) return resolved(id);
+      if (CONFIG_VMODS.includes(id as (typeof CONFIG_VMODS)[number])) return resolved(id);
+      if (FOLDERS_VMODS.includes(id as (typeof FOLDERS_VMODS)[number])) return resolved(id);
       return null;
     },
     async load(id) {
-      if (id === resolved(SLIDES_VMOD)) {
+      if (matchesVirtual(id, SLIDES_VMODS)) {
         const files = await findSlides(userCwd, slidesDir);
         return await generateSlidesModule(files, slidesRoot, isDev);
       }
-      if (id === resolved(CONFIG_VMOD)) {
+      if (matchesVirtual(id, CONFIG_VMODS)) {
         const userBuild = config.build ?? {};
         const buildResolved = isDev
           ? { showSlideBrowser: true, showSlideUi: true, allowHtmlDownload: true }
@@ -240,7 +266,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
         const resolvedConfig = { ...config, build: buildResolved };
         return `export default ${JSON.stringify(resolvedConfig)};\n`;
       }
-      if (id === resolved(FOLDERS_VMOD)) {
+      if (matchesVirtual(id, FOLDERS_VMODS)) {
         const manifest = await readFoldersManifest(foldersManifestPath);
         return `export default ${JSON.stringify(manifest)};\n`;
       }
@@ -260,8 +286,10 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
         if (reloadTimer) clearTimeout(reloadTimer);
         reloadTimer = setTimeout(() => {
           reloadTimer = null;
-          const mod = server.moduleGraph.getModuleById(resolved(SLIDES_VMOD));
-          if (mod) server.moduleGraph.invalidateModule(mod);
+          for (const virtualId of SLIDES_VMODS) {
+            const mod = server.moduleGraph.getModuleById(resolved(virtualId));
+            if (mod) server.moduleGraph.invalidateModule(mod);
+          }
           server.ws.send({ type: 'full-reload' });
         }, 150);
       };
@@ -282,8 +310,10 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
         if (foldersTimer) clearTimeout(foldersTimer);
         foldersTimer = setTimeout(() => {
           foldersTimer = null;
-          const mod = server.moduleGraph.getModuleById(resolved(FOLDERS_VMOD));
-          if (mod) server.moduleGraph.invalidateModule(mod);
+          for (const virtualId of FOLDERS_VMODS) {
+            const mod = server.moduleGraph.getModuleById(resolved(virtualId));
+            if (mod) server.moduleGraph.invalidateModule(mod);
+          }
         }, 100);
       };
       server.watcher.add(foldersManifestPath);
@@ -301,8 +331,17 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
 }
 
 export async function loadUserConfig(userCwd: string): Promise<OpenSlideConfig> {
-  const file = path.join(userCwd, CONFIG_FILE);
-  if (!existsSync(file)) return {};
+  const canonicalFile = path.join(userCwd, AWESOME_SLIDE_CONFIG_FILE);
+  const legacyFile = path.join(userCwd, OPEN_SLIDE_CONFIG_FILE);
+  const canonicalExists = existsSync(canonicalFile);
+  const legacyExists = existsSync(legacyFile);
+  if (!canonicalExists && !legacyExists) return {};
+  const file = canonicalExists ? canonicalFile : legacyFile;
+  if (canonicalExists && legacyExists) {
+    console.warn(
+      `[awesome-slide] Both ${AWESOME_SLIDE_CONFIG_FILE} and ${OPEN_SLIDE_CONFIG_FILE} exist. Using ${AWESOME_SLIDE_CONFIG_FILE}.`,
+    );
+  }
   const loaded = await loadConfigFromFile(
     { command: 'serve', mode: 'development' },
     file,

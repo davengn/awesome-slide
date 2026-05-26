@@ -11,6 +11,8 @@ import {
   spliceRange,
 } from './edit-ops.ts';
 
+const CORE_IMPORT_SOURCES = ['@awesome-slide/core', '@open-slide/core'] as const;
+
 type ImgSrcUse = { element: t.JSXElement; identNode: t.Identifier };
 
 function collectImgSrcUses(ast: t.File, identifier: string): ImgSrcUse[] {
@@ -64,7 +66,9 @@ function planEnsureImagePlaceholderImport(ast: t.File): Splice | null {
   const imports = findImports(ast);
   let valueImport: ImportInfo | null = null;
   for (const imp of imports) {
-    if (imp.source !== '@open-slide/core') continue;
+    if (!CORE_IMPORT_SOURCES.includes(imp.source as (typeof CORE_IMPORT_SOURCES)[number])) {
+      continue;
+    }
     const declIsTypeOnly = readKind(imp.node);
     for (const spec of imp.node.specifiers) {
       if (!t.isImportSpecifier(spec)) continue;
@@ -93,7 +97,7 @@ function planEnsureImagePlaceholderImport(ast: t.File): Splice | null {
   return {
     from: 0,
     to: 0,
-    text: "import { ImagePlaceholder } from '@open-slide/core';\n",
+    text: "import { ImagePlaceholder } from '@awesome-slide/core';\n",
   };
 }
 

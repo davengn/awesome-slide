@@ -1,6 +1,8 @@
-import buildManifest from 'virtual:open-slide/folders';
+import buildManifest from 'virtual:awesome-slide/folders';
 import { useCallback, useEffect, useState } from 'react';
 import type { Folder, FolderIcon, FoldersManifest } from './sdk';
+
+const FILES_CHANGED_EVENTS = ['awesome-slide:files-changed', 'open-slide:files-changed'] as const;
 
 const EMPTY: FoldersManifest = { folders: [], assignments: {} };
 
@@ -132,9 +134,9 @@ export function useFolders(): UseFoldersResult {
     const handler = () => {
       refresh().catch(() => {});
     };
-    import.meta.hot.on('open-slide:files-changed', handler);
+    for (const event of FILES_CHANGED_EVENTS) import.meta.hot.on(event, handler);
     return () => {
-      import.meta.hot?.off('open-slide:files-changed', handler);
+      for (const event of FILES_CHANGED_EVENTS) import.meta.hot?.off(event, handler);
     };
   }, [refresh]);
 

@@ -19,7 +19,7 @@ export function GetStarted() {
           </p>
 
           <div className="flex flex-wrap items-center gap-4">
-            <CopyCommand command="npx @open-slide/cli init" />
+            <CopyCommand command="npx @awesome-slide/cli init" />
           </div>
         </div>
       </div>

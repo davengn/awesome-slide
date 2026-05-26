@@ -4,19 +4,19 @@ description: Translate the runtime UI — home, inspector, presenter, toasts.
 ---
 
 The runtime ships with four built-in dictionaries. Pick one in
-`open-slide.config.ts`, or pass your own object that satisfies the `Locale`
+`awesome-slide.config.ts`, or pass your own object that satisfies the `Locale`
 type.
 
-The locale only affects the **runtime UI** that open-slide renders around
+The locale only affects the **runtime UI** that Awesome Slide renders around
 your slides (the home screen, slide browser, inspector, asset panel,
 presenter mode, toasts, etc.). It does **not** translate slide content —
 that lives in your own React code.
 
 ## Presets
 
-```ts title="open-slide.config.ts"
-import type { OpenSlideConfig } from '@open-slide/core';
-import { zhTW } from '@open-slide/core/locale';
+```ts title="awesome-slide.config.ts"
+import type { OpenSlideConfig } from '@awesome-slide/core';
+import { zhTW } from '@awesome-slide/core/locale';
 
 const config: OpenSlideConfig = {
   locale: zhTW,
@@ -32,10 +32,10 @@ export default config;
 | `zhCN`   | `'zh-CN'` | 简体中文            |
 | `ja`     | `'ja'`    | 日本語              |
 
-All presets are re-exported from the `@open-slide/core/locale` subpath:
+All presets are re-exported from the `@awesome-slide/core/locale` subpath:
 
 ```ts
-import { en, zhTW, zhCN, ja } from '@open-slide/core/locale';
+import { en, zhTW, zhCN, ja } from '@awesome-slide/core/locale';
 ```
 
 If `locale` is omitted, the runtime falls back to `en`.
@@ -44,11 +44,11 @@ If `locale` is omitted, the runtime falls back to `en`.
 
 A locale is plain data — no functions, no JSX — so it serializes through
 the build cleanly. Provide your own object as long as it matches the
-`Locale` type from `@open-slide/core`.
+`Locale` type from `@awesome-slide/core`.
 
-```ts title="open-slide.config.ts"
-import type { OpenSlideConfig, Locale } from '@open-slide/core';
-import { en } from '@open-slide/core/locale';
+```ts title="awesome-slide.config.ts"
+import type { OpenSlideConfig, Locale } from '@awesome-slide/core';
+import { en } from '@awesome-slide/core/locale';
 
 const fr: Locale = {
   ...en,

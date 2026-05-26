@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
 import { normalizePath, type Plugin } from 'vite';
+import { AWESOME_SLIDE_VIRTUAL_PREFIX, OPEN_SLIDE_VIRTUAL_PREFIX } from '../brand.ts';
 import type { OpenSlideConfig } from '../config.ts';
 
 export type ThemesPluginOptions = {
@@ -10,7 +11,9 @@ export type ThemesPluginOptions = {
   config: OpenSlideConfig;
 };
 
-const THEMES_VMOD = 'virtual:open-slide/themes';
+const THEMES_VMOD = `${AWESOME_SLIDE_VIRTUAL_PREFIX}/themes`;
+const LEGACY_THEMES_VMOD = `${OPEN_SLIDE_VIRTUAL_PREFIX}/themes`;
+const THEMES_VMODS = [THEMES_VMOD, LEGACY_THEMES_VMOD] as const;
 
 function resolved(id: string): string {
   return `\0${id}`;
@@ -99,7 +102,7 @@ function generateThemesModule(themes: ParsedTheme[], isDev: boolean): string {
     })
     .join('\n');
 
-  return `// virtual:open-slide/themes — generated
+  return `// ${THEMES_VMOD} - generated
 export const themes = ${JSON.stringify(meta)};
 
 export async function loadThemeDemo(id) {
@@ -119,16 +122,18 @@ export function themesPlugin(opts: ThemesPluginOptions): Plugin {
   let isDev = false;
 
   return {
-    name: 'open-slide:themes',
+    name: 'awesome-slide:themes',
     config(_c, env) {
       isDev = env.command === 'serve';
     },
     resolveId(id) {
-      if (id === THEMES_VMOD) return resolved(THEMES_VMOD);
+      if (THEMES_VMODS.includes(id as (typeof THEMES_VMODS)[number])) return resolved(id);
       return null;
     },
     async load(id) {
-      if (id !== resolved(THEMES_VMOD)) return null;
+      if (!THEMES_VMODS.some((virtualId) => id === virtualId || id === resolved(virtualId))) {
+        return null;
+      }
       const files = await findThemes(userCwd, themesDir);
       const themes = await Promise.all(files.map((f) => readTheme(f, themesRoot)));
       return generateThemesModule(themes, isDev);
@@ -146,8 +151,10 @@ export function themesPlugin(opts: ThemesPluginOptions): Plugin {
         if (reloadTimer) clearTimeout(reloadTimer);
         reloadTimer = setTimeout(() => {
           reloadTimer = null;
-          const mod = server.moduleGraph.getModuleById(resolved(THEMES_VMOD));
-          if (mod) server.moduleGraph.invalidateModule(mod);
+          for (const virtualId of THEMES_VMODS) {
+            const mod = server.moduleGraph.getModuleById(resolved(virtualId));
+            if (mod) server.moduleGraph.invalidateModule(mod);
+          }
           server.ws.send({ type: 'full-reload' });
         }, 150);
       };

@@ -1,4 +1,4 @@
-import config from 'virtual:open-slide/config';
+import config from 'virtual:awesome-slide/config';
 import {
   Check,
   ChevronDown,
@@ -52,6 +52,7 @@ import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
+import { readStorageWithLegacy, writeStorageWithLegacy } from '../lib/compat-storage';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
@@ -92,6 +93,13 @@ export function Slide() {
   useEffect(() => {
     if (!import.meta.hot) return;
     if (!slideId || !slide || pageCount === 0) return;
+    import.meta.hot.send('awesome-slide:current', {
+      slideId,
+      pageIndex: index,
+      totalPages: pageCount,
+      slideTitle: slide.meta?.title ?? slideId,
+      view,
+    });
     import.meta.hot.send('open-slide:current', {
       slideId,
       pageIndex: index,
@@ -404,7 +412,7 @@ export function Slide() {
                       if (linkCopiedTimerRef.current) clearTimeout(linkCopiedTimerRef.current);
                       linkCopiedTimerRef.current = setTimeout(() => setLinkCopied(false), 1200);
                     } catch (err) {
-                      console.error('[open-slide] copy link failed', err);
+                      console.error('[awesome-slide] copy link failed', err);
                       toast.error(t.slide.toastCopyLinkFailed);
                     }
                   }}
@@ -449,7 +457,7 @@ export function Slide() {
                         try {
                           await exportSlideAsHtml(slide, slideId);
                         } catch (err) {
-                          console.error('[open-slide] export failed', err);
+                          console.error('[awesome-slide] export failed', err);
                         } finally {
                           setExporting(false);
                         }
@@ -489,7 +497,7 @@ export function Slide() {
                             });
                           });
                         } catch (err) {
-                          console.error('[open-slide] pdf export failed', err);
+                          console.error('[awesome-slide] pdf export failed', err);
                           toast.error(t.slide.pdfExportFailed, { id: toastId, duration: 4000 });
                         } finally {
                           setExporting(false);
@@ -642,14 +650,19 @@ export function Slide() {
   );
 }
 
-const RAIL_WIDTH_STORAGE_KEY = 'open-slide:thumbnail-rail-width';
+const RAIL_WIDTH_STORAGE_KEY = 'awesome-slide:thumbnail-rail-width';
+const LEGACY_RAIL_WIDTH_STORAGE_KEY = 'open-slide:thumbnail-rail-width';
 const DEFAULT_RAIL_WIDTH = 264;
 const MIN_RAIL_WIDTH = 200;
 const MAX_RAIL_WIDTH = 480;
 
 function readStoredRailWidth(): number {
   if (typeof window === 'undefined') return DEFAULT_RAIL_WIDTH;
-  const raw = window.localStorage.getItem(RAIL_WIDTH_STORAGE_KEY);
+  const raw = readStorageWithLegacy(
+    window.localStorage,
+    RAIL_WIDTH_STORAGE_KEY,
+    LEGACY_RAIL_WIDTH_STORAGE_KEY,
+  );
   const parsed = raw == null ? Number.NaN : Number(raw);
   if (!Number.isFinite(parsed)) return DEFAULT_RAIL_WIDTH;
   return Math.min(MAX_RAIL_WIDTH, Math.max(MIN_RAIL_WIDTH, parsed));
@@ -670,7 +683,12 @@ function ResizableRail(props: {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem(RAIL_WIDTH_STORAGE_KEY, String(width));
+    writeStorageWithLegacy(
+      window.localStorage,
+      RAIL_WIDTH_STORAGE_KEY,
+      LEGACY_RAIL_WIDTH_STORAGE_KEY,
+      String(width),
+    );
   }, [width]);
 
   useEffect(() => {
@@ -809,6 +827,7 @@ function SelectionReporter() {
           text: (selected.anchor.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 120),
         }
       : null;
+    import.meta.hot.send('awesome-slide:current', { selection });
     import.meta.hot.send('open-slide:current', { selection });
   }, [selected]);
   return null;

@@ -1,19 +1,19 @@
 ---
-title: open-slide sync:skills
+title: awesome-slide sync:skills
 description: Refresh the bundled agent skills inside an existing workspace.
 ---
 
 ```npm
-open-slide sync:skills
+awesome-slide sync:skills
 # or
 npm run sync:skills
 ```
 
-Copies the latest skill definitions from your installed `@open-slide/core`
+Copies the latest skill definitions from your installed `@awesome-slide/core`
 into the workspace under `.agents/skills/`, and refreshes the
 `.claude/skills/` symlinks so Claude Code picks them up too.
 
-Run this after upgrading `@open-slide/core` — that's how you pull in skill
+Run this after upgrading `@awesome-slide/core` — that's how you pull in skill
 fixes and new skills (`/create-slide`, `/slide-authoring`,
 `/apply-comments`, `/create-theme`, …) without re-scaffolding.
 
@@ -22,7 +22,7 @@ fixes and new skills (`/create-slide`, `/slide-authoring`,
 ```text
 .agents/
 └── skills/
-    └── <name>/        # canonical copy from @open-slide/core
+    └── <name>/        # canonical copy from @awesome-slide/core
 .claude/
 └── skills/
     └── <name>         # symlink to ../../.agents/skills/<name>
@@ -41,7 +41,7 @@ copy.
 
 ## Drift detection on `dev`
 
-`open-slide dev` runs the same drift check at startup. If any skill is out
+`awesome-slide dev` runs the same drift check at startup. If any skill is out
 of date it offers to sync interactively, or prints a one-line warning if
 stdin isn't a TTY. Skip the check with `--no-skills-check` (or
-`OPEN_SLIDE_SKIP_SKILLS_CHECK=1`) — see [open-slide dev](/docs/cli/dev).
+`AWESOME_SLIDE_SKIP_SKILLS_CHECK=1`) — see [awesome-slide dev](/docs/cli/dev).

@@ -1,62 +1,76 @@
-# @open-slide/core
+# @awesome-slide/core
 
-Runtime and CLI for [open-slide](https://github.com/1weiho/open-slide) — a React-based slide framework where you write slides and the framework handles the Vite/React stack, layout, navigation, hot reload, and fullscreen play mode.
+Runtime and CLI for Awesome Slide, a React-based slide framework where you write
+slides and the framework handles the Vite/React stack, layout, navigation, hot
+reload, inspector, export, and present mode.
 
 ## Install
 
 ```bash
-pnpm add @open-slide/core
+pnpm add @awesome-slide/core
 ```
 
-Most users get this installed automatically by running `npx @open-slide/cli init`. Use this package directly only if you're wiring up an existing workspace by hand.
+Most users get this installed automatically by running:
 
-## What's inside
+```bash
+npx @awesome-slide/cli init
+```
 
-- **Runtime** — home page, slide viewer, thumbnail rail, keyboard navigation, and fullscreen presenter mode. Every slide renders into a fixed **1920×1080** canvas; the framework scales it.
-- **Vite plugin** — discovers `slides/<id>/index.{tsx,jsx,ts,js}`, exposes them via virtual modules, and reloads when slides are added or removed.
-- **CLI** — `open-slide dev | build | preview` so workspaces never need to touch Vite, React, or tsconfig directly.
+Existing `@open-slide/core` projects remain supported during the migration
+window.
+
+## What's Inside
+
+- **Runtime**: home page, slide viewer, thumbnail rail, inspector, keyboard
+  navigation, and presenter mode.
+- **Vite plugin**: discovers `slides/<id>/index.{tsx,jsx,ts,js}`, exposes them
+  through virtual modules, and reloads when slides change.
+- **CLI**: `awesome-slide dev | build | preview` so workspaces do not need to
+  touch Vite, React, or tsconfig directly.
 
 ## CLI
 
-Once installed, the `open-slide` bin is available in the workspace:
+The canonical bin is `awesome-slide`. The legacy `open-slide` bin forwards to
+the same runtime during the compatibility window.
 
 | Command | Description |
 | --- | --- |
-| `open-slide dev` | Start the dev server. Flags: `-p, --port <port>`, `--host [host]`, `--open`. |
-| `open-slide build` | Build a static site. Flags: `--out-dir <dir>` (defaults to `dist`). |
-| `open-slide preview` | Preview the production build. Flags: `-p, --port <port>`, `--host [host]`, `--open`. |
+| `awesome-slide dev` | Start the dev server. |
+| `awesome-slide build` | Build a static site. |
+| `awesome-slide preview` | Preview the production build. |
+| `awesome-slide sync:skills` | Sync bundled agent skills into a workspace. |
 
 ## Config
 
-Create `open-slide.config.ts` in the workspace root (all fields optional):
+Create `awesome-slide.config.ts` in the workspace root. Existing
+`open-slide.config.ts` files continue to load as a fallback.
 
 ```ts
-import type { OpenSlideConfig } from '@open-slide/core';
+import type { AwesomeSlideConfig } from '@awesome-slide/core';
 
-const openSlideConfig: OpenSlideConfig = {
+const config: AwesomeSlideConfig = {
   slidesDir: 'slides',
   port: 5173,
 };
 
-export default openSlideConfig;
+export default config;
 ```
 
-## Authoring slides
+## Authoring Slides
 
-Slides live under `slides/<kebab-case-id>/index.tsx` and default-export an array of `Page` components:
+Slides live under `slides/<kebab-case-id>/index.tsx` and default-export an array
+of `Page` components:
 
 ```tsx
-import type { Page } from '@open-slide/core';
+import type { Page } from '@awesome-slide/core';
 
 const Cover: Page = () => (
   <div className="flex h-full w-full items-center justify-center">
-    <h1 className="text-[120px] font-bold">Hello, open-slide</h1>
+    <h1 className="text-[120px] font-bold">Hello, Awesome Slide</h1>
   </div>
 );
 
-const pages: Page[] = [Cover];
-export default pages;
-
+export default [Cover] satisfies Page[];
 export const meta = { title: 'Hello' };
 ```
 
@@ -64,19 +78,20 @@ export const meta = { title: 'Hello' };
 
 ```ts
 import {
-  CANVAS_WIDTH,   // 1920
-  CANVAS_HEIGHT,  // 1080
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  type AwesomeSlideConfig,
+  type OpenSlideConfig,
   type Page,
   type SlideMeta,
   type SlideModule,
-  type OpenSlideConfig,
-} from '@open-slide/core';
+} from '@awesome-slide/core';
 ```
 
-The Vite plugin is exposed under a subpath for advanced setups:
+The Vite helper is exposed under a subpath:
 
 ```ts
-import { createViteConfig } from '@open-slide/core/vite';
+import { createViteConfig } from '@awesome-slide/core/vite';
 ```
 
 ## License

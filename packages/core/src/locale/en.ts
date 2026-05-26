@@ -36,7 +36,7 @@ export const en: Locale = {
   },
 
   home: {
-    appTitle: 'open-slide',
+    appTitle: 'Awesome Slide',
     draft: 'Draft',
     duplicate: 'Duplicate',
     themes: 'Themes',
