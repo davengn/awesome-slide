@@ -1,4 +1,4 @@
-/* open-slide landing styles — scoped to .os-landing so they don't bleed
+/* Awesome Slide landing styles — scoped to .os-landing so they don't bleed
    into the rest of the docs site (which uses fumadocs-ui's defaults).
 
    Palette mirrors packages/core: warm paper + ink, single vermillion
@@ -25,6 +25,11 @@
   --color-accent-deep: oklch(0.555 0.185 28);
   --color-warm: oklch(0.78 0.14 60);
   --color-mint: oklch(0.7 0.14 160);
+  --color-block-lime: oklch(0.88 0.16 128);
+  --color-block-lilac: oklch(0.79 0.12 302);
+  --color-block-cream: oklch(0.91 0.065 82);
+  --color-block-mint: oklch(0.84 0.12 168);
+  --color-block-coral: oklch(0.76 0.15 34);
 
   --font-display: var(--font-instrument-serif);
   --font-sans: var(--font-geist-sans);
@@ -58,6 +63,11 @@ html.light .os-landing {
   --color-accent-deep: oklch(0.46 0.18 28);
   --color-warm: oklch(0.6 0.14 60);
   --color-mint: oklch(0.5 0.13 160);
+  --color-block-lime: oklch(0.82 0.15 128);
+  --color-block-lilac: oklch(0.83 0.1 302);
+  --color-block-cream: oklch(0.9 0.055 82);
+  --color-block-mint: oklch(0.82 0.1 168);
+  --color-block-coral: oklch(0.78 0.14 34);
 }
 
 .os-landing ::selection {

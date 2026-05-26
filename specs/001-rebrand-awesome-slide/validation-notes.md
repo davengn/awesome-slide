@@ -22,10 +22,12 @@
 | --- | --- | --- |
 | T005 initial inventory scan | PASS | Ran the quickstart `rg` scan and classified matches in `rebrand-inventory.md`. |
 | T020 US1 inventory update | PASS | Standard app title, locale app titles, README copy, docs entry pages, landing chrome, and runtime help/error copy now use canonical brand naming. Remaining legacy matches are compatibility, asset filenames, or later-story work. |
+| T021 CLI scaffold test | PASS | `pnpm.cmd vitest run packages/cli/src/init.test.ts` passes with coverage for canonical starter scripts, dependency, config filename, README, and welcome slide copy. |
+| T029 CLI scaffold quickstart | PASS | Built `@awesome-slide/cli`, then ran `node packages/cli/dist/cli.js init node_modules/.tmp/awesome-slide-quickstart-20260526102808 --no-install --no-git --name quickstart-deck --use-pnpm`; generated files use `awesome-slide`, `@awesome-slide/core@^1.7.0`, `awesome-slide.config.ts`, `@awesome-slide/core/env`, and Awesome Slide README/welcome copy. |
 
 ## CLI Scaffold Quickstart
 
-Pending.
+PASS on 2026-05-26. The normal relative-target flow generated a canonical Awesome Slide starter. A Windows absolute target was rejected by the existing non-interactive path sanitizer because of the drive-letter colon; that behavior is outside this US2 scaffold-branding validation.
 
 ## Responsive And Accessibility Review
 

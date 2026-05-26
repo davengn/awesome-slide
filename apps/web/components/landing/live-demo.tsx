@@ -33,15 +33,17 @@ export function LiveDemo() {
     <section id="demo" className="relative">
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 pt-4 sm:pt-8 lg:pt-12 pb-20 sm:pb-32">
         <div
-          className="relative block w-full overflow-hidden rounded-[8px] border border-[color:var(--color-rule)] bg-black"
+          className="relative block w-full overflow-hidden rounded-[8px] border border-[color:var(--color-rule)] bg-[color:var(--color-block-mint)] p-2"
           style={{ aspectRatio: '16 / 9' }}
         >
-          <InlineSlidePlayer index={index} onIndexChange={setIndex} />
+          <div className="h-full w-full overflow-hidden rounded-[6px] bg-black">
+            <InlineSlidePlayer index={index} onIndexChange={setIndex} />
+          </div>
         </div>
 
         <div className="mt-6 flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.12em] uppercase text-[color:var(--color-muted)]">
           <a
-            href="https://demo.open-slide.dev/"
+            href="https://demo.awesome-slide.dev/"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => posthog.capture('view_more_demos_clicked')}

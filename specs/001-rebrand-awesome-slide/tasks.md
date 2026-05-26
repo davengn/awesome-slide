@@ -70,18 +70,18 @@
 
 ### Tests for User Story 2
 
-- [ ] T021 [P] [US2] Add CLI init coverage for canonical starter README, package scripts, dependency names, config filename, and welcome copy in `packages/cli/src/init.test.ts`
+- [X] T021 [P] [US2] Add CLI init coverage for canonical starter README, package scripts, dependency names, config filename, and welcome copy in `packages/cli/src/init.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Update scaffolder command name, help text, git init commit text, generated config path, and success output in `packages/cli/src/index.ts`, `packages/cli/src/init.ts`, and `packages/cli/src/git.ts`
-- [ ] T023 [US2] Add the canonical starter config template while preserving legacy config compatibility in `packages/cli/template/awesome-slide.config.ts` and `packages/cli/template/open-slide.config.ts`
-- [ ] T024 [P] [US2] Update starter package scripts, dependency names, and TypeScript includes in `packages/cli/template/package.json` and `packages/cli/template/tsconfig.json`
-- [ ] T025 [P] [US2] Update starter project README and agent guide copy in `packages/cli/template/README.md`, `packages/cli/template/AGENTS.md`, and `packages/cli/template/CLAUDE.md`
-- [ ] T026 [US2] Rebrand the generated getting-started deck copy and import examples in `packages/cli/template/slides/getting-started/index.tsx`
-- [ ] T027 [P] [US2] Rebrand the landing demo slide mirror in `apps/web/components/landing/demo-slide/index.tsx`
-- [ ] T028 [P] [US2] Update marketing section copy and visual brand styling in `apps/web/components/landing/how-it-works.tsx`, `apps/web/components/landing/anatomy.tsx`, `apps/web/components/landing/live-demo.tsx`, and `apps/web/app/(home)/landing.css`
-- [ ] T029 [US2] Run the CLI scaffold quickstart and record generated-file validation in `specs/001-rebrand-awesome-slide/validation-notes.md`
+- [X] T022 [US2] Update scaffolder command name, help text, git init commit text, generated config path, and success output in `packages/cli/src/index.ts`, `packages/cli/src/init.ts`, and `packages/cli/src/git.ts`
+- [X] T023 [US2] Add the canonical starter config template while preserving legacy config compatibility in `packages/cli/template/awesome-slide.config.ts` and `packages/cli/template/open-slide.config.ts`
+- [X] T024 [P] [US2] Update starter package scripts, dependency names, and TypeScript includes in `packages/cli/template/package.json` and `packages/cli/template/tsconfig.json`
+- [X] T025 [P] [US2] Update starter project README and agent guide copy in `packages/cli/template/README.md`, `packages/cli/template/AGENTS.md`, and `packages/cli/template/CLAUDE.md`
+- [X] T026 [US2] Rebrand the generated getting-started deck copy and import examples in `packages/cli/template/slides/getting-started/index.tsx`
+- [X] T027 [P] [US2] Rebrand the landing demo slide mirror in `apps/web/components/landing/demo-slide/index.tsx`
+- [X] T028 [P] [US2] Update marketing section copy and visual brand styling in `apps/web/components/landing/how-it-works.tsx`, `apps/web/components/landing/anatomy.tsx`, `apps/web/components/landing/live-demo.tsx`, and `apps/web/app/(home)/landing.css`
+- [X] T029 [US2] Run the CLI scaffold quickstart and record generated-file validation in `specs/001-rebrand-awesome-slide/validation-notes.md`
 
 **Checkpoint**: New projects scaffold with Awesome Slide branding and the marketing first impression matches the rebrand.
 

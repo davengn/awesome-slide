@@ -5,6 +5,7 @@ type Step = {
   kicker: string;
   title: string;
   body: string;
+  block: string;
   code: {
     prompt: string;
     line: string;
@@ -18,9 +19,10 @@ const steps: Step[] = [
     kicker: 'scaffold',
     title: 'Spin up a workspace',
     body: 'Creates the slide workspace. Every future deck you author lives inside it.',
+    block: 'var(--color-block-lime)',
     code: {
       prompt: '$',
-      line: 'npx @open-slide/cli init my-deck',
+      line: 'npx @awesome-slide/cli init my-deck',
       tail: '✓ ready in 3s',
     },
   },
@@ -29,6 +31,7 @@ const steps: Step[] = [
     kicker: 'author',
     title: 'Ask your agent',
     body: 'Your agent drafts pages as arbitrary React components. You guide with prompts.',
+    block: 'var(--color-block-lilac)',
     code: {
       prompt: '›',
       line: '/create-slide for Q2 roadmap',
@@ -40,6 +43,7 @@ const steps: Step[] = [
     kicker: 'iterate',
     title: 'Edit, comment, apply',
     body: 'Click any element to tweak it visually. Or leave a comment for the agent to apply.',
+    block: 'var(--color-block-coral)',
     code: {
       prompt: '›',
       line: '/apply-comment',
@@ -111,6 +115,11 @@ export function HowItWorks() {
               <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
                 {s.num} · {s.kicker}
               </span>
+              <span
+                aria-hidden
+                className="h-1.5 w-16 rounded-full"
+                style={{ background: s.block }}
+              />
 
               <div>
                 <h3 className="text-[22px] sm:text-[26px] lg:text-[30px] font-medium tracking-[-0.025em] leading-[1.15]">

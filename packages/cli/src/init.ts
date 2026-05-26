@@ -59,7 +59,9 @@ export async function isDirNonEmpty(target: string): Promise<boolean> {
 declare const __CORE_VERSION_AT_BUILD__: string;
 
 function coreVersionRange(): string {
-  return `^${__CORE_VERSION_AT_BUILD__}`;
+  const version =
+    typeof __CORE_VERSION_AT_BUILD__ === 'string' ? __CORE_VERSION_AT_BUILD__ : '0.0.0';
+  return `^${version}`;
 }
 
 async function linkOrCopy(relSrc: string, dst: string): Promise<void> {
@@ -97,23 +99,23 @@ function renderConfigFile(locale: LocaleCode): string {
   const localeImport = LOCALE_IMPORTS[locale];
   if (!localeImport) {
     return [
-      "import type { OpenSlideConfig } from '@open-slide/core';",
+      "import type { AwesomeSlideConfig } from '@awesome-slide/core';",
       '',
-      'const openSlideConfig: OpenSlideConfig = {};',
+      'const awesomeSlideConfig: AwesomeSlideConfig = {};',
       '',
-      'export default openSlideConfig;',
+      'export default awesomeSlideConfig;',
       '',
     ].join('\n');
   }
   return [
-    "import type { OpenSlideConfig } from '@open-slide/core';",
-    `import { ${localeImport} } from '@open-slide/core/locale';`,
+    "import type { AwesomeSlideConfig } from '@awesome-slide/core';",
+    `import { ${localeImport} } from '@awesome-slide/core/locale';`,
     '',
-    'const openSlideConfig: OpenSlideConfig = {',
+    'const awesomeSlideConfig: AwesomeSlideConfig = {',
     `  locale: ${localeImport},`,
     '};',
     '',
-    'export default openSlideConfig;',
+    'export default awesomeSlideConfig;',
     '',
   ].join('\n');
 }
@@ -133,7 +135,7 @@ export async function init(opts: InitOptions): Promise<void> {
 
   if (!existsSync(TEMPLATE_DIR)) {
     throw new Error(
-      `Template missing at ${TEMPLATE_DIR}. If you are running from source, run \`pnpm --filter @open-slide/cli build\` first.`,
+      `Template missing at ${TEMPLATE_DIR}. If you are running from source, run \`pnpm --filter @awesome-slide/cli build\` first.`,
     );
   }
 
@@ -156,21 +158,25 @@ export async function init(opts: InitOptions): Promise<void> {
     pkg.version = '0.0.0';
     pkg.private = true;
     if (pkg.dependencies?.['@open-slide/core']) {
-      pkg.dependencies['@open-slide/core'] = coreVersionRange();
+      delete pkg.dependencies['@open-slide/core'];
+      pkg.dependencies['@awesome-slide/core'] = coreVersionRange();
+    } else if (pkg.dependencies?.['@awesome-slide/core']) {
+      pkg.dependencies['@awesome-slide/core'] = coreVersionRange();
     }
     await writeFile(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
   }
 
-  const configPath = join(target, 'open-slide.config.ts');
+  const configPath = join(target, 'awesome-slide.config.ts');
   if (existsSync(configPath)) {
     await writeFile(configPath, renderConfigFile(locale));
   }
+  await rm(join(target, 'open-slide.config.ts'), { force: true });
 
   await writeFile(join(target, '.gitignore'), 'node_modules\ndist\n.DS_Store\n');
 
   const cdTarget = dir === '.' ? basename(target) : dir;
   process.stdout.write(
-    `\n${chalk.green.bold('✔ Created open-slide workspace')} ${chalk.dim(`in ${target}`)}\n`,
+    `\n${chalk.green.bold('✔ Created Awesome Slide workspace')} ${chalk.dim(`in ${target}`)}\n`,
   );
 
   let installed = false;

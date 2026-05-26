@@ -34,7 +34,7 @@ const CYCLE_MS = 3200;
 
 function buildCode({ accent, word, subtitle }: Variant): string[] {
   return [
-    "import type { Page } from '@open-slide/core';",
+    "import type { Page } from '@awesome-slide/core';",
     '',
     `const ACCENT = '${accent}';`,
     `const WORD = '${word}';`,
@@ -80,7 +80,7 @@ export function Anatomy() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* code pane */}
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-7 rounded-[8px] bg-[color:var(--color-block-lilac)] p-2">
             <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
               <div className="flex items-center justify-between px-4 sm:px-5 h-10 sm:h-11 border-b border-[color:var(--color-rule)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
                 <div className="flex items-center gap-3">
@@ -113,7 +113,7 @@ export function Anatomy() {
           </div>
 
           {/* preview pane */}
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-5 rounded-[8px] bg-[color:var(--color-block-cream)] p-2">
             <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-4 sm:p-5">
               <div className="flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.14em] uppercase text-[color:var(--color-muted)] mb-4">
                 <span>rendered output</span>
@@ -187,7 +187,7 @@ function SlidePreview({ variant, index }: { variant: Variant; index: number }) {
             className="inline-block rounded-full transition-colors duration-500"
             style={{ width: '0.9cqw', height: '0.9cqw', background: accent }}
           />
-          <span>open-slide · {label}</span>
+          <span>Awesome Slide · {label}</span>
         </span>
         <span>2026</span>
       </div>
