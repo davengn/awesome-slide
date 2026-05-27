@@ -4,7 +4,7 @@ import { source } from '@/lib/source';
 
 export default function Layout({ children }: LayoutProps<'/docs'>) {
   return (
-    <div className="min-h-dvh bg-white text-black">
+    <div className="as-docs-shell min-h-dvh bg-white text-black">
       <DocsLayout tree={source.getPageTree()} {...baseOptions()}>
         {children}
       </DocsLayout>

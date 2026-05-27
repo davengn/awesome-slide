@@ -25,7 +25,7 @@ Agent-assisted slide editing is currently conceptually tied to external skills o
 
 - Do not build the local agent discovery or API key management UI in this spec.
 - Do not allow silent autonomous file writes without user review.
-- Do not define every model provider protocol; connection adapters are covered by `specs/004-agent-model-connections`.
+- Do not define every model provider protocol; connection adapters are covered by `specs/005-agent-model-connections`.
 - Do not require collaborative multi-user chat history or cloud sync.
 - Do not replace manual slide editing.
 
@@ -125,4 +125,3 @@ Agent-assisted slide editing is currently conceptually tied to external skills o
 - Add tests for state transitions, error categorization, cancellation, validation failures, and apply behavior.
 - Add security checks around context redaction.
 - Verify accessibility and responsive behavior.
-

@@ -29,13 +29,13 @@ const palette = {
   dim: '#3e4048',
   border: 'rgba(255,255,255,0.07)',
   borderBright: 'rgba(255,255,255,0.14)',
-  accent: '#7170ff',
-  accentSoft: '#a3a0ff',
-  accent2: '#5e6ad2',
-  mint: '#68cc9a',
+  accent: '#c5b0f4',
+  accentSoft: '#dceeb1',
+  accent2: '#c8e6cd',
+  mint: '#c8e6cd',
   cream: '#f4ecd6',
-  inspect: '#3b82f6',
-  inspectFill: 'rgba(59,130,246,0.10)',
+  inspect: '#dceeb1',
+  inspectFill: 'rgba(220,238,177,0.14)',
 };
 
 const font = {
@@ -49,7 +49,7 @@ const fill = {
   background: palette.bg,
   color: palette.text,
   fontFamily: font.sans,
-  letterSpacing: '-0.015em',
+  letterSpacing: 0,
   overflow: 'hidden',
   position: 'relative' as const,
 };
@@ -188,7 +188,7 @@ const Eyebrow = ({
 
 const TrafficLights = () => (
   <div style={{ display: 'flex', gap: 10 }}>
-    {['#ff5f56', '#ffbd2e', '#27c93f'].map((c) => (
+    {['#000000', '#dceeb1', '#c5b0f4'].map((c) => (
       <span
         key={c}
         style={{

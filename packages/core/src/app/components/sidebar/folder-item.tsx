@@ -151,10 +151,10 @@ export function FolderItem({
     // biome-ignore lint/a11y/noStaticElementInteractions: drag-and-drop target wraps interactive children
     <div
       className={cn(
-        'group relative flex items-center gap-2.5 rounded-[8px] px-2.5 py-[6px] text-[12.5px] transition-colors',
+        'group relative grid min-h-[var(--sidebar-row-height)] grid-cols-[1.5rem_minmax(0,1fr)_var(--sidebar-count-width)] items-center gap-2 rounded-[var(--sidebar-row-radius)] px-2.5 text-[12.5px] transition-colors',
         selected
-          ? 'bg-muted text-foreground before:absolute before:inset-y-1.5 before:-left-0.5 before:w-[2px] before:rounded-full before:bg-brand'
-          : 'text-foreground/70 hover:bg-muted/60 hover:text-foreground',
+          ? 'bg-sidebar-primary font-medium text-sidebar-primary-foreground before:absolute before:inset-y-1.5 before:-left-0.5 before:w-[2px] before:rounded-full before:bg-sidebar-primary'
+          : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
         slideDragActive && acceptsSlideDrop && !dragOver && 'ring-1 ring-foreground/10',
         dragOver &&
           'bg-muted text-foreground ring-1 ring-foreground ring-offset-1 ring-offset-sidebar motion-safe:scale-[1.01] motion-safe:transition-transform',
@@ -169,7 +169,7 @@ export function FolderItem({
           <PopoverTrigger asChild>
             <button
               type="button"
-              className="flex size-6 shrink-0 items-center justify-center rounded-full transition-transform hover:bg-muted hover:scale-105"
+              className="flex size-6 shrink-0 items-center justify-center rounded-full transition-transform hover:bg-sidebar-accent hover:scale-105"
               aria-label={t.home.changeIcon}
               onClick={(e) => e.stopPropagation()}
             >
@@ -199,17 +199,25 @@ export function FolderItem({
             }
           }}
           maxLength={40}
-          className="min-w-0 flex-1 rounded-[3px] bg-card px-1 text-[12.5px] outline-none ring-1 ring-foreground/20"
+          className="min-w-0 rounded-[3px] bg-card px-1 text-[12.5px] text-foreground outline-none ring-1 ring-foreground/20"
         />
       ) : (
-        <button type="button" onClick={onSelect} className="min-w-0 flex-1 truncate text-left">
+        <button
+          type="button"
+          onClick={onSelect}
+          title={label}
+          className="min-w-0 truncate text-left"
+        >
           {label}
         </button>
       )}
 
       <span
         className={cn(
-          'folio ml-auto shrink-0 transition-opacity',
+          'nums ml-auto inline-flex min-w-[var(--sidebar-count-width)] shrink-0 justify-center rounded-full border px-1.5 py-0.5 font-mono text-[10px] transition-opacity',
+          selected
+            ? 'border-sidebar-primary-foreground/20 text-sidebar-primary-foreground/80'
+            : 'border-sidebar-border text-muted-foreground',
           row.kind === 'folder' &&
             import.meta.env.DEV &&
             'group-hover:opacity-0 group-has-[[aria-expanded=true]]:opacity-0',

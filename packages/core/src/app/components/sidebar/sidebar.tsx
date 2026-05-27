@@ -101,15 +101,23 @@ export function Sidebar({
   }, [creating]);
 
   return (
-    <aside className="paper relative flex h-full w-[17rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center justify-between px-4 pt-5 pb-4">
-        <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
+    <aside
+      aria-label={t.home.appTitle}
+      className="paper relative flex h-full w-[18rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground"
+    >
+      <div className="flex min-h-16 items-center justify-between border-b border-hairline px-4">
+        <div className="min-w-0">
+          <span className="eyebrow block">Workspace</span>
+          <h1 className="truncate font-heading text-lg font-semibold tracking-normal">
+            {t.home.appTitle}
+          </h1>
+        </div>
         <div className="-mr-1.5">
           <ThemeToggle />
         </div>
       </div>
 
-      <div className="px-2">
+      <nav className="px-2 py-3" aria-label="Primary navigation">
         <FolderItem
           row={{ kind: 'draft' }}
           count={countFor(null)}
@@ -131,14 +139,14 @@ export function Sidebar({
           onSelect={() => onSelect(ASSETS_ID)}
           onDropSlide={() => {}}
         />
-      </div>
+      </nav>
 
-      <div className="mt-5 flex items-center gap-2 px-4 pb-1.5">
+      <div className="mt-2 flex items-center gap-2 px-4 pb-1.5">
         <span className="eyebrow">{t.home.folders}</span>
         <span className="h-px flex-1 bg-hairline" aria-hidden />
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 pb-2">
+      <nav className="flex-1 overflow-y-auto px-2 pb-3" aria-label={t.home.folders}>
         {folders.map((folder) => (
           <FolderItem
             key={folder.id}
@@ -160,13 +168,13 @@ export function Sidebar({
           (creating ? (
             <div
               data-folder-create
-              className="mt-1 flex items-center gap-2.5 rounded-[8px] border border-dashed border-foreground/30 bg-card px-2 py-[6px]"
+              className="mt-1 grid min-h-[var(--sidebar-row-height)] grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-2 rounded-[var(--sidebar-row-radius)] border border-dashed border-foreground/30 bg-card px-2.5"
             >
               <Popover open={iconOpen} onOpenChange={setIconOpen}>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="flex size-5 shrink-0 items-center justify-center rounded transition-transform hover:scale-110"
+                    className="flex size-6 shrink-0 items-center justify-center rounded-full transition-transform hover:bg-muted hover:scale-105"
                     aria-label={t.home.pickIcon}
                   >
                     <FolderIconChip icon={newIcon} />
@@ -193,13 +201,14 @@ export function Sidebar({
             <button
               type="button"
               onClick={startCreating}
-              className="mt-1 flex w-full items-center gap-2 rounded-full px-2.5 py-2 text-[12px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              aria-label={t.home.newFolder}
+              className="mt-1 flex min-h-[var(--sidebar-row-height)] w-full items-center gap-2 rounded-full px-2.5 text-[12px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <Plus className="size-3.5" />
               <span>{t.home.newFolder}</span>
             </button>
           ))}
-      </div>
+      </nav>
     </aside>
   );
 }

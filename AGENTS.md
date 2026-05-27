@@ -49,5 +49,6 @@ Filter to one package: `pnpm core <script>` / `pnpm cli <script>`.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read:
-specs/001-rebrand-awesome-slide/plan.md
+- specs/001-rebrand-awesome-slide/plan.md
+- specs/002-reshape-landing-navigation/plan.md
 <!-- SPECKIT END -->

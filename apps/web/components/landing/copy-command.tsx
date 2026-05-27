@@ -33,7 +33,7 @@ export function CopyCommand({ command, size = 'lg' }: { command: string; size?: 
       <span aria-hidden className="text-[color:var(--color-inverse-text)]/80">
         $
       </span>
-      <span className="tracking-[-0.01em]">{command}</span>
+      <span className="min-w-0 max-w-[min(72vw,24rem)] truncate tracking-normal">{command}</span>
       <span
         aria-hidden
         className="ml-1 inline-flex items-center gap-1.5 text-[color:var(--color-inverse-text)]/70 transition-colors group-hover:text-[color:var(--color-inverse-text)]"

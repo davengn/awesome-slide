@@ -57,6 +57,7 @@
 
 html {
   scrollbar-gutter: stable;
+  scroll-padding-top: 72px;
 }
 
 html > body[data-scroll-locked] {
@@ -69,4 +70,33 @@ html > body[data-scroll-locked] {
 ::selection {
   background: rgb(0 0 0 / 0.12);
   color: var(--color-fd-foreground);
+}
+
+:where(a, button, input, textarea, select, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--color-fd-ring);
+  outline-offset: 3px;
+}
+
+.as-docs-shell {
+  background: #ffffff;
+  color: #000000;
+}
+
+.as-docs-shell :where(header, nav) {
+  --color-fd-primary: #000000;
+  --color-fd-primary-foreground: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms;
+    animation-iteration-count: 1;
+    transition-duration: 1ms;
+  }
 }
