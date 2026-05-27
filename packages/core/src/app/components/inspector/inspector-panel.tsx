@@ -852,11 +852,11 @@ function AgentWatchingBadge() {
             <span aria-hidden className="relative flex size-1.5 items-center justify-center">
               {connected ? (
                 <>
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                  <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-[color:var(--semantic-success)] opacity-60" />
+                  <span className="relative inline-flex size-1.5 rounded-full bg-[color:var(--semantic-success)]" />
                 </>
               ) : (
-                <span className="relative inline-flex size-1.5 rounded-full bg-rose-500" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-destructive" />
               )}
             </span>
             {connected ? t.inspector.agentWatching : t.inspector.agentNotWatching}

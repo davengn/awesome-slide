@@ -101,7 +101,7 @@ export function Sidebar({
   }, [creating]);
 
   return (
-    <aside className="paper relative flex h-full w-[16.5rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
+    <aside className="paper relative flex h-full w-[17rem] shrink-0 flex-col border-r border-hairline bg-sidebar text-sidebar-foreground">
       <div className="flex items-center justify-between px-4 pt-5 pb-4">
         <h1 className="font-heading text-lg font-bold tracking-tight">{t.home.appTitle}</h1>
         <div className="-mr-1.5">
@@ -160,7 +160,7 @@ export function Sidebar({
           (creating ? (
             <div
               data-folder-create
-              className="mt-1 flex items-center gap-2.5 rounded-[5px] border border-dashed border-foreground/30 bg-card px-2 py-[5px]"
+              className="mt-1 flex items-center gap-2.5 rounded-[8px] border border-dashed border-foreground/30 bg-card px-2 py-[6px]"
             >
               <Popover open={iconOpen} onOpenChange={setIconOpen}>
                 <PopoverTrigger asChild>
@@ -193,7 +193,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={startCreating}
-              className="mt-1 flex w-full items-center gap-2 rounded-[5px] px-2 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              className="mt-1 flex w-full items-center gap-2 rounded-full px-2.5 py-2 text-[12px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <Plus className="size-3.5" />
               <span>{t.home.newFolder}</span>

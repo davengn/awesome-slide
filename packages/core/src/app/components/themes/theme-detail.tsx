@@ -121,7 +121,7 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
                   aria-label={t.themes.prevPageAria}
                   disabled={pageIndex === 0}
                   onClick={() => setPageIndex((i) => Math.max(0, i - 1))}
-                  className="flex size-8 items-center justify-center rounded-[6px] border border-border bg-card text-foreground transition-colors hover:bg-muted disabled:opacity-40"
+                  className="flex size-9 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted disabled:opacity-40"
                 >
                   <ChevronLeft className="size-4" />
                 </button>
@@ -133,7 +133,7 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
                   aria-label={t.themes.nextPageAria}
                   disabled={pageIndex === totalPages - 1}
                   onClick={() => setPageIndex((i) => Math.min(totalPages - 1, i + 1))}
-                  className="flex size-8 items-center justify-center rounded-[6px] border border-border bg-card text-foreground transition-colors hover:bg-muted disabled:opacity-40"
+                  className="flex size-9 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted disabled:opacity-40"
                 >
                   <ChevronRight className="size-4" />
                 </button>
@@ -287,7 +287,7 @@ function renderBodyWithSwatches(body: string): ReactNode[] {
 function NoDemoLargeState() {
   const t = useLocale();
   return (
-    <div className="grid h-full w-full place-items-center bg-muted/40 px-8 text-center">
+    <div className="grid h-full w-full place-items-center bg-block-cream px-8 text-center">
       <div className="max-w-sm">
         <p className="font-heading text-[15px] font-semibold tracking-tight">
           {t.themes.noDemoYet}

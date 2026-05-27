@@ -8,7 +8,7 @@ const mdxComponents = {
   h2: ({ className, ...props }: ComponentPropsWithoutRef<'h2'>) => (
     <h2
       className={cn(
-        'mt-12 scroll-m-24 border-t border-[oklch(0.86_0.008_70)] pt-8 font-medium tracking-normal',
+        'mt-12 scroll-m-24 border-t border-[#e6e6e6] pt-8 font-medium tracking-normal',
         className,
       )}
       {...props}
@@ -18,12 +18,12 @@ const mdxComponents = {
     <h3 className={cn('mt-8 font-medium tracking-normal', className)} {...props} />
   ),
   p: ({ className, ...props }: ComponentPropsWithoutRef<'p'>) => (
-    <p className={cn('leading-7 text-[oklch(0.28_0.012_60)]', className)} {...props} />
+    <p className={cn('leading-7 text-black', className)} {...props} />
   ),
   blockquote: ({ className, ...props }: ComponentPropsWithoutRef<'blockquote'>) => (
     <blockquote
       className={cn(
-        'my-6 border-l-2 border-[oklch(0.555_0.185_28)] bg-[oklch(0.955_0.006_100)] px-5 py-4 text-[15px] leading-7',
+        'my-6 border-l-2 border-black bg-[#f7f7f5] px-5 py-4 text-[15px] leading-7',
         className,
       )}
       {...props}
@@ -31,17 +31,14 @@ const mdxComponents = {
   ),
   code: ({ className, ...props }: ComponentPropsWithoutRef<'code'>) => (
     <code
-      className={cn(
-        'rounded-[4px] bg-[oklch(0.955_0.006_100)] px-1.5 py-0.5 font-mono text-[0.9em]',
-        className,
-      )}
+      className={cn('rounded-[4px] bg-[#f7f7f5] px-1.5 py-0.5 font-mono text-[0.9em]', className)}
       {...props}
     />
   ),
   pre: ({ className, ...props }: ComponentPropsWithoutRef<'pre'>) => (
     <pre
       className={cn(
-        'my-6 overflow-x-auto rounded-[8px] border border-[oklch(0.86_0.008_70)] bg-[oklch(0.18_0.04_278)] p-4 text-[oklch(0.985_0_0)] shadow-sm',
+        'my-6 overflow-x-auto rounded-[8px] border border-[#e6e6e6] bg-black p-4 text-white shadow-sm',
         className,
       )}
       {...props}
@@ -53,9 +50,11 @@ const mdxComponents = {
       {...props}
     />
   ),
-  img: ({ className, ...props }: ComponentPropsWithoutRef<'img'>) => (
+  img: ({ alt = '', className, src, ...props }: ComponentPropsWithoutRef<'img'>) => (
     <ImageZoom
-      className={cn('rounded-[8px] border border-[oklch(0.86_0.008_70)]', className)}
+      alt={alt}
+      className={cn('rounded-[8px] border border-[#e6e6e6]', className)}
+      src={typeof src === 'string' ? src : ''}
       {...props}
     />
   ),

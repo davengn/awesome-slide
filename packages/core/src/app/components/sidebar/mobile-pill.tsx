@@ -20,7 +20,7 @@ export function MobileFolderPill({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex shrink-0 items-center gap-1.5 rounded-[5px] border px-2.5 py-1 text-[11.5px] font-medium transition-colors',
+        'flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[11.5px] font-medium transition-colors',
         active
           ? 'border-foreground/40 bg-foreground text-background'
           : 'border-border bg-card text-muted-foreground hover:text-foreground',

@@ -125,14 +125,17 @@
 
 ### Implementation for User Story 4
 
-- [ ] T044 [P] [US4] Implement CSS custom properties and Tailwind token bindings in `packages/core/src/app/styles.css`
-- [ ] T045 [US4] Redesign app shell, home layout, slide browser, and canvas framing in `packages/core/src/app/routes/home-shell.tsx`, `packages/core/src/app/routes/home.tsx`, `packages/core/src/app/components/thumbnail-rail.tsx`, and `packages/core/src/app/components/slide-canvas.tsx`
-- [ ] T046 [US4] Redesign sidebar and folder controls in `packages/core/src/app/components/sidebar/sidebar.tsx`, `packages/core/src/app/components/sidebar/folder-item.tsx`, `packages/core/src/app/components/sidebar/mobile-pill.tsx`, and `packages/core/src/app/components/sidebar/icon-picker.tsx`
-- [ ] T047 [US4] Redesign inspector, panel shell, and save states in `packages/core/src/app/components/inspector/inspector-panel.tsx`, `packages/core/src/app/components/inspector/comment-widget.tsx`, `packages/core/src/app/components/panel/panel-shell.tsx`, and `packages/core/src/app/components/panel/save-card.tsx`
-- [ ] T048 [US4] Redesign theme gallery, theme detail, assets view, and empty/loading states in `packages/core/src/app/routes/themes.tsx`, `packages/core/src/app/components/themes/themes-gallery.tsx`, `packages/core/src/app/components/themes/theme-detail.tsx`, `packages/core/src/app/routes/assets.tsx`, and `packages/core/src/app/components/asset-view.tsx`
-- [ ] T049 [US4] Redesign slide route, presenter route, player controls, and progress feedback in `packages/core/src/app/routes/slide.tsx`, `packages/core/src/app/routes/presenter.tsx`, `packages/core/src/app/components/player.tsx`, and `packages/core/src/app/components/pdf-progress-toast.tsx`
-- [ ] T050 [P] [US4] Align web docs chrome and MDX treatment with the design system in `apps/web/app/docs/layout.tsx`, `apps/web/app/docs/[[...slug]]/page.tsx`, `apps/web/lib/layout.shared.tsx`, and `apps/web/components/mdx.tsx`
-- [ ] T051 [US4] Record viewport, keyboard focus, contrast, reduced-motion, loading-state, and no-overlap review results in `specs/001-rebrand-awesome-slide/validation-notes.md`
+- [X] T044 [P] [US4] Implement CSS custom properties and Tailwind token bindings in `packages/core/src/app/styles.css`
+- [X] T045 [US4] Redesign app shell, home layout, slide browser, and canvas framing in `packages/core/src/app/routes/home-shell.tsx`, `packages/core/src/app/routes/home.tsx`, `packages/core/src/app/components/thumbnail-rail.tsx`, and `packages/core/src/app/components/slide-canvas.tsx`
+- [X] T046 [US4] Redesign sidebar and folder controls in `packages/core/src/app/components/sidebar/sidebar.tsx`, `packages/core/src/app/components/sidebar/folder-item.tsx`, `packages/core/src/app/components/sidebar/mobile-pill.tsx`, and `packages/core/src/app/components/sidebar/icon-picker.tsx`
+- [X] T047 [US4] Redesign inspector, panel shell, and save states in `packages/core/src/app/components/inspector/inspector-panel.tsx`, `packages/core/src/app/components/inspector/comment-widget.tsx`, `packages/core/src/app/components/panel/panel-shell.tsx`, and `packages/core/src/app/components/panel/save-card.tsx`
+- [X] T048 [US4] Redesign theme gallery, theme detail, assets view, and empty/loading states in `packages/core/src/app/routes/themes.tsx`, `packages/core/src/app/components/themes/themes-gallery.tsx`, `packages/core/src/app/components/themes/theme-detail.tsx`, `packages/core/src/app/routes/assets.tsx`, and `packages/core/src/app/components/asset-view.tsx`
+- [X] T049 [US4] Redesign slide route, presenter route, player controls, and progress feedback in `packages/core/src/app/routes/slide.tsx`, `packages/core/src/app/routes/presenter.tsx`, `packages/core/src/app/components/player.tsx`, and `packages/core/src/app/components/pdf-progress-toast.tsx`
+- [X] T050 [P] [US4] Align web docs chrome and MDX treatment with the design system in `apps/web/app/docs/layout.tsx`, `apps/web/app/docs/[[...slug]]/page.tsx`, `apps/web/lib/layout.shared.tsx`, and `apps/web/components/mdx.tsx`
+- [X] T059 [US4] Realign runtime and docs token values to the final black/white and pastel palette in `packages/core/src/app/styles.css`, `apps/web/app/docs/layout.tsx`, `apps/web/components/mdx.tsx`, and `apps/web/lib/layout.shared.tsx`
+- [X] T060 [US4] Rework the landing palette and page rhythm to the final reference's white hero, monochrome chrome, black/white CTA pair, pastel color blocks separated by white canvas, and magenta promo-only usage in `apps/web/app/(home)/landing.css`, `apps/web/components/landing/nav.tsx`, `apps/web/components/landing/hero.tsx`, `apps/web/components/landing/get-started.tsx`, and `apps/web/components/landing/how-it-works.tsx`
+- [X] T061 [US4] Audit and replace vermillion/red accent drift across runtime, marketing, docs, and demo surfaces with black primary actions, the documented pastel block family, or the final magenta promo accent in `packages/core/src/app/styles.css`, `apps/web/app/(home)/landing.css`, `apps/web/components/landing/**`, and `apps/demo/**`
+- [X] T051 [US4] Record viewport, keyboard focus, contrast, reduced-motion, loading-state, no-overlap, and final design-alignment review results in `specs/001-rebrand-awesome-slide/validation-notes.md`
 
 **Checkpoint**: Runtime and docs UI express the new design system without sacrificing editor density or slide-preview priority.
 
@@ -142,13 +145,13 @@
 
 **Purpose**: Finish demo, repo maintenance, changesets, and final validation across all implemented stories.
 
-- [ ] T052 [P] Update demo package scripts, dependency names, canonical config, legacy config fallback, and TypeScript includes in `apps/demo/package.json`, `apps/demo/awesome-slide.config.ts`, `apps/demo/open-slide.config.ts`, and `apps/demo/tsconfig.json`
-- [ ] T053 [P] Rebrand demo slide and theme examples in `apps/demo/slides/open-slide-launch/index.tsx`, `apps/demo/slides/open-slide-anatomy/index.tsx`, `apps/demo/themes/aurora.md`, `apps/demo/themes/bright-sans.md`, and `apps/demo/themes/sticker-pop.md`
-- [ ] T054 [P] Update repository guides and GitHub templates in `AGENTS.md`, `CLAUDE.md`, `.github/ISSUE_TEMPLATE/config.yml`, `.github/ISSUE_TEMPLATE/bug_report.yml`, and `.github/ISSUE_TEMPLATE/feature_request.yml`
-- [ ] T055 Add the required package changeset for core and CLI changes in `.changeset/rebrand-awesome-slide.md`
-- [ ] T056 Run `pnpm check`, `pnpm typecheck`, `pnpm test`, and `pnpm build`, then record results in `specs/001-rebrand-awesome-slide/validation-notes.md`
-- [ ] T057 Run the final legacy-brand inventory scan and update completion status in `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
-- [ ] T058 Review migration copy and release-prep notes in `references/AWESOME_SLIDE_BRAND_MIGRATION.md`, `packages/core/README.md`, and `packages/cli/README.md`
+- [X] T052 [P] Update demo package scripts, dependency names, canonical config, legacy config fallback, and TypeScript includes in `apps/demo/package.json`, `apps/demo/awesome-slide.config.ts`, `apps/demo/open-slide.config.ts`, and `apps/demo/tsconfig.json`
+- [X] T053 [P] Rebrand demo slide and theme examples in `apps/demo/slides/open-slide-launch/index.tsx`, `apps/demo/slides/open-slide-anatomy/index.tsx`, `apps/demo/themes/aurora.md`, `apps/demo/themes/bright-sans.md`, and `apps/demo/themes/sticker-pop.md`
+- [X] T054 [P] Update repository guides and GitHub templates in `AGENTS.md`, `CLAUDE.md`, `.github/ISSUE_TEMPLATE/config.yml`, `.github/ISSUE_TEMPLATE/bug_report.yml`, and `.github/ISSUE_TEMPLATE/feature_request.yml`
+- [X] T055 Add the required package changeset for core and CLI changes in `.changeset/rebrand-awesome-slide.md`
+- [X] T056 Run `pnpm check`, `pnpm typecheck`, `pnpm test`, and `pnpm build`, then record results in `specs/001-rebrand-awesome-slide/validation-notes.md`
+- [X] T057 Run the final legacy-brand inventory scan and update completion status in `specs/001-rebrand-awesome-slide/rebrand-inventory.md`
+- [X] T058 Review migration copy and release-prep notes in `references/AWESOME_SLIDE_BRAND_MIGRATION.md`, `packages/core/README.md`, and `packages/cli/README.md`
 
 ---
 
@@ -169,7 +172,7 @@
 - **US1 (P1)**: No dependency on other user stories after Foundation.
 - **US2 (P2)**: No user-story dependency for copy/template work; canonical package usage should wait for US3 package decisions if those tasks are implemented in parallel.
 - **US3 (P3)**: No dependency on US1 or US2 after Foundation, but its compatibility aliases protect existing users before broad technical renames.
-- **US4 (P4)**: No dependency on other user stories after Foundation, except that runtime copy from US1 should be merged before final visual review.
+- **US4 (P4)**: No dependency on other user stories after Foundation, except that runtime copy from US1 should be merged before final visual review. T059-T061 must complete before T051 can claim final design alignment.
 
 ### Within Each User Story
 
@@ -213,6 +216,8 @@ Task: T042 Update built-in skill and skill-doc references in packages/core/skill
 ```text
 Task: T044 Implement CSS custom properties and Tailwind token bindings in packages/core/src/app/styles.css
 Task: T050 Align web docs chrome and MDX treatment in apps/web/app/docs/layout.tsx, apps/web/app/docs/[[...slug]]/page.tsx, apps/web/lib/layout.shared.tsx, and apps/web/components/mdx.tsx
+Task: T059 Realign runtime and docs token values in packages/core/src/app/styles.css and apps/web docs files
+Task: T060 Rework landing palette and rhythm in apps/web/app/(home)/landing.css and landing components
 ```
 
 ---

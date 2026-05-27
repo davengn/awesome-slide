@@ -52,7 +52,11 @@ const LEGACY_SORT_STORAGE_KEY = 'open-slide:home-sort';
 function readSortPref(): SortKey {
   if (typeof window === 'undefined') return DEFAULT_SORT;
   try {
-    const raw = readStorageWithLegacy(window.localStorage, SORT_STORAGE_KEY, LEGACY_SORT_STORAGE_KEY);
+    const raw = readStorageWithLegacy(
+      window.localStorage,
+      SORT_STORAGE_KEY,
+      LEGACY_SORT_STORAGE_KEY,
+    );
     if (raw && (SORT_KEYS as readonly string[]).includes(raw)) return raw as SortKey;
   } catch {}
   return DEFAULT_SORT;
@@ -147,7 +151,7 @@ export function Home() {
               )}
             </span>
           )}
-          <div className="ml-auto flex w-full items-center gap-2 md:w-auto">
+          <div className="ml-auto flex w-full flex-wrap items-center gap-2 md:w-auto md:flex-nowrap">
             <SortControl value={sortKey} onChange={setSortKey} />
             <SearchInput value={query} onChange={setQuery} />
           </div>
@@ -208,14 +212,14 @@ function SearchInput({ value, onChange }: { value: string; onChange: (value: str
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={t.home.searchPlaceholder}
-        className="h-8 w-full rounded-[6px] border border-border bg-background pl-8 pr-7 text-[12.5px] outline-none placeholder:text-muted-foreground/70 focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
+        className="h-9 w-full rounded-full border border-border bg-background pl-8 pr-7 text-[12.5px] outline-none placeholder:text-muted-foreground/70 focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/30"
       />
       {value && (
         <button
           type="button"
           onClick={() => onChange('')}
           aria-label={t.home.clearSearch}
-          className="absolute right-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-[4px] text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="absolute right-1.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <X className="size-3" />
         </button>
@@ -244,7 +248,7 @@ function SortControl({ value, onChange }: { value: SortKey; onChange: (next: Sor
         <button
           type="button"
           aria-label={`${t.home.sortLabel}: ${labels[value]}`}
-          className="flex h-8 items-center gap-1.5 rounded-[6px] border border-border bg-background pl-2 pr-1.5 text-[12.5px] font-medium text-foreground outline-none hover:bg-muted focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
+          className="flex h-9 items-center gap-1.5 rounded-full border border-border bg-background pl-3 pr-2 text-[12.5px] font-medium text-foreground outline-none hover:bg-muted focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/30"
         >
           <FieldIcon k={value} className="size-3.5 text-muted-foreground" />
           <span>{labels[value]}</span>
@@ -290,7 +294,7 @@ function HomeLoading() {
 function NoResultsState({ query, onClear }: { query: string; onClear: () => void }) {
   const t = useLocale();
   return (
-    <div className="rounded-[10px] border border-dashed border-border bg-card/60 px-8 py-20">
+    <div className="rounded-[24px] border border-border bg-block-cream px-8 py-20">
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
         <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
           <Search className="size-5" />
@@ -318,7 +322,7 @@ function EmptyState({ isDraft, folderName }: { isDraft: boolean; folderName?: st
     folderName ?? t.home.folderEmptyTitle,
   );
   return (
-    <div className="rounded-[10px] border border-dashed border-border bg-card/60 px-8 py-20">
+    <div className="rounded-[24px] border border-border bg-block-lime px-8 py-20">
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
         <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
           <FolderPlus className="size-5" />
@@ -457,9 +461,12 @@ function SlideCard({
         onDragEnd={() => setDragging(false)}
         className={cn('group relative motion-safe:transition-opacity', dragging && 'opacity-40')}
       >
-        <Link to={`/s/${id}`} className="block focus-visible:outline-none">
+        <Link
+          to={`/s/${id}`}
+          className="block rounded-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        >
           {/* Slide thumb — tight border, grey baseboard, no shadcn rounded-xl */}
-          <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color] motion-safe:duration-200">
+          <div className="relative aspect-video overflow-hidden rounded-[8px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color] motion-safe:duration-200">
             {FirstPage ? (
               <div className="h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.03]">
                 <SlideCanvas flat freezeMotion design={slide?.design}>

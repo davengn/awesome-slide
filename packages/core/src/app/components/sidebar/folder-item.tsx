@@ -151,13 +151,13 @@ export function FolderItem({
     // biome-ignore lint/a11y/noStaticElementInteractions: drag-and-drop target wraps interactive children
     <div
       className={cn(
-        'group relative flex items-center gap-2.5 rounded-[5px] px-2 py-[5px] text-[12.5px] transition-colors',
+        'group relative flex items-center gap-2.5 rounded-[8px] px-2.5 py-[6px] text-[12.5px] transition-colors',
         selected
           ? 'bg-muted text-foreground before:absolute before:inset-y-1.5 before:-left-0.5 before:w-[2px] before:rounded-full before:bg-brand'
           : 'text-foreground/70 hover:bg-muted/60 hover:text-foreground',
         slideDragActive && acceptsSlideDrop && !dragOver && 'ring-1 ring-foreground/10',
         dragOver &&
-          'bg-brand/10 text-foreground ring-1 ring-brand ring-offset-1 ring-offset-sidebar motion-safe:scale-[1.01] motion-safe:transition-transform',
+          'bg-muted text-foreground ring-1 ring-foreground ring-offset-1 ring-offset-sidebar motion-safe:scale-[1.01] motion-safe:transition-transform',
       )}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
@@ -169,7 +169,7 @@ export function FolderItem({
           <PopoverTrigger asChild>
             <button
               type="button"
-              className="flex size-5 shrink-0 items-center justify-center rounded transition-transform hover:scale-110"
+              className="flex size-6 shrink-0 items-center justify-center rounded-full transition-transform hover:bg-muted hover:scale-105"
               aria-label={t.home.changeIcon}
               onClick={(e) => e.stopPropagation()}
             >
@@ -224,7 +224,7 @@ export function FolderItem({
             <button
               type="button"
               onClick={(e) => e.stopPropagation()}
-              className="absolute right-2 top-1/2 size-5 -translate-y-1/2 rounded opacity-0 transition-opacity hover:bg-foreground/10 group-hover:opacity-100 aria-expanded:opacity-100"
+              className="absolute right-2 top-1/2 size-6 -translate-y-1/2 rounded-full opacity-0 transition-opacity hover:bg-foreground/10 group-hover:opacity-100 aria-expanded:opacity-100"
               aria-label={t.home.folderActions}
             >
               <MoreHorizontal className="mx-auto size-3.5" />

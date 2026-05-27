@@ -55,7 +55,7 @@ export function Assets() {
         <h2 className="text-[32px] sm:text-[44px] lg:text-[64px] leading-[1.1] sm:leading-[1.05] tracking-[-0.03em] max-w-[820px] mb-14 sm:mb-20">
           <span className="font-[family-name:var(--font-sans)] font-medium">Drop in images.</span>
           <br />
-          <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-warm)]">
+          <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-block-navy)]">
             Pull in logos.
           </span>
         </h2>

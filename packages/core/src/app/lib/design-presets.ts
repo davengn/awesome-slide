@@ -16,7 +16,7 @@ export const designPresets: DesignSystem[] = [
     radius: 6,
   },
   {
-    palette: { bg: '#eef1f4', text: '#1c2733', accent: '#ff6a5b' },
+    palette: { bg: '#f7f7f5', text: '#000000', accent: '#1f1d3d' },
     fonts: { display: SANS_HELV, body: SANS_SYSTEM },
     typeScale: { hero: 156, body: 30 },
     radius: 8,
@@ -34,13 +34,13 @@ export const designPresets: DesignSystem[] = [
     radius: 4,
   },
   {
-    palette: { bg: '#ffffff', text: '#0a0a0a', accent: '#e11d48' },
+    palette: { bg: '#ffffff', text: '#000000', accent: '#000000' },
     fonts: { display: SANS_HELV, body: SANS_HELV },
     typeScale: { hero: 200, body: 28 },
     radius: 0,
   },
   {
-    palette: { bg: '#fde9d9', text: '#3a1f3d', accent: '#f97316' },
+    palette: { bg: '#f3c9b6', text: '#000000', accent: '#000000' },
     fonts: { display: SERIF_GEORGIA, body: SANS_SYSTEM },
     typeScale: { hero: 184, body: 36 },
     radius: 24,

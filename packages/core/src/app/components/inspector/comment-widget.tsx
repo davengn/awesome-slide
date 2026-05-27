@@ -26,7 +26,7 @@ export function CommentWidget() {
               <X className="size-3.5" />
             </button>
           </div>
-          {error && <p className="px-3 py-2 text-xs text-red-600">{error}</p>}
+          {error && <p className="px-3 py-2 text-xs text-destructive">{error}</p>}
           {count === 0 ? (
             <p className="px-3 py-6 text-center text-xs text-muted-foreground">
               {t.inspector.commentsEmpty}
@@ -48,7 +48,7 @@ export function CommentWidget() {
                     <button
                       type="button"
                       onClick={() => remove(c.id)}
-                      className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-600"
+                      className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
                       title={t.inspector.commentDeleteAria}
                     >
                       <Trash2 className="size-3.5" />
@@ -70,7 +70,7 @@ export function CommentWidget() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-9 items-center gap-2 rounded-full border border-hairline bg-popover px-3 text-[12px] font-medium shadow-floating hover:bg-muted"
+        className="flex h-10 items-center gap-2 rounded-full border border-hairline bg-popover px-3 text-[12px] font-medium shadow-floating hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
         aria-label={t.inspector.commentsButtonAria}
       >
         <MessageSquare className="size-4" />

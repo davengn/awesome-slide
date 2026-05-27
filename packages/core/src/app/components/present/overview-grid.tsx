@@ -126,7 +126,7 @@ export function PresentOverviewGrid({ pages, design, open, current, onClose, onS
                 <div
                   className={cn(
                     'relative w-full overflow-hidden rounded-[4px] bg-black ring-1 ring-white/10 transition-shadow',
-                    isFocused && 'ring-2 ring-[var(--brand,#ef4444)]',
+                    isFocused && 'ring-2 ring-white',
                   )}
                   style={{ height: THUMB_H }}
                 >
@@ -144,7 +144,7 @@ export function PresentOverviewGrid({ pages, design, open, current, onClose, onS
                   {isCurrent && (
                     <span
                       aria-hidden
-                      className="pointer-events-none absolute top-1.5 right-1.5 rounded-[3px] bg-[var(--brand,#ef4444)] px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.06em] uppercase text-white"
+                      className="pointer-events-none absolute top-1.5 right-1.5 rounded-[3px] bg-white px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.06em] uppercase text-black"
                     >
                       {t.present.nowBadge}
                     </span>

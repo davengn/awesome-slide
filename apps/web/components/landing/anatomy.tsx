@@ -267,7 +267,7 @@ function highlight(src: string): string {
 
   const palette = {
     kw: 'var(--color-accent-soft)',
-    str: 'var(--color-warm)',
+    str: 'var(--color-block-navy)',
     num: 'var(--color-mint)',
     cmt: 'var(--color-muted)',
     tag: 'var(--color-accent)',

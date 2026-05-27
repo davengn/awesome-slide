@@ -43,7 +43,7 @@ const steps: Step[] = [
     kicker: 'iterate',
     title: 'Edit, comment, apply',
     body: 'Click any element to tweak it visually. Or leave a comment for the agent to apply.',
-    block: 'var(--color-block-coral)',
+    block: 'var(--color-block-mint)',
     code: {
       prompt: '›',
       line: '/apply-comment',
@@ -63,8 +63,8 @@ function renderLine(line: string) {
     const cmd = match[0];
     parts.push(
       <span key={`cmd-${start}`}>
-        <span className="text-[color:var(--color-accent)]">/</span>
-        <span className="text-[color:var(--color-accent-soft)]">{cmd.slice(1)}</span>
+        <span className="text-[color:var(--color-text)]">/</span>
+        <span className="text-[color:var(--color-text)]">{cmd.slice(1)}</span>
       </span>,
     );
     last = start + cmd.length;
@@ -101,38 +101,35 @@ export function HowItWorks() {
         <h2 className="text-[32px] sm:text-[44px] lg:text-[64px] leading-[1.1] sm:leading-[1.05] tracking-[-0.03em] max-w-[820px] mb-14 sm:mb-20">
           <span className="font-[family-name:var(--font-sans)] font-medium">Slides as code.</span>
           <br />
-          <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-accent)]">
+          <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-paper)]">
             Crafted by agents.
           </span>
         </h2>
 
-        <ol className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden">
+        <ol className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {steps.map((s) => (
             <li
               key={s.num}
-              className="group relative p-8 sm:p-10 lg:p-12 bg-[color:var(--color-ink)] flex flex-col gap-7 transition-colors hover:bg-[color:var(--color-panel)]"
+              className="group relative flex flex-col gap-7 rounded-[24px] p-8 text-[color:var(--color-text)] sm:p-10 lg:p-12"
+              style={{ background: s.block }}
             >
               <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
                 {s.num} · {s.kicker}
               </span>
-              <span
-                aria-hidden
-                className="h-1.5 w-16 rounded-full"
-                style={{ background: s.block }}
-              />
+              <span aria-hidden className="h-1.5 w-16 rounded-full bg-[color:var(--color-text)]" />
 
               <div>
                 <h3 className="text-[22px] sm:text-[26px] lg:text-[30px] font-medium tracking-[-0.025em] leading-[1.15]">
                   {s.title}
                 </h3>
-                <p className="mt-4 text-[15px] leading-[1.65] text-[color:var(--color-text-soft)] max-w-[36ch]">
+                <p className="mt-4 max-w-[36ch] text-[15px] leading-[1.65] text-[color:var(--color-text)]">
                   {s.body}
                 </p>
               </div>
 
-              <div className="rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] p-4 font-[family-name:var(--font-mono)] text-[13px]">
+              <div className="rounded-[8px] border border-[color:var(--color-text)] bg-[color:var(--color-ink)] p-4 font-[family-name:var(--font-mono)] text-[13px]">
                 <div className="flex items-center gap-2">
-                  <span className="text-[color:var(--color-accent)]">{s.code.prompt}</span>
+                  <span className="text-[color:var(--color-text)]">{s.code.prompt}</span>
                   <span className="text-[color:var(--color-text)] truncate">
                     {renderLine(s.code.line)}
                   </span>

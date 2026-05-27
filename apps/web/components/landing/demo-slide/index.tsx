@@ -33,7 +33,7 @@ const palette = {
   accentSoft: '#a3a0ff',
   accent2: '#5e6ad2',
   mint: '#68cc9a',
-  amber: '#e0b25c',
+  cream: '#f4ecd6',
   inspect: '#3b82f6',
   inspectFill: 'rgba(59,130,246,0.10)',
 };
@@ -288,7 +288,7 @@ const AgentLine = ({
       ? palette.mint
       : speaker === 'assistant'
         ? palette.accentSoft
-        : palette.amber;
+        : palette.cream;
   return (
     <div
       className="gs-stream"
@@ -2163,7 +2163,7 @@ const Apply: Page = () => (
             }}
           >
             <AgentLine speaker="user" delay={0.2}>
-              <SlashCmd name="apply-comments" color={palette.amber} />
+              <SlashCmd name="apply-comments" color={palette.cream} />
             </AgentLine>
             <AgentLine speaker="assistant" delay={1.0}>
               1 marker found. Applying…
@@ -2505,8 +2505,8 @@ const AgentAgnostic: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            Awesome Slide speaks plain React and a file-convention protocol. Any agent can author and
-            edit slides — no lock-in, no bespoke SDK.
+            Awesome Slide speaks plain React and a file-convention protocol. Any agent can author
+            and edit slides — no lock-in, no bespoke SDK.
           </p>
         </div>
 
@@ -2969,7 +2969,7 @@ const GitTracked: Page = () => {
                     padding: '6px 0',
                   }}
                 >
-                  <span style={{ color: palette.amber }}>*</span>
+                  <span style={{ color: palette.cream }}>*</span>
                   <span style={{ color: palette.accentSoft }}>{c.hash}</span>
                   {c.head && <span style={{ color: palette.mint }}>{c.head}</span>}
                   <span style={{ color: palette.text }}>{c.msg}</span>
@@ -3116,8 +3116,8 @@ const DeployAnywhere: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            Awesome Slide builds to plain static assets. Drop them on Vercel, Cloudflare, Zeabur — or
-            any server that serves HTML.
+            Awesome Slide builds to plain static assets. Drop them on Vercel, Cloudflare, Zeabur —
+            or any server that serves HTML.
           </p>
         </div>
 

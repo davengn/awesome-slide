@@ -40,9 +40,9 @@ function ThemeCard({
       type="button"
       onClick={onOpen}
       aria-label={ariaLabel}
-      className="group block w-full text-left focus-visible:outline-none"
+      className="group block w-full rounded-[8px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
     >
-      <div className="relative aspect-video overflow-hidden rounded-[6px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color] motion-safe:duration-200">
+      <div className="relative aspect-video overflow-hidden rounded-[8px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color] motion-safe:duration-200">
         <ThemePreview theme={theme} />
       </div>
       <div className="mt-3">
@@ -110,7 +110,7 @@ function NoDemoState() {
 function ThemesEmptyState() {
   const t = useLocale();
   return (
-    <div className="rounded-[10px] border border-dashed border-border bg-card/60 px-8 py-20">
+    <div className="rounded-[24px] border border-border bg-block-lilac px-8 py-20">
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
         <div className="text-2xl">🎨</div>
         <p className="mt-3 font-heading text-[15px] font-semibold tracking-tight">

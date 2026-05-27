@@ -55,7 +55,7 @@ export function PanelShell({
   return (
     <aside
       {...dataAttrs}
-      className="flex h-full shrink-0 justify-end overflow-hidden bg-sidebar transition-[width,border-left-width] ease-out"
+      className="flex h-full shrink-0 justify-end overflow-hidden bg-background transition-[width,border-left-width] ease-out"
       style={{
         width: animVisible ? PANEL_W : 0,
         borderLeftWidth: animVisible ? 1 : 0,
@@ -64,7 +64,7 @@ export function PanelShell({
       }}
     >
       <div style={{ width: PANEL_W }} className="flex h-full shrink-0 flex-col">
-        <header className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-hairline px-3">
+        <header className="flex h-10 shrink-0 items-center justify-between gap-2 border-b border-hairline bg-card px-3">
           {header}
         </header>
         {banner}

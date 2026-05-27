@@ -42,9 +42,9 @@ export function cssVarsToString(vars: Record<string, string>): string {
 
 export const defaultDesign: DesignSystem = {
   palette: {
-    bg: '#f7f5f0',
-    text: '#1a1814',
-    accent: '#6d4cff',
+    bg: '#ffffff',
+    text: '#000000',
+    accent: '#000000',
   },
   fonts: {
     display: 'Georgia, "Times New Roman", serif',

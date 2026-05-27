@@ -50,7 +50,7 @@ export function SlideCanvas({
           'overflow-hidden bg-white text-black',
           // Inset shadow keeps the 1px edge inside the canvas box so it
           // can't be clipped by the parent's overflow-hidden.
-          !flat && 'rounded-[6px] shadow-[inset_0_0_0_1px_oklch(0_0_0/0.08)]',
+          !flat && 'rounded-[8px] shadow-[inset_0_0_0_1px_oklch(0_0_0/0.08)]',
         )}
         style={{
           width: scaledW,

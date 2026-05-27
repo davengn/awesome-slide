@@ -228,14 +228,14 @@ function PresenterTopBar({
 }) {
   const t = useLocale();
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b border-hairline px-6">
+    <header className="flex h-12 shrink-0 items-center justify-between border-b border-hairline bg-background px-6">
       <div className="flex items-baseline gap-3">
         <span className="eyebrow text-white/45">{t.presenter.eyebrow}</span>
         <span className="truncate font-heading text-[14px] font-semibold tracking-tight">
           {slideTitle}
         </span>
         {!connected && (
-          <span className="rounded-[3px] border border-amber-300/30 bg-amber-300/10 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.06em] uppercase text-amber-200/85">
+          <span className="rounded-[3px] border border-white/25 bg-white/10 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.06em] uppercase text-white/85">
             {t.presenter.notLinked}
           </span>
         )}
@@ -272,7 +272,7 @@ function PresenterBottomBar({
 }) {
   const t = useLocale();
   return (
-    <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-hairline px-6 py-3">
+    <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-hairline bg-background px-6 py-3">
       <div className="flex items-center gap-2">
         <Button variant="outline" onClick={onPrev} disabled={index === 0}>
           <ChevronLeft className="size-4" /> {t.presenter.prev}

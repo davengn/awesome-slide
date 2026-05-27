@@ -2,14 +2,17 @@
 
 ## Design Direction
 
-Awesome Slide uses a calm editor base with moments of expressive color:
+Awesome Slide uses the final rebrand reference as the normative visual system:
 
-- Monochrome core UI for app chrome, dense controls, panels, text, dividers, and primary actions.
+- Black-and-white core UI for app chrome, dense controls, panels, text, dividers, and primary actions.
+- Black primary actions and selected states with white text.
+- Magenta only for scarce marketing promo CTAs.
+- No vermillion/red accent may replace the final magenta or black primary roles.
 - Oversized pastel color blocks for onboarding, empty states, marketing storytelling, theme showcases, and important context shifts.
 - Editorial typography with a variable sans font and a mono taxonomy style for labels.
 - Minimal shadows, crisp borders, pill text CTAs, circular icon buttons, and compact repeated controls.
 
-The primary source direction is `references/REBRANDING_DESIGN.md`.
+The primary source direction is `references/REBRANDING_DESIGN_FINAL.md`. The earlier `references/REBRANDING_DESIGN.md` is superseded because it omitted the token front matter used for planning and implementation.
 
 ## Token Families
 
@@ -26,8 +29,12 @@ Required semantic roles:
 - `hairline`: borders and dividers
 - `primary`: primary action and selected state
 - `primaryText`: text on primary action
+- `onInverseSoft`: base color for translucent controls on inverse sections
 - `focus`: keyboard focus ring
 - `danger`: destructive action
+- `accentMagenta`: scarce promotional accent for marketing-only moments
+- `semanticSuccess`: success glyph color
+- `overlayScrim`: modal and video overlay base
 - `blockLime`, `blockLilac`, `blockCream`, `blockMint`, `blockPink`, `blockCoral`, `blockNavy`: expressive color-block surfaces
 
 Rules:
@@ -35,6 +42,7 @@ Rules:
 - Body text on light surfaces must meet WCAG AA contrast.
 - Pastel block surfaces must not be used as every repeated card background.
 - Dark surfaces should be limited to inverse sections, previews, or existing dark-mode support.
+- Marketing pages must not default to an all-dark shell; dark surfaces are limited to the marquee, footer, navy block, or embedded product previews.
 
 ### Typography
 

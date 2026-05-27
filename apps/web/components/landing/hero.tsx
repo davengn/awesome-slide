@@ -8,7 +8,7 @@ export function Hero() {
     <section className="relative overflow-hidden">
       <div aria-hidden className="hair absolute inset-x-0 top-0" />
 
-      <div className="relative mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 pt-20 sm:pt-32 lg:pt-44 pb-20 sm:pb-32">
+      <div className="relative mx-auto max-w-[1360px] px-5 pt-20 pb-16 sm:px-8 sm:pt-32 sm:pb-24 lg:px-12 lg:pt-40">
         <div className="flex flex-col gap-10 sm:gap-14 max-w-[920px]">
           <h1
             className="text-[44px] sm:text-[72px] lg:text-[100px] leading-[1.05] sm:leading-[0.98] tracking-[-0.035em] rise"
@@ -19,7 +19,7 @@ export function Hero() {
             </span>
             <br />
             <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-paper)]">
-              built for <span className="text-[color:var(--color-accent)]">agents</span>.
+              built for agents.
             </span>
           </h1>
 
@@ -39,7 +39,7 @@ export function Hero() {
             <a
               href="/docs"
               onClick={() => posthog.capture('docs_link_clicked', { location: 'hero' })}
-              className="group inline-flex items-center gap-2 text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text)] transition-colors"
+              className="group inline-flex h-[48px] items-center gap-2 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-ink)] px-5 text-[14px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)] transition-colors hover:border-[color:var(--color-text)]"
             >
               <span>Read the docs</span>
               <span

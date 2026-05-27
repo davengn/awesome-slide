@@ -50,9 +50,9 @@ import { openPresenterWindow, Player } from '../components/player';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
+import { readStorageWithLegacy, writeStorageWithLegacy } from '../lib/compat-storage';
 import { exportSlideAsHtml } from '../lib/export-html';
 import { exportSlideAsPdf, isSafari } from '../lib/export-pdf';
-import { readStorageWithLegacy, writeStorageWithLegacy } from '../lib/compat-storage';
 import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
@@ -356,7 +356,7 @@ export function Slide() {
         <SelectionReporter />
         <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
           {/* Editorial toolbar — three zones, hairline separators, mono-folio center */}
-          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-background/90 px-2 backdrop-blur-md md:px-3">
             <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
               {showSlideBrowser && (
                 <Button asChild variant="ghost" size="icon-sm" title={t.slide.home}>
@@ -797,11 +797,11 @@ function AgentConnectedBadge() {
             <span aria-hidden className="relative flex size-1.5 items-center justify-center">
               {connected ? (
                 <>
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                  <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-[color:var(--semantic-success)] opacity-60" />
+                  <span className="relative inline-flex size-1.5 rounded-full bg-[color:var(--semantic-success)]" />
                 </>
               ) : (
-                <span className="relative inline-flex size-1.5 rounded-full bg-rose-500" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-destructive" />
               )}
             </span>
             {connected ? t.slide.agentConnected : t.slide.agentDisconnected}
