@@ -30,7 +30,7 @@ const palette = {
 const fonts = {
   serif: '"Times New Roman", "Georgia", serif',
   sans: '-apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", system-ui, sans-serif',
-  mono: '"SF Mono", "JetBrains Mono", "Menlo", monospace',
+  mono: '"SF Mono", "Google Sans Flex Variable", "Menlo", monospace',
 };
 
 const fill = {

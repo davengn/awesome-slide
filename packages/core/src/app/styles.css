@@ -1,17 +1,17 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource-variable/google-sans-flex";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-heading: "Geist Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-sans: "Google Sans Flex Variable", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: "Google Sans Flex Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-serif:
     ui-serif, "New York", "Iowan Old Style", "Apple Garamond", "Big Caslon", "Charter", Georgia,
     serif;
-  --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", "Menlo", "Cascadia Code", monospace;
+  --font-mono: ui-monospace, "Google Sans Flex Variable", "SF Mono", "Menlo", "Cascadia Code", monospace;
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -243,6 +243,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   html {
     @apply font-sans;
     text-rendering: optimizeLegibility;
@@ -253,6 +254,7 @@
       "cv11" on,
       "calt" on;
   }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings:
@@ -262,6 +264,7 @@
       "tnum" off;
     letter-spacing: 0;
   }
+
   ::selection {
     background: var(--brand-soft);
     color: var(--foreground);
@@ -269,6 +272,7 @@
 }
 
 @layer components {
+
   /*
    * Eyebrow label — the single typographic gesture used for *every* section
    * label across the app. Tracked-out small caps in muted ink.
@@ -289,6 +293,7 @@
     position: relative;
     isolation: isolate;
   }
+
   .paper::before {
     content: "";
     position: absolute;
@@ -299,11 +304,13 @@
     z-index: 0;
     mix-blend-mode: multiply;
   }
+
   .dark .paper::before {
     opacity: 0.05;
     mix-blend-mode: screen;
   }
-  .paper > * {
+
+  .paper>* {
     position: relative;
     z-index: 1;
   }
@@ -334,15 +341,13 @@
   inset: -1px;
   border-radius: calc(var(--radius-md) + 1px);
   padding: 1.25px;
-  background: conic-gradient(
-    from var(--comment-cue-angle),
-    transparent 0deg,
-    transparent 250deg,
-    color-mix(in oklab, var(--block-lime) 70%, transparent) 295deg,
-    color-mix(in oklab, var(--accent-magenta) 90%, transparent) 325deg,
-    color-mix(in oklab, var(--block-lilac) 70%, transparent) 350deg,
-    transparent 360deg
-  );
+  background: conic-gradient(from var(--comment-cue-angle),
+      transparent 0deg,
+      transparent 250deg,
+      color-mix(in oklab, var(--block-lime) 70%, transparent) 295deg,
+      color-mix(in oklab, var(--accent-magenta) 90%, transparent) 325deg,
+      color-mix(in oklab, var(--block-lilac) 70%, transparent) 350deg,
+      transparent 360deg);
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -363,16 +368,12 @@
   inset: -10px;
   border-radius: calc(var(--radius-md) + 10px);
   background:
-    radial-gradient(
-      80% 60% at 30% 50%,
+    radial-gradient(80% 60% at 30% 50%,
       color-mix(in oklab, var(--block-lilac) 30%, transparent),
-      transparent 70%
-    ),
-    radial-gradient(
-      70% 60% at 75% 60%,
+      transparent 70%),
+    radial-gradient(70% 60% at 75% 60%,
       color-mix(in oklab, var(--block-lime) 30%, transparent),
-      transparent 70%
-    );
+      transparent 70%);
   filter: blur(14px);
   opacity: 0;
   z-index: -1;
@@ -385,12 +386,15 @@
     --comment-cue-angle: 0deg;
     opacity: 0;
   }
+
   18% {
     opacity: 1;
   }
+
   82% {
     opacity: 1;
   }
+
   100% {
     --comment-cue-angle: 360deg;
     opacity: 0;
@@ -402,10 +406,12 @@
     opacity: 0;
     transform: scale(0.97);
   }
+
   40% {
     opacity: 1;
     transform: scale(1);
   }
+
   100% {
     opacity: 0;
     transform: scale(1.015);
@@ -413,6 +419,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .comment-cue::before,
   .comment-cue::after {
     animation: none;
@@ -428,9 +435,11 @@
   0% {
     transform: translateX(0%);
   }
+
   50% {
     transform: translateX(300%);
   }
+
   100% {
     transform: translateX(0%);
   }
@@ -476,23 +485,28 @@
     width: 10px;
     height: 10px;
   }
+
   *::-webkit-scrollbar-track {
     background: transparent;
   }
+
   *::-webkit-scrollbar-thumb {
     background: oklch(0 0 0 / 0.1);
     border: 3px solid transparent;
     background-clip: content-box;
     border-radius: 999px;
   }
+
   *::-webkit-scrollbar-thumb:hover {
     background: oklch(0 0 0 / 0.18);
     background-clip: content-box;
   }
+
   .dark *::-webkit-scrollbar-thumb {
     background: oklch(1 0 0 / 0.1);
     background-clip: content-box;
   }
+
   .dark *::-webkit-scrollbar-thumb:hover {
     background: oklch(1 0 0 / 0.18);
     background-clip: content-box;

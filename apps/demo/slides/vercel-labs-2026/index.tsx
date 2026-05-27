@@ -38,7 +38,7 @@ const palette = {
 
 const fonts = {
   sans: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif",
-  mono: "'Geist Mono', 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace",
+  mono: "'Geist Mono', 'Google Sans Flex Variable', 'SF Mono', ui-monospace, Menlo, monospace",
 };
 
 const fill = {

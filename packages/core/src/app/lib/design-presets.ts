@@ -5,7 +5,7 @@ const SANS_INTER = '"Inter", system-ui, sans-serif';
 const SANS_HELV = '"Helvetica Neue", Helvetica, Arial, sans-serif';
 const SERIF_GEORGIA = 'Georgia, "Times New Roman", serif';
 const SERIF_TIMES = '"Times New Roman", Times, serif';
-const MONO_SF = '"SF Mono", "JetBrains Mono", Menlo, monospace';
+const MONO_SF = '"SF Mono", "Google Sans Flex Variable", Menlo, monospace';
 
 export const designPresets: DesignSystem[] = [
   defaultDesign,

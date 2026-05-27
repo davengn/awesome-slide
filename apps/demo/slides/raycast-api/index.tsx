@@ -29,7 +29,7 @@ const palette = {
 
 const fonts = {
   sans: '-apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", system-ui, sans-serif',
-  mono: '"SF Mono", "JetBrains Mono", "Menlo", monospace',
+  mono: '"SF Mono", "Google Sans Flex Variable", "Menlo", monospace',
 };
 
 const fill = {

@@ -1,20 +1,8 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import './global.css';
 import type { Metadata, Viewport } from 'next';
-import { Geist, Instrument_Serif, JetBrains_Mono } from 'next/font/google';
+import { Instrument_Serif } from 'next/font/google';
 import { appName, gitConfig, siteUrl } from '@/lib/shared';
-
-const geist = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-  display: 'swap',
-});
-
-const jetbrains = JetBrains_Mono({
-  variable: '--font-jetbrains-mono',
-  subsets: ['latin'],
-  display: 'swap',
-});
 
 const instrument = Instrument_Serif({
   variable: '--font-instrument-serif',
@@ -102,9 +90,15 @@ export default function Layout({ children }: LayoutProps<'/'>) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geist.className} ${geist.variable} ${jetbrains.variable} ${instrument.variable}`}
+      className={instrument.variable}
     >
-      <body className="flex flex-col min-h-screen">
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="flex flex-col min-h-screen" style={{ fontFamily: '"Google Sans Flex Variable", sans-serif' }}>
         <RootProvider>{children}</RootProvider>
       </body>
     </html>

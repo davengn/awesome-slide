@@ -242,7 +242,7 @@ const GlitchGlyph = (
   <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
     <span
       style={{
-        fontFamily: 'ui-monospace, "JetBrains Mono", monospace',
+        fontFamily: 'ui-monospace, "Google Sans Flex Variable", monospace',
         fontSize: 64,
         fontWeight: 700,
         color: 'var(--osd-text)',
@@ -412,7 +412,7 @@ const Cli: Page = () => (
       <div style={{ ...EYEBROW, color: muted, marginBottom: 44 }}>one command · zero config</div>
       <div
         style={{
-          fontFamily: 'ui-monospace, "JetBrains Mono", monospace',
+          fontFamily: 'ui-monospace, "Google Sans Flex Variable", monospace',
           fontSize: 88,
           fontWeight: 700,
           letterSpacing: '-0.025em',

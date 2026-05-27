@@ -17,7 +17,7 @@ const tokens = {
   paper: '#f6f3ec',
   accent: '#ff4f1a',
   cream: '#fffdf6',
-  mono: "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace",
+  mono: "'Google Sans Flex Variable', 'SF Mono', Menlo, Consolas, monospace",
 } as const;
 
 const fill: CSSProperties = {

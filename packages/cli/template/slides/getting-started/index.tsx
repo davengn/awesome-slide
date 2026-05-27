@@ -54,7 +54,7 @@ const palette = {
 const font = {
   sans: design.fonts.body,
   display: design.fonts.display,
-  mono: '"JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace',
+  mono: '"Google Sans Flex Variable", "SF Mono", ui-monospace, Menlo, monospace',
 };
 
 const fill = {

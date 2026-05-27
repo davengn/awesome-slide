@@ -9,7 +9,7 @@ import type { ReactNode } from 'react';
 export const design: DesignSystem = {
   palette: { bg: '#0a0e14', text: '#e6edf3', accent: '#6ee7ff' },
   fonts: {
-    display: "'JetBrains Mono', 'Menlo', 'Consolas', monospace",
+    display: "'Google Sans Flex Variable', 'Menlo', 'Consolas', monospace",
     body: "'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
   },
   typeScale: { hero: 132, body: 34 },

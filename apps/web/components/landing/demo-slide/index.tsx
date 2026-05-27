@@ -40,7 +40,7 @@ const palette = {
 
 const font = {
   sans: '"Inter", "SF Pro Display", system-ui, -apple-system, sans-serif',
-  mono: '"JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace',
+  mono: '"Google Sans Flex Variable", "SF Mono", ui-monospace, Menlo, monospace',
 };
 
 const fill = {
