@@ -48,7 +48,7 @@ export function DuplicateSlideDialog({
               value={newId}
               onChange={(event) => setNewId(event.target.value)}
               aria-label="New slide ID"
-              className="h-10 w-full rounded-[8px] border border-hairline bg-muted px-3 font-mono text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="h-10 w-full rounded-md border border-hairline bg-muted px-3 font-mono text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
             />
           </Field>
           <Field label="Title">
@@ -57,7 +57,7 @@ export function DuplicateSlideDialog({
               onChange={(event) => setTitle(event.target.value)}
               maxLength={80}
               aria-label="Title"
-              className="h-10 w-full rounded-[8px] border border-hairline bg-muted px-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="h-10 w-full rounded-md border border-hairline bg-muted px-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
             />
           </Field>
           {error && <p className="text-[13px] text-destructive">{error}</p>}

@@ -36,7 +36,7 @@ export function DeleteConfirmDialog({
             Delete <span className="font-medium text-foreground">{slide?.title ?? slide?.id}</span>?
           </p>
           {slide && (
-            <p className="rounded-[8px] bg-muted px-3 py-2 font-mono text-[12px] text-muted-foreground">
+            <p className="rounded-md bg-muted px-3 py-2 font-mono text-[12px] text-muted-foreground">
               {slide.id}
             </p>
           )}

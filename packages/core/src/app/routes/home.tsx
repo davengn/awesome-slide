@@ -214,11 +214,11 @@ export function Home() {
         </div>
       )}
 
-      <main className="flex min-w-0 flex-1 flex-col">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="grid gap-4 border-b border-hairline bg-canvas px-4 py-4 md:px-7">
           <div className="flex min-w-0 items-end gap-4">
             <div className="min-w-0 flex-1">
-              <h1 className="truncate font-heading text-[26px] font-semibold leading-none tracking-normal md:text-[28px]">
+              <h1 className="truncate font-heading text-[26px] font-semibold leading-none tracking-[-0.8px] md:text-[28px] md:tracking-[-1px]">
                 {title}
               </h1>
               <p className="mt-1 text-[12.5px] text-muted-foreground">

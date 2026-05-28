@@ -46,7 +46,7 @@ export function SlideCollectionControls({
     <div className={cn('grid min-w-0 gap-1.5', density === 'row' && 'grid-cols-[1fr_1fr]')}>
       <label className="grid min-w-0 gap-1">
         <span className="sr-only">Folder</span>
-        <span className="flex h-8 min-w-0 items-center gap-1.5 rounded-[7px] border border-hairline bg-muted px-2">
+        <span className="flex h-8 min-w-0 items-center gap-1.5 rounded-md border border-hairline bg-muted px-2">
           <Folder className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
           <select
             value={slide.folderId ?? ''}
@@ -65,7 +65,7 @@ export function SlideCollectionControls({
         </span>
       </label>
 
-      <details className="min-w-0 rounded-[7px] border border-hairline bg-muted px-2 py-1.5">
+      <details className="min-w-0 rounded-md border border-hairline bg-muted px-2 py-1.5">
         <summary className="flex min-h-5 cursor-pointer list-none items-center gap-1.5 text-[12px] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/30">
           <Layers3 className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
           <span className="min-w-0 truncate">

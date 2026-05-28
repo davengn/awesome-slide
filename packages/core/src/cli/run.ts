@@ -71,7 +71,9 @@ async function runSkillsDriftCheck(skillsDir: string): Promise<void> {
     if (answer === '' || answer === 'y' || answer === 'yes') {
       await syncSkills(skillsDir);
     } else {
-      process.stdout.write(chalk.dim('Skipped. Run `awesome-slide sync:skills` later to update.\n'));
+      process.stdout.write(
+        chalk.dim('Skipped. Run `awesome-slide sync:skills` later to update.\n'),
+      );
     }
   } finally {
     rl.close();
@@ -92,7 +94,10 @@ function resolveBuiltinSkillsDir(): string {
   return path.resolve(here, '..', '..', 'skills');
 }
 
-export function createRuntimeProgram(version: string, skillsDir = resolveBuiltinSkillsDir()): Command {
+export function createRuntimeProgram(
+  version: string,
+  skillsDir = resolveBuiltinSkillsDir(),
+): Command {
   const program = new Command();
   program
     .name('awesome-slide')

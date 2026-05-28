@@ -16,26 +16,25 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
+        success: <CircleCheckIcon className="size-4 text-emerald-500" />,
+        info: <InfoIcon className="size-4 text-sky-500" />,
+        warning: <TriangleAlertIcon className="size-4 text-amber-500" />,
+        error: <OctagonXIcon className="size-4 text-rose-500" />,
+        loading: <Loader2Icon className="size-4 animate-spin text-[#6a4cf5]" />,
       }}
       style={
         {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
-          "--border-radius": "8px",
-          "--font-family":
-            "Google Sans Flex Variable, -apple-system, BlinkMacSystemFont, sans-serif",
+          "--border-radius": "10px",
+          "--font-family": "var(--font-sans)",
         } as React.CSSProperties
       }
       toastOptions={{
         classNames: {
           toast:
-            "!font-sans !text-[12.5px] !shadow-floating !border-border !rounded-[8px]",
+            "!font-sans !text-[12.5px] !shadow-floating !border-border !rounded-md bg-popover text-popover-foreground",
           title: "!font-medium !text-[12.5px] !tracking-tight",
           description: "!text-[12px] !text-muted-foreground",
         },

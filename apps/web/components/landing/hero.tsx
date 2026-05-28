@@ -20,7 +20,7 @@ export function Hero() {
           </span>
           <div className="flex flex-col gap-5">
             <h1
-              className="rise text-[40px] font-medium leading-[1.04] tracking-normal text-[color:var(--color-text)] sm:text-[58px] lg:text-[72px]"
+              className="rise text-[40px] font-medium leading-[1.04] tracking-[-1.5px] text-[color:var(--color-text)] sm:text-[58px] sm:tracking-[-2.5px] lg:text-[72px] lg:tracking-[-3.5px]"
               style={{ animationDelay: '80ms' }}
             >
               Slides as React code, shaped with your agent.
@@ -58,7 +58,7 @@ export function Hero() {
           style={{ animationDelay: '360ms' }}
           aria-label="Awesome Slide product preview"
         >
-          <div className="landing-color-block bg-[color:var(--color-block-cream)] p-2 sm:p-3">
+          <div className="landing-color-block bg-[color:var(--color-panel-hi)] p-2 sm:p-3">
             <div className="overflow-hidden rounded-[8px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)]">
               <div className="flex h-10 items-center justify-between border-b border-[color:var(--color-rule)] px-4 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[color:var(--color-muted)]">
                 <span>local workspace</span>

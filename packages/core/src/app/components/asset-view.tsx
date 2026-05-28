@@ -269,9 +269,9 @@ export function AssetView({ slideId }: Props) {
           aria-hidden="true"
         >
           <div className="absolute inset-0 bg-brand/5" />
-          <div className="absolute inset-2 rounded-[10px] border border-dashed border-brand/40" />
+          <div className="absolute inset-2 rounded-md border border-dashed border-brand/40" />
           <div className="absolute inset-x-0 bottom-8 flex justify-center">
-            <div className="flex animate-in items-center gap-2 rounded-[6px] border border-border bg-card px-3 py-1.5 text-[12px] font-medium shadow-floating fade-in-0 slide-in-from-bottom-1 duration-300">
+            <div className="flex animate-in items-center gap-2 rounded-sm border border-border bg-card px-3 py-1.5 text-[12px] font-medium shadow-floating fade-in-0 slide-in-from-bottom-1 duration-300">
               <ArrowDownToLine className="size-3.5 text-brand" />
               <span>{t.asset.dropToUpload}</span>
             </div>
@@ -387,7 +387,7 @@ function AssetCard({
   const isImage = asset.mime.startsWith('image/');
   const t = useLocale();
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-[8px] border border-border bg-card shadow-edge transition-shadow hover:shadow-floating focus-within:ring-2 focus-within:ring-ring/30">
+    <div className="group relative flex flex-col overflow-hidden rounded-md border border-border bg-card shadow-edge transition-shadow hover:shadow-floating focus-within:ring-2 focus-within:ring-ring/30">
       <button
         type="button"
         onClick={onPreview}
@@ -492,7 +492,7 @@ function RenameCard({
 
   const isImage = asset.mime.startsWith('image/');
   return (
-    <div className="relative flex flex-col overflow-hidden rounded-[8px] border border-brand bg-card shadow-floating">
+    <div className="relative flex flex-col overflow-hidden rounded-md border border-brand bg-card shadow-floating">
       <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:14px_14px]">
         {isImage ? (
           <img src={asset.url} alt="" className="size-full object-contain" draggable={false} />
@@ -519,7 +519,7 @@ function RenameCard({
             }
           }}
           maxLength={120}
-          className="w-full rounded-[6px] border border-border bg-background px-2 py-1 text-[12.5px] outline-none ring-ring/40 focus:ring-2"
+          className="w-full rounded-md border border-border bg-background px-2 py-1 text-[12.5px] outline-none ring-ring/40 focus:ring-2"
         />
       </div>
     </div>
@@ -601,7 +601,7 @@ function DeleteDialog({
           </DialogDescription>
         </DialogHeader>
         {inUse && usages && (
-          <ul className="max-h-40 overflow-y-auto rounded-[5px] border border-hairline bg-muted/40 px-3 py-2 font-mono text-[11.5px] leading-relaxed">
+          <ul className="max-h-40 overflow-y-auto rounded-sm border border-hairline bg-muted/40 px-3 py-2 font-mono text-[11.5px] leading-relaxed">
             {usages.map((u) => (
               <li key={u.slideId} className="flex items-center justify-between gap-3">
                 <span className="truncate">{u.slideId}</span>
@@ -669,7 +669,7 @@ function PreviewDialog({
             <span className="text-sm">{t.asset.noPreview}</span>
           </div>
         )}
-        <div className="rounded-[5px] border border-hairline bg-muted/50 px-3 py-2 font-mono text-[11.5px] leading-relaxed">
+        <div className="rounded-sm border border-hairline bg-muted/50 px-3 py-2 font-mono text-[11.5px] leading-relaxed">
           <span className="text-muted-foreground">{t.asset.importHintComment}</span>
           <span className="text-brand">'{importPath}'</span>
           <span className="text-muted-foreground">{t.asset.importHintSemi}</span>
@@ -750,7 +750,7 @@ function LogoSearchDialog({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t.asset.logoSearchPlaceholder}
-            className="h-9 w-full rounded-[6px] border border-border bg-background py-2 pl-8 pr-3 text-[13px] outline-none focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
+            className="h-9 w-full rounded-md border border-border bg-background py-2 pl-8 pr-3 text-[13px] outline-none focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
           />
         </div>
 

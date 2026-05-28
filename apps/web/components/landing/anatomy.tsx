@@ -68,8 +68,8 @@ export function Anatomy() {
   return (
     <section id="anatomy" className="landing-section relative">
       <div className="mx-auto max-w-[1360px] px-5 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-32">
-        <div className="landing-color-block bg-[color:var(--color-block-lilac)] p-7 sm:p-10 lg:p-12">
-          <h2 className="mb-10 max-w-[820px] text-[32px] leading-[1.1] tracking-normal sm:mb-14 sm:text-[44px] lg:text-[58px]">
+        <div className="landing-color-block bg-[color:var(--color-panel-hi)] p-7 sm:p-10 lg:p-12">
+          <h2 className="mb-10 max-w-[820px] text-[32px] leading-[1.1] tracking-[-1px] sm:mb-14 sm:text-[44px] sm:tracking-[-2px] lg:text-[58px] lg:tracking-[-3px]">
             <span className="font-[family-name:var(--font-sans)] font-medium">
               A slide is a file.
             </span>
@@ -81,8 +81,8 @@ export function Anatomy() {
 
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12 lg:gap-8">
             {/* code pane */}
-            <div className="rounded-[8px] bg-[color:var(--color-panel)] p-2 lg:col-span-7">
-              <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
+            <div className="rounded-md bg-[color:var(--color-panel)] p-2 lg:col-span-7">
+              <div className="relative rounded-sm border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
                 <div className="flex items-center justify-between px-4 sm:px-5 h-10 sm:h-11 border-b border-[color:var(--color-rule)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
                   <div className="flex items-center gap-3">
                     <span
@@ -100,7 +100,7 @@ export function Anatomy() {
                       return (
                         <div
                           key={changing ? `${idx}-${i}` : idx}
-                          className={`-mx-2 px-2 rounded-[3px] ${changing ? 'code-pulse' : ''}`}
+                          className={`-mx-2 px-2 rounded-sm ${changing ? 'code-pulse' : ''}`}
                           // highlight output is escaped + whitelisted spans — safe markup
                           dangerouslySetInnerHTML={{
                             __html: highlight(line) || '&nbsp;',
@@ -114,8 +114,8 @@ export function Anatomy() {
             </div>
 
             {/* preview pane */}
-            <div className="rounded-[8px] bg-[color:var(--color-panel)] p-2 lg:col-span-5">
-              <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-4 sm:p-5">
+            <div className="rounded-md bg-[color:var(--color-panel)] p-2 lg:col-span-5">
+              <div className="relative rounded-sm border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-4 sm:p-5">
                 <div className="flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.14em] uppercase text-[color:var(--color-muted)] mb-4">
                   <span>rendered output</span>
                   <span className="flex items-center gap-2">
@@ -128,7 +128,7 @@ export function Anatomy() {
                 </div>
 
                 <div
-                  className="relative rounded-[6px] overflow-hidden border border-[color:var(--color-rule)]"
+                  className="relative rounded-sm overflow-hidden border border-[color:var(--color-rule)]"
                   style={{ aspectRatio: '16 / 9', containerType: 'inline-size' }}
                 >
                   <SlidePreview variant={v} index={i} />

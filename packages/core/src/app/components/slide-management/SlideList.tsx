@@ -27,7 +27,7 @@ export function SlideList({
   onPatchCollection,
 }: SlideListProps) {
   return (
-    <div className="overflow-x-auto rounded-[8px] border border-hairline bg-background">
+    <div className="overflow-x-auto rounded-xl border border-hairline bg-background">
       <div className="grid min-w-[900px] grid-cols-[minmax(220px,1fr)_110px_minmax(260px,320px)_minmax(120px,180px)_112px] border-b border-hairline px-3 py-2 text-[11px] font-medium uppercase text-muted-foreground">
         <span>Slide</span>
         <span>Status</span>

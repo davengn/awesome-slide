@@ -12,7 +12,7 @@ export function CommentWidget() {
   return (
     <div data-inspector-ui className="absolute right-4 bottom-4 z-20 flex flex-col items-end gap-2">
       {open && (
-        <div className="w-80 rounded-[8px] border border-hairline bg-popover shadow-floating animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+        <div className="w-80 rounded-md border border-hairline bg-popover shadow-floating animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
           <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
             <span className="font-heading text-[12px] font-semibold tracking-tight">
               {format(plural(count, t.inspector.commentsCount), { count })}
@@ -48,7 +48,7 @@ export function CommentWidget() {
                     <button
                       type="button"
                       onClick={() => remove(c.id)}
-                      className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
+                      className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
                       title={t.inspector.commentDeleteAria}
                     >
                       <Trash2 className="size-3.5" />
@@ -58,7 +58,7 @@ export function CommentWidget() {
               </ul>
               <div className="border-t border-hairline px-3 py-2 text-[11px] text-muted-foreground">
                 {t.inspector.commentsApplyHintPrefix}
-                <code className="rounded-[4px] bg-muted px-1 py-0.5 font-mono text-foreground">
+                <code className="rounded-xs bg-muted px-1 py-0.5 font-mono text-foreground">
                   /apply-comments
                 </code>
                 {t.inspector.commentsApplyHintSuffix}

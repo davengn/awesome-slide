@@ -33,7 +33,7 @@ export function LiveDemo() {
   return (
     <section id="demo" className="landing-section relative">
       <div className="mx-auto max-w-[1360px] px-5 pb-20 pt-4 sm:px-8 sm:pb-28 lg:px-12">
-        <div className="landing-color-block bg-[color:var(--color-block-mint)] p-3 sm:p-4 lg:p-5">
+        <div className="landing-color-block bg-[color:var(--color-panel-hi)] p-3 sm:p-4 lg:p-5">
           <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <span className="caption">Product preview</span>

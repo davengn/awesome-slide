@@ -2741,8 +2741,8 @@ const AgentAgnostic: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            Awesome Slide speaks plain React and a file-convention protocol. Any agent can author and
-            edit slides — no lock-in, no bespoke SDK.
+            Awesome Slide speaks plain React and a file-convention protocol. Any agent can author
+            and edit slides — no lock-in, no bespoke SDK.
           </p>
         </div>
 
@@ -3334,8 +3334,8 @@ const DeployAnywhere: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            Awesome Slide builds to plain static assets. Drop them on Vercel, Cloudflare, Zeabur — or
-            any server that serves HTML.
+            Awesome Slide builds to plain static assets. Drop them on Vercel, Cloudflare, Zeabur —
+            or any server that serves HTML.
           </p>
         </div>
 

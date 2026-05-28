@@ -63,7 +63,13 @@ export type LocTagsPluginOptions = {
 };
 
 export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
-  const slidesRoot = path.resolve(opts.userCwd, opts.slidesDir ?? 'slides');
+  const resolvedRoot = path.resolve(opts.userCwd, opts.slidesDir ?? 'slides');
+  const slidesRoot =
+    opts.userCwd.startsWith('/') &&
+    !opts.userCwd.startsWith('//') &&
+    /^[a-zA-Z]:/.test(resolvedRoot)
+      ? resolvedRoot.slice(2)
+      : resolvedRoot;
   return {
     name: 'awesome-slide:loc-tags',
     apply: 'serve',
@@ -71,12 +77,13 @@ export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
     // sees our injected attributes.
     enforce: 'pre',
     transform(code, id) {
-      const filePath = id.split('?')[0];
-      if (!filePath.startsWith(slidesRoot + path.sep)) return null;
+      const filePath = id.split('?')[0].replace(/\\/g, '/');
+      const normalizedRoot = slidesRoot.replace(/\\/g, '/');
+      if (!filePath.startsWith(`${normalizedRoot}/`)) return null;
       if (!filePath.endsWith('.tsx')) return null;
       if (filePath.endsWith('.d.ts') || filePath.endsWith('.test.tsx')) return null;
-      const rel = filePath.slice(slidesRoot.length + path.sep.length);
-      if (!rel.includes(path.sep)) return null;
+      const rel = filePath.slice(normalizedRoot.length + 1);
+      if (!rel.includes('/')) return null;
       const next = injectLocTags(code);
       if (next === null) return null;
       return { code: next, map: null };

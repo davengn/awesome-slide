@@ -265,7 +265,7 @@ export const meta = {
   theme: 'bright-sans',
   title: 'Second Slide',
   status: 'draft',
-  createdAt: '2026-05-28T09:41:09.011Z'
+  createdAt: '2026-05-28T09:41:09.011Z',
 };
 
 export default [Cover, Content, Closer];

@@ -65,7 +65,7 @@ export function PresentJumpInput({ pageCount, onJump }: Props) {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none absolute top-1/2 left-1/2 z-40 -translate-x-1/2 -translate-y-1/2 select-none rounded-[10px] bg-black/70 px-6 py-4 font-mono text-[44px] font-medium tracking-[0.05em] text-white tabular-nums shadow-[0_8px_40px_-8px_oklch(0_0_0/0.6)] backdrop-blur-md"
+      className="pointer-events-none absolute top-1/2 left-1/2 z-40 -translate-x-1/2 -translate-y-1/2 select-none rounded-md bg-black/70 px-6 py-4 font-mono text-[44px] font-medium tracking-[0.05em] text-white tabular-nums shadow-[0_8px_40px_-8px_oklch(0_0_0/0.6)] backdrop-blur-md"
     >
       <span className="text-white/60">→ </span>
       {buffer}

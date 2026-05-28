@@ -33,15 +33,12 @@ const callouts: { eyebrow: string; title: string; body: ReactNode }[] = [
           href="https://svgl.app/"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-[family-name:var(--font-mono)] text-[color:var(--color-accent-soft)] underline-offset-4 hover:underline"
+          className="font-[family-name:var(--font-mono)] text-white underline underline-offset-4 hover:text-white/80"
         >
           svgl
         </a>{' '}
         from inside the editor. Pick a result and the SVG lands in your assets folder, ready to{' '}
-        <code className="font-[family-name:var(--font-mono)] text-[color:var(--color-text)]">
-          import
-        </code>
-        .
+        <code className="font-[family-name:var(--font-mono)] text-white/90">import</code>.
       </>
     ),
   },
@@ -51,8 +48,8 @@ export function Assets() {
   return (
     <section id="assets" className="landing-section relative">
       <div className="mx-auto max-w-[1360px] px-5 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-32">
-        <div className="landing-color-block bg-[color:var(--color-block-cream)] p-7 sm:p-10 lg:p-12">
-          <h2 className="mb-10 max-w-[820px] text-[32px] leading-[1.1] tracking-normal sm:mb-14 sm:text-[44px] lg:text-[58px]">
+        <div className="landing-color-block bg-[color:var(--color-panel-hi)] p-7 sm:p-10 lg:p-12">
+          <h2 className="mb-10 max-w-[820px] text-[32px] leading-[1.1] tracking-[-1px] sm:mb-14 sm:text-[44px] sm:tracking-[-2px] lg:text-[58px] lg:tracking-[-3px]">
             <span className="font-[family-name:var(--font-sans)] font-medium">Drop in images.</span>
             <br />
             <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-block-navy)]">
@@ -67,19 +64,19 @@ export function Assets() {
             </div>
 
             {/* side callouts */}
-            <div className="lg:col-span-4 flex flex-col gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden">
-              {callouts.map((c) => (
+            <div className="lg:col-span-4 flex flex-col gap-3">
+              {callouts.map((c, idx) => (
                 <div
                   key={c.eyebrow}
-                  className="bg-[color:var(--color-ink)] p-6 sm:p-7 lg:p-8 flex flex-col gap-3"
+                  className={`spotlight ${idx === 0 ? 'violet' : 'magenta'} flex flex-col gap-3 p-6 sm:p-7 lg:p-8`}
                 >
-                  <span className="caption">{c.eyebrow}</span>
-                  <h3 className="text-[22px] lg:text-[24px] font-medium tracking-[-0.025em] leading-[1.2]">
+                  <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.18em] text-white/60">
+                    {c.eyebrow}
+                  </span>
+                  <h3 className="spotlight-title text-[22px] lg:text-[24px] font-medium tracking-[-0.025em] leading-[1.2]">
                     {c.title}
                   </h3>
-                  <p className="text-[14px] leading-[1.6] text-[color:var(--color-text-soft)] max-w-[40ch]">
-                    {c.body}
-                  </p>
+                  <p className="spotlight-body text-[14px] leading-[1.6] max-w-[40ch]">{c.body}</p>
                 </div>
               ))}
             </div>
@@ -92,7 +89,7 @@ export function Assets() {
 
 function AssetManagerMock() {
   return (
-    <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
+    <div className="relative rounded-sm border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
       {/* window header */}
       <div className="flex items-center px-4 sm:px-5 h-10 sm:h-11 border-b border-[color:var(--color-rule)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
         <div className="flex items-center gap-2">
@@ -118,7 +115,7 @@ function AssetManagerMock() {
             Assets
           </span>
         </div>
-        <span className="inline-flex items-center gap-2 rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] px-3.5 py-1.5 font-[family-name:var(--font-sans)] text-[13px] text-[color:var(--color-text)]">
+        <span className="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] px-4 py-1.5 font-[family-name:var(--font-sans)] text-[13px] text-[color:var(--color-text)]">
           <span className="text-[color:var(--color-accent-soft)]">↑</span>
           Upload
         </span>
@@ -133,12 +130,12 @@ function AssetManagerMock() {
         </div>
 
         {/* svgl Logo Search dialog */}
-        <div className="absolute right-3 sm:right-5 bottom-3 sm:bottom-5 w-[80%] sm:w-[64%] max-w-[420px] rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] shadow-[0_10px_28px_-14px_rgba(0,0,0,0.35)] p-4">
+        <div className="absolute right-3 sm:right-5 bottom-3 sm:bottom-5 w-[80%] sm:w-[64%] max-w-[420px] rounded-md border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] shadow-[0_10px_28px_-14px_rgba(0,0,0,0.35)] p-4">
           <div className="flex items-center justify-between mb-3 font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--color-muted)]">
             <span>Search svgl</span>
             <span className="text-[color:var(--color-dim)]">✕</span>
           </div>
-          <div className="flex items-center gap-2 rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-3 py-2 mb-3 font-[family-name:var(--font-mono)] text-[13px] text-[color:var(--color-text)]">
+          <div className="flex items-center gap-2 rounded-md border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] px-3 py-2 mb-3 font-[family-name:var(--font-mono)] text-[13px] text-[color:var(--color-text)]">
             <span className="text-[color:var(--color-muted)]">⌕</span>
             <span>vercel</span>
             <span className="caret" aria-hidden />
@@ -147,7 +144,7 @@ function AssetManagerMock() {
             {svglResults.map((r, i) => (
               <div
                 key={r.name}
-                className={`rounded-[6px] border ${
+                className={`rounded-md border ${
                   i === 0
                     ? 'border-[color:var(--color-accent)] bg-[color:var(--color-accent)]/[0.06]'
                     : 'border-[color:var(--color-rule)] bg-[color:var(--color-panel)]'
@@ -190,7 +187,7 @@ function AssetManagerMock() {
 
 function AssetCard({ asset }: { asset: AssetMock }) {
   return (
-    <div className="rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] overflow-hidden flex flex-col">
+    <div className="rounded-md border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] overflow-hidden flex flex-col">
       <div
         className="h-[80px] sm:h-[120px] flex items-center justify-center"
         style={{

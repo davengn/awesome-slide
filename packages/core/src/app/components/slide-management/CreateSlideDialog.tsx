@@ -105,7 +105,7 @@ export function CreateSlideDialog({
         </DialogHeader>
 
         <div className="grid gap-5">
-          <div className="grid grid-cols-3 gap-2 rounded-[8px] bg-muted p-1">
+          <div className="grid grid-cols-3 gap-2 rounded-md bg-muted p-1">
             {KIND_OPTIONS.map((option) => {
               const Icon = option.icon;
               const active = kind === option.kind;
@@ -115,7 +115,7 @@ export function CreateSlideDialog({
                   type="button"
                   onClick={() => setKind(option.kind)}
                   className={cn(
-                    'inline-flex h-10 items-center justify-center gap-2 rounded-[7px] text-[13px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/30',
+                    'inline-flex h-10 items-center justify-center gap-2 rounded-sm text-[13px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/30',
                     active ? 'bg-background text-foreground shadow-edge' : 'text-muted-foreground',
                   )}
                 >
@@ -133,7 +133,7 @@ export function CreateSlideDialog({
                 onChange={(event) => setTitle(event.target.value)}
                 maxLength={80}
                 aria-label="Title"
-                className="h-10 w-full rounded-[8px] border border-hairline bg-muted px-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-10 w-full rounded-md border border-hairline bg-muted px-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
               />
             </Field>
             <Field label="Slide ID">
@@ -142,7 +142,7 @@ export function CreateSlideDialog({
                 onChange={(event) => setId(event.target.value)}
                 placeholder={generatedId}
                 aria-label="Slide ID"
-                className="h-10 w-full rounded-[8px] border border-hairline bg-muted px-3 font-mono text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-10 w-full rounded-md border border-hairline bg-muted px-3 font-mono text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
               />
             </Field>
           </div>
@@ -153,7 +153,7 @@ export function CreateSlideDialog({
                 value={templateId}
                 onChange={(event) => setTemplateId(event.target.value)}
                 aria-label="Template"
-                className="h-10 w-full rounded-[8px] border border-hairline bg-muted px-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-10 w-full rounded-md border border-hairline bg-muted px-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
               >
                 {availableTemplates.map((theme) => (
                   <option key={theme.id} value={theme.id}>
@@ -172,7 +172,7 @@ export function CreateSlideDialog({
                 rows={5}
                 maxLength={2000}
                 aria-label="Prompt"
-                className="min-h-28 w-full resize-y rounded-[8px] border border-hairline bg-muted px-3 py-2 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="min-h-28 w-full resize-y rounded-md border border-hairline bg-muted px-3 py-2 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
               />
             </Field>
           )}
@@ -183,7 +183,7 @@ export function CreateSlideDialog({
                 value={folderId}
                 onChange={(event) => setFolderId(event.target.value)}
                 aria-label="Folder"
-                className="h-10 w-full rounded-[8px] border border-hairline bg-muted px-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-10 w-full rounded-md border border-hairline bg-muted px-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
               >
                 <option value="">Drafts</option>
                 {folders.map((folder) => (
@@ -198,7 +198,7 @@ export function CreateSlideDialog({
                 value={deckId}
                 onChange={(event) => setDeckId(event.target.value)}
                 aria-label="Deck"
-                className="h-10 w-full rounded-[8px] border border-hairline bg-muted px-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-10 w-full rounded-md border border-hairline bg-muted px-3 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
               >
                 <option value="">None</option>
                 {decks.map((deck) => (

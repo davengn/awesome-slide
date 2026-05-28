@@ -1,6 +1,8 @@
 import { Archive, Check, Folder, Layers3, Pencil, Plus, Trash2, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import logoUrl from '@/assets/awesome-slide.png';
+import { ThemeToggle } from '@/components/theme-toggle';
 import type { Deck, Folder as FolderRecord, SlideRecord } from '@/lib/sdk';
 import { cn } from '@/lib/utils';
 
@@ -98,11 +100,21 @@ export function ManagementSidebar({
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col border-r border-hairline bg-background md:w-[17rem]">
-      <div className="border-b border-hairline px-4 py-4">
-        <p className="text-[11px] font-medium uppercase text-muted-foreground">Collections</p>
-        <h2 className="mt-1 font-heading text-[20px] font-semibold tracking-normal">
-          Slide library
-        </h2>
+      <div className="flex min-h-14 items-center justify-between border-b border-hairline px-4">
+        <div className="flex items-center gap-3">
+          <img src={logoUrl} alt="Logo" className="size-6 rounded-md object-contain" />
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium uppercase text-muted-foreground leading-none">
+              Collections
+            </p>
+            <h2 className="truncate font-heading text-[15px] font-semibold tracking-normal mt-0.5">
+              Slide library
+            </h2>
+          </div>
+        </div>
+        <div className="-mr-1">
+          <ThemeToggle />
+        </div>
       </div>
       <nav className="min-h-0 flex-1 overflow-y-auto p-2" aria-label="Slide collections">
         <CollectionButton
@@ -202,7 +214,7 @@ export function ManagementSidebar({
         {decks.length === 0 && <EmptyLine label="No decks" />}
 
         {deleteTarget && (
-          <div className="mt-3 rounded-[8px] border border-destructive/20 bg-destructive/5 p-3 text-[12px]">
+          <div className="mt-3 rounded-md border border-destructive/20 bg-destructive/5 p-3 text-[12px]">
             <p className="font-medium text-foreground">Delete {deleteTarget.name}?</p>
             <p className="mt-1 text-muted-foreground">
               Slides stay in the library. Folder assignments or deck membership are cleared.
@@ -211,7 +223,7 @@ export function ManagementSidebar({
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
-                className="h-8 rounded-[7px] px-3 text-[12px] text-muted-foreground outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-8 rounded-full px-3 text-[12px] text-muted-foreground outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/30"
               >
                 Cancel
               </button>
@@ -219,7 +231,7 @@ export function ManagementSidebar({
                 type="button"
                 onClick={confirmDelete}
                 disabled={pending}
-                className="h-8 rounded-[7px] bg-destructive px-3 text-[12px] font-medium text-destructive-foreground outline-none disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-8 rounded-full bg-destructive px-3 text-[12px] font-medium text-destructive-foreground outline-none disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-ring/30"
               >
                 Delete
               </button>
@@ -288,7 +300,7 @@ function CollectionButton({
   return (
     <div
       className={cn(
-        'group mb-1 grid h-10 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-[7px] transition-colors',
+        'group mb-1 grid h-10 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-md transition-colors',
         active ? 'bg-foreground text-background' : 'text-foreground hover:bg-muted',
       )}
     >
@@ -366,7 +378,7 @@ function InlineEditor({
   }, []);
 
   return (
-    <div className="mb-1 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1 rounded-[7px] bg-muted p-1">
+    <div className="mb-1 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1 rounded-md bg-muted p-1">
       <input
         ref={inputRef}
         value={value}
@@ -377,7 +389,7 @@ function InlineEditor({
         }}
         maxLength={60}
         aria-label={label}
-        className="h-8 min-w-0 rounded-[6px] border border-hairline bg-background px-2 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+        className="h-8 min-w-0 rounded-sm border border-hairline bg-background px-2 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
       />
       <button
         type="button"

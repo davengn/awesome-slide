@@ -77,7 +77,7 @@ export function AssetPickerDialog({
         <label
           htmlFor={inputId}
           className={cn(
-            'absolute right-12 top-3.5 inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[5px] border border-border bg-card px-2 text-[12px] font-medium transition-colors',
+            'absolute right-12 top-3.5 inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-2.5 text-[12px] font-medium transition-colors',
             'hover:bg-muted/60 hover:border-foreground/20 active:translate-y-px',
             uploading && 'pointer-events-none opacity-60',
           )}
@@ -144,7 +144,7 @@ export function AssetPickerDialog({
                   type="button"
                   onClick={() => onPick(asset, scope)}
                   className={cn(
-                    'group flex flex-col overflow-hidden rounded-lg border bg-card text-left shadow-sm transition-all',
+                    'group flex flex-col overflow-hidden rounded-md border bg-card text-left shadow-sm transition-all',
                     'hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
                   )}
                 >
@@ -171,9 +171,9 @@ export function AssetPickerDialog({
               aria-hidden
             >
               <div className="absolute inset-0 bg-brand/5" />
-              <div className="absolute inset-1 rounded-[8px] border border-dashed border-brand/40" />
+              <div className="absolute inset-1 rounded-md border border-dashed border-brand/40" />
               <div className="absolute inset-x-0 bottom-4 flex justify-center">
-                <div className="flex items-center gap-2 rounded-[6px] border border-border bg-card px-3 py-1.5 text-[12px] font-medium shadow-floating">
+                <div className="flex items-center gap-2 rounded-sm border border-border bg-card px-3 py-1.5 text-[12px] font-medium shadow-floating">
                   <ArrowDownToLine className="size-3.5 text-brand" />
                   <span>{t.asset.dropToUpload}</span>
                 </div>

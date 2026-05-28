@@ -246,7 +246,7 @@ function ImageActionPanel({
     <TooltipProvider delayDuration={200}>
       <div
         className={cn(
-          'absolute flex items-center gap-0.5 rounded-[8px] border border-border bg-popover p-1 text-popover-foreground shadow-floating',
+          'absolute flex items-center gap-0.5 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-floating',
           visible ? 'pointer-events-auto' : 'pointer-events-none',
         )}
         style={{
@@ -266,7 +266,7 @@ function ImageActionPanel({
                 e.stopPropagation();
                 openReplace(anchor);
               }}
-              className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              className="inline-flex size-7 items-center justify-center rounded-full text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
             >
               <ImageIcon className="size-3.5" />
             </button>
@@ -284,7 +284,7 @@ function ImageActionPanel({
                 e.stopPropagation();
                 openCrop(anchor as HTMLImageElement);
               }}
-              className="inline-flex size-7 items-center justify-center rounded-[5px] text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              className="inline-flex size-7 items-center justify-center rounded-full text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
             >
               <Crop className="size-3.5" />
             </button>
