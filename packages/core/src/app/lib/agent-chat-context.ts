@@ -5,6 +5,8 @@ import type {
   ThemeSummary,
 } from './agent-chat-types.ts';
 import type { DeckId, FolderId, SlideId } from './sdk.ts';
+import { slideSourceState } from './slides.ts';
+import { themes } from './themes.ts';
 
 export function isSecretFile(filePath: string): boolean {
   const filename = filePath.split(/[/\\]/).pop() || '';
@@ -46,7 +48,14 @@ export function redactSecrets(content: string): string {
 
 export interface BuildContextOptions {
   project: { name?: string; rootLabel?: string };
-  slide?: { id: SlideId; title?: string; pageIndex?: number; pageCount?: number; status?: string };
+  slide?: {
+    id: SlideId;
+    title?: string;
+    pageIndex?: number;
+    pageCount?: number;
+    status?: string;
+    sourceState?: string;
+  };
   selection?: SelectedElementDescriptor[];
   collection?: { folderId?: FolderId; deckId?: DeckId; slideIds?: SlideId[] };
   theme?: { activeThemeId?: string; availableThemeIds: string[]; summaries: ThemeSummary[] };
@@ -82,12 +91,42 @@ export async function buildAgentChatContext(
   let totalBytes = filteredExcerpts.reduce((sum, e) => sum + e.content.length, 0);
   let truncated = false;
 
+  const themeList = themes || [];
+  const themeSummaries: ThemeSummary[] = themeList.map((theme) => {
+    const bgMatch = theme.body?.match(/--background:\s*([^;]+)/);
+    const fgMatch = theme.body?.match(/--foreground:\s*([^;]+)/);
+    const primaryMatch = theme.body?.match(/--primary:\s*([^;]+)/);
+    return {
+      themeId: theme.id,
+      name: theme.name,
+      colors: {
+        background: bgMatch ? bgMatch[1].trim() : '#ffffff',
+        foreground: fgMatch ? fgMatch[1].trim() : '#000000',
+        primary: primaryMatch ? primaryMatch[1].trim() : '#3b82f6',
+      },
+    };
+  });
+
+  const activeThemeId = options.theme?.activeThemeId || 'default';
+  const availableThemeIds = options.theme?.availableThemeIds || themeList.map((t) => t.id);
+  const themeContext = {
+    activeThemeId,
+    availableThemeIds,
+    summaries: options.theme?.summaries || themeSummaries,
+  };
+
   const context: AgentChatContext = {
     project: options.project,
-    slide: options.slide,
+    slide: options.slide
+      ? {
+          ...options.slide,
+          sourceState:
+            options.slide.sourceState || slideSourceState[options.slide.id] || 'supported',
+        }
+      : undefined,
     selection: options.selection,
     collection: options.collection,
-    theme: options.theme,
+    theme: themeContext,
     notes: options.notes,
     source: { excerpts: filteredExcerpts, totalBytes, truncated },
     limits: { maxBytes, generatedAt: now },

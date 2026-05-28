@@ -20,7 +20,13 @@ export const meta: SlideMeta = {
   createdAt: '${createdAt}',
 };
 
-export default [] satisfies Page[];
+const Page1: Page = () => (
+  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <h1 style={{ fontSize: '2.5rem', fontWeight: 700, color: '#1a1a1a' }}>${escapeSingleQuoted(title)}</h1>
+  </div>
+);
+
+export default [Page1] satisfies Page[];
 `;
 }
 

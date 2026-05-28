@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { agentChatReducer } from './agent-chat-state.ts';
-import type { AgentChatEvent, AgentChatSession } from './agent-chat-types.ts';
+import type { AgentChatEvent, AgentChatSession, AgentEditProposal } from './agent-chat-types.ts';
 
 const createInitialSession = (): AgentChatSession => ({
   id: 'session_123',
@@ -225,5 +225,65 @@ describe('Agent Chat State Reducer', () => {
     expect(nextSession.id).toBe('session_new');
     expect(nextSession.messages).toHaveLength(1);
     expect(nextSession.messages[0].content[0].text).toBe('Hello');
+  });
+
+  it('should handle APPLY_PROPOSAL action', () => {
+    const session = createInitialSession();
+    session.messages = [
+      {
+        id: 'msg_assistant',
+        sessionId: session.id,
+        role: 'assistant',
+        proposalId: 'prop_123',
+        content: [
+          {
+            type: 'proposal-summary',
+            text: 'Proposed edits',
+            data: { id: 'prop_123', state: 'pending-review' },
+          },
+        ],
+        state: 'needs-review',
+        createdAt: new Date().toISOString(),
+      },
+    ];
+
+    const nextSession = agentChatReducer(session, {
+      type: 'APPLY_PROPOSAL',
+      payload: { proposalId: 'prop_123', state: 'applied' },
+    });
+
+    expect(nextSession.messages[0].state).toBe('completed');
+    const summaryPart = nextSession.messages[0].content[0];
+    expect((summaryPart.data as AgentEditProposal).state).toBe('applied');
+  });
+
+  it('should handle REJECT_PROPOSAL action', () => {
+    const session = createInitialSession();
+    session.messages = [
+      {
+        id: 'msg_assistant',
+        sessionId: session.id,
+        role: 'assistant',
+        proposalId: 'prop_123',
+        content: [
+          {
+            type: 'proposal-summary',
+            text: 'Proposed edits',
+            data: { id: 'prop_123', state: 'pending-review' },
+          },
+        ],
+        state: 'needs-review',
+        createdAt: new Date().toISOString(),
+      },
+    ];
+
+    const nextSession = agentChatReducer(session, {
+      type: 'REJECT_PROPOSAL',
+      payload: { proposalId: 'prop_123' },
+    });
+
+    expect(nextSession.messages[0].state).toBe('completed');
+    const summaryPart = nextSession.messages[0].content[0];
+    expect((summaryPart.data as AgentEditProposal).state).toBe('rejected');
   });
 });

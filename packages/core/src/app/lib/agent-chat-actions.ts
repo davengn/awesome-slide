@@ -58,4 +58,22 @@ export const SUGGESTED_ACTIONS: SuggestedAction[] = [
     scope: 'deck',
     riskLevel: 'medium',
   },
+  {
+    id: 'shorten-deck-content',
+    label: 'Shorten Deck Content',
+    promptTemplate:
+      'Review all slides in this deck and suggest ways to tighten the narrative and reduce word count.',
+    defaultContextKinds: ['deck', 'speaker-notes'],
+    scope: 'deck',
+    riskLevel: 'medium',
+  },
+  {
+    id: 'generate-deck-notes',
+    label: 'Generate Deck Speaker Notes',
+    promptTemplate:
+      'Generate concise speaker notes for each slide in this deck based on the slide content.',
+    defaultContextKinds: ['deck', 'speaker-notes'],
+    scope: 'deck',
+    riskLevel: 'low',
+  },
 ];

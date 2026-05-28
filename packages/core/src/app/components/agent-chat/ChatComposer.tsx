@@ -11,6 +11,8 @@ interface ChatComposerProps {
   isRunActive: boolean;
   canRetry: boolean;
   placeholder?: string;
+  value?: string;
+  onChange?: (val: string) => void;
 }
 
 export const ChatComposer: React.FC<ChatComposerProps> = ({
@@ -20,8 +22,12 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
   isRunActive,
   canRetry,
   placeholder = 'Ask the agent to edit this slide...',
+  value,
+  onChange,
 }) => {
-  const [prompt, setPrompt] = useState('');
+  const [internalPrompt, setInternalPrompt] = useState('');
+  const prompt = value !== undefined ? value : internalPrompt;
+  const setPrompt = onChange !== undefined ? onChange : setInternalPrompt;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = () => {

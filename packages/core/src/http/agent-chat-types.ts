@@ -1,4 +1,5 @@
 import type {
+  AgentChatContext,
   AgentConnectionRef,
   ContextPreference,
   RunState,
@@ -25,6 +26,7 @@ export interface CreateRunRequest {
   prompt: string;
   actionId?: string;
   contextPreferences: ContextPreference[];
+  context?: AgentChatContext;
 }
 
 export interface CreateRunResponse {

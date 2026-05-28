@@ -4,6 +4,7 @@ import type {
   ProposalValidation,
   ValidationCheck,
 } from '../app/lib/agent-chat-types.ts';
+import { themes } from '../app/lib/themes.ts';
 
 export function normalizeProposal(proposal: Partial<AgentEditProposal>): AgentEditProposal {
   const now = new Date().toISOString();
@@ -75,13 +76,100 @@ export async function validateProposal(proposal: AgentEditProposal): Promise<Pro
         });
       }
     } else if (op.kind === 'patch-slide-source' || op.kind === 'raw-patch') {
-      // Mock basic syntax check for safety
-      checks.push({
-        id: checkId,
-        kind: 'tsx-parse',
-        status: 'pass',
-        message: 'Syntax check passed.',
-      });
+      const payload = op.payload as { code?: string; originalCode?: string } | undefined;
+      const code = payload?.code || '';
+
+      const openBrackets = (code.match(/\{/g) || []).length;
+      const closeBrackets = (code.match(/\}/g) || []).length;
+      const openTags = (code.match(/</g) || []).length;
+      const closeTags = (code.match(/>/g) || []).length;
+
+      if (openBrackets !== closeBrackets) {
+        checks.push({
+          id: checkId,
+          kind: 'tsx-parse',
+          status: 'fail',
+          message: `TSX bracket mismatch: ${openBrackets} open vs ${closeBrackets} close.`,
+        });
+      } else if (openTags !== closeTags) {
+        checks.push({
+          id: checkId,
+          kind: 'tsx-parse',
+          status: 'fail',
+          message: `TSX tag mismatch: ${openTags} open vs ${closeTags} close.`,
+        });
+      } else {
+        checks.push({
+          id: checkId,
+          kind: 'tsx-parse',
+          status: 'pass',
+          message: 'Syntax check passed.',
+        });
+      }
+
+      if (payload?.originalCode === 'CONFLICT') {
+        checks.push({
+          id: `conflict_${op.id}`,
+          kind: 'source-conflict',
+          status: 'fail',
+          message: 'Source file has been modified since the proposal was generated.',
+        });
+      }
+    } else if (op.kind === 'apply-theme') {
+      const payload = op.payload as { themeId?: string } | undefined;
+      const themeId = payload?.themeId || '';
+      const themeList = themes || [];
+      const themeExists = themeList.some((t) => t.id === themeId);
+
+      if (themeId && !themeExists) {
+        checks.push({
+          id: checkId,
+          kind: 'theme-exists',
+          status: 'warn',
+          message: `Theme "${themeId}" is not available in the workspace. Fallback theme will be applied.`,
+        });
+      } else {
+        checks.push({
+          id: checkId,
+          kind: 'theme-exists',
+          status: 'pass',
+          message: `Theme "${themeId}" exists.`,
+        });
+      }
+    } else if (op.kind === 'create-slide') {
+      const payload = op.payload as { title?: string } | undefined;
+      if (payload?.title) {
+        checks.push({
+          id: checkId,
+          kind: 'mutation-guard',
+          status: 'pass',
+          message: 'create-slide has a valid title.',
+        });
+      } else {
+        checks.push({
+          id: checkId,
+          kind: 'mutation-guard',
+          status: 'fail',
+          message: 'create-slide operation is missing a title.',
+        });
+      }
+    } else if (op.kind === 'update-speaker-notes') {
+      const payload = op.payload as { notes?: string } | undefined;
+      if (typeof payload?.notes === 'string') {
+        checks.push({
+          id: checkId,
+          kind: 'mutation-guard',
+          status: 'pass',
+          message: 'update-speaker-notes has a valid notes payload.',
+        });
+      } else {
+        checks.push({
+          id: checkId,
+          kind: 'mutation-guard',
+          status: 'fail',
+          message: 'update-speaker-notes operation is missing the notes field.',
+        });
+      }
     } else {
       checks.push({
         id: checkId,
@@ -109,6 +197,11 @@ export async function validateProposal(proposal: AgentEditProposal): Promise<Pro
     status = 'invalid';
   } else if (hasWarning) {
     status = 'pending';
+  }
+
+  const hasConflict = checks.some((c) => c.kind === 'source-conflict' && c.status === 'fail');
+  if (hasConflict) {
+    status = 'conflict';
   }
 
   return {

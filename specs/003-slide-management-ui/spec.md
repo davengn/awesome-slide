@@ -26,7 +26,7 @@ The current creation flow is too agent-command oriented. Slide creation and mana
 - Do not replace the existing slide source format or runtime rendering model.
 - Do not require a cloud backend.
 - Do not implement full agent editing in this spec; agent prompts and preview/apply behavior are covered by `specs/004-agent-chat-ui`.
-- Do not implement provider credentials or local model connection management in this spec; that is covered by `specs/005-agent-model-connections`.
+- Do not implement provider credentials or local model connection management in this spec; that is covered by `specs/006-agent-model-connections`.
 
 ## User Stories
 

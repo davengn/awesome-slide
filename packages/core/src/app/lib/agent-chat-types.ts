@@ -53,7 +53,14 @@ export interface ThemeSummary {
 
 export interface AgentChatContext {
   project: { name?: string; rootLabel?: string };
-  slide?: { id: SlideId; title?: string; pageIndex?: number; pageCount?: number; status?: string };
+  slide?: {
+    id: SlideId;
+    title?: string;
+    pageIndex?: number;
+    pageCount?: number;
+    status?: string;
+    sourceState?: string;
+  };
   selection?: SelectedElementDescriptor[];
   collection?: { folderId?: FolderId; deckId?: DeckId; slideIds?: SlideId[] };
   theme?: { activeThemeId?: string; availableThemeIds: string[]; summaries: ThemeSummary[] };
@@ -69,7 +76,9 @@ export type SuggestedActionId =
   | 'apply-theme'
   | 'generate-speaker-notes'
   | 'fix-alignment'
-  | 'create-related-slide';
+  | 'create-related-slide'
+  | 'shorten-deck-content'
+  | 'generate-deck-notes';
 
 export interface SuggestedAction {
   id: SuggestedActionId;

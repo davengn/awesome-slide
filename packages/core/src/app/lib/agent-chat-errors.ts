@@ -64,9 +64,11 @@ export function redactDiagnostics(diagnostics: string): string {
   // Redact Windows/Mac home paths
   redacted = redacted.replace(/\/Users\/[a-zA-Z0-9_-]+/g, '/Users/<user>');
   redacted = redacted.replace(/C:\\Users\\[a-zA-Z0-9_-]+/g, 'C:\\Users\\<user>');
+  // Redact Bearer tokens and API keys
+  redacted = redacted.replace(/\bBearer\s+[a-zA-Z0-9_\-./~+\\*=]{8,}/gi, 'Bearer <redacted>');
   // Redact potential API keys or tokens in query strings or headers
   redacted = redacted.replace(
-    /(api[-_]?key|token|auth|password|secret|key|bearer)\s*[:=]\s*["']?[a-zA-Z0-9_\-./~+\\*=]{8,}["']?/gi,
+    /(api[-_]?key|token|auth|password|secret|key)\s*[:=]\s*["']?[a-zA-Z0-9_\-./~+\\*=]{8,}["']?/gi,
     '$1=<redacted>',
   );
   return redacted;

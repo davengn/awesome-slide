@@ -3,6 +3,7 @@ import type {
   AgentChatEvent,
   AgentChatMessage,
   AgentChatSession,
+  AgentEditProposal,
   ContextPreference,
 } from './agent-chat-types.ts';
 
@@ -11,6 +12,11 @@ export type AgentChatAction =
   | { type: 'START_RUN'; payload: { runId: string; prompt: string } }
   | { type: 'RECEIVE_EVENT'; payload: AgentChatEvent }
   | { type: 'SET_CONTEXT_PREFERENCE'; payload: ContextPreference[] }
+  | {
+      type: 'APPLY_PROPOSAL';
+      payload: { proposalId: string; state: 'applied' | 'partially-applied' };
+    }
+  | { type: 'REJECT_PROPOSAL'; payload: { proposalId: string } }
   | { type: 'CLEAR_HISTORY' };
 
 export function agentChatReducer(
@@ -135,6 +141,64 @@ export function agentChatReducer(
       return {
         ...state,
         currentRunId,
+        messages,
+        updatedAt: now,
+      };
+    }
+
+    case 'APPLY_PROPOSAL': {
+      const { proposalId, state: nextState } = action.payload;
+      const messages = state.messages.map((msg) => {
+        if (msg.proposalId === proposalId) {
+          const content = msg.content.map((part) => {
+            if (part.type === 'proposal-summary' && part.data) {
+              const prop = part.data as AgentEditProposal;
+              return {
+                ...part,
+                data: { ...prop, state: nextState },
+              };
+            }
+            return part;
+          });
+          return {
+            ...msg,
+            state: 'completed' as const,
+            content,
+          };
+        }
+        return msg;
+      });
+      return {
+        ...state,
+        messages,
+        updatedAt: now,
+      };
+    }
+
+    case 'REJECT_PROPOSAL': {
+      const { proposalId } = action.payload;
+      const messages = state.messages.map((msg) => {
+        if (msg.proposalId === proposalId) {
+          const content = msg.content.map((part) => {
+            if (part.type === 'proposal-summary' && part.data) {
+              const prop = part.data as AgentEditProposal;
+              return {
+                ...part,
+                data: { ...prop, state: 'rejected' as const },
+              };
+            }
+            return part;
+          });
+          return {
+            ...msg,
+            state: 'completed' as const,
+            content,
+          };
+        }
+        return msg;
+      });
+      return {
+        ...state,
         messages,
         updatedAt: now,
       };

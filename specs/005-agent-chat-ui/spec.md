@@ -25,18 +25,35 @@ Agent-assisted slide editing is currently conceptually tied to external skills o
 
 - Do not build the local agent discovery or API key management UI in this spec.
 - Do not allow silent autonomous file writes without user review.
-- Do not define every model provider protocol; connection adapters are covered by `specs/005-agent-model-connections`.
+- Do not define every model provider protocol; connection adapters are covered by `specs/006-agent-model-connections`.
 - Do not require collaborative multi-user chat history or cloud sync.
 - Do not replace manual slide editing.
 
 ## User Stories
 
-- As a creator, I want to ask the agent to improve the current slide so I can iterate faster without leaving the app.
-- As a creator, I want the agent to understand which slide or deck I am working on so prompts can be short and contextual.
-- As a designer, I want to ask for layout and theme changes and preview them before applying.
-- As a presenter, I want to ask for content tightening or narrative flow improvements across a deck.
-- As a cautious user, I want to see proposed changes, reject them, or apply only selected edits.
-- As a user with a failing agent connection, I want clear errors and recovery actions.
+### User Story 1 - Current Slide Chat (Priority: P1)
+
+As a creator, I want to ask the agent to improve the current slide so I can iterate faster without leaving the app.
+
+### User Story 2 - Context-Aware Prompting (Priority: P1)
+
+As a creator, I want the agent to understand which slide or deck I am working on so prompts can be short and contextual.
+
+### User Story 3 - Layout and Theme Preview (Priority: P2)
+
+As a designer, I want to ask for layout and theme changes and preview them before applying.
+
+### User Story 4 - Deck Narrative Improvements (Priority: P2)
+
+As a presenter, I want to ask for content tightening or narrative flow improvements across a deck.
+
+### User Story 5 - Selective Review and Apply (Priority: P1)
+
+As a cautious user, I want to see proposed changes, reject them, or apply only selected edits.
+
+### User Story 6 - Connection Failure Recovery (Priority: P2)
+
+As a user with a failing agent connection, I want clear errors and recovery actions.
 
 ## Functional Requirements
 
@@ -55,6 +72,15 @@ Agent-assisted slide editing is currently conceptually tied to external skills o
 - FR-013: The agent must not receive hidden files, secret values, or unrelated project files unless the user explicitly expands context.
 - FR-014: The agent must be able to reference default and user-added themes when the user requests theme application or redesign.
 - FR-015: The chat must expose a deterministic audit trail for applied changes: prompt, selected context summary, proposed changes, applied files, timestamp, and agent/model used.
+- FR-016: Local session history must be bounded to the most recent 50 visible messages or 256KB serialized size, whichever limit is reached first; audit records are stored separately and never retain raw secret-bearing payloads.
+- FR-017: When no inspected element selection exists, selected-element context must be shown as unavailable or disabled and must not send an empty or misleading selection payload.
+- FR-018: Broad or dangerous edits must include deletes, deck-wide rewrites, multi-slide edits, broad theme replacement, and raw patches outside the active slide; these edits require stronger confirmation before apply.
+- FR-019: Static or read-only builds may show the chat in read-only/no-connection mode, but must block file-changing runs and proposal apply actions.
+- FR-020: Empty decks, missing slides, parse-error slides, unsupported metadata formats, and read-only source states must produce categorized non-writing states that preserve prompt text and expose recovery actions.
+- FR-021: Context collection must visibly truncate oversized source excerpts, speaker notes, rendered snapshots, or deck metadata rather than silently exceeding context budgets.
+- FR-022: A session must prevent multiple simultaneous active runs; users can cancel, retry after terminal state, or keep the next prompt as a draft before starting another run.
+- FR-023: Partial selected apply must report success only when every selected operation succeeds; failed writes must surface as failed transactions, not partial success.
+- FR-024: Proposals must become expired or conflict when the relevant source, deck, theme, or metadata changes after proposal generation and before apply.
 
 ## UX Requirements
 
@@ -71,7 +97,7 @@ Agent-assisted slide editing is currently conceptually tied to external skills o
 
 ## Technical Considerations
 
-- The chat UI should be connection-agnostic and call a local agent/model adapter interface defined by the connection spec.
+- The chat UI should be connection-agnostic and call a local agent/model adapter interface defined by `specs/006-agent-model-connections`.
 - Context collection should be explicit and bounded. A likely model is a `ChatContext` object containing slide ID, metadata, selected element descriptors, deck/folder IDs, theme IDs, and a limited source excerpt or rendered snapshot.
 - Proposed edits should be represented as structured operations when possible, with raw patch fallback only when necessary.
 - TSX slide edits should be validated before apply through TypeScript parsing, project typecheck where feasible, or a lighter syntax validation path for fast feedback.
@@ -92,6 +118,24 @@ Agent-assisted slide editing is currently conceptually tied to external skills o
 - AC-008: Broad or destructive agent edits require confirmation.
 - AC-009: The chat never sends stored API keys or unrelated secret files as prompt context.
 - AC-010: The chat UI follows the Awesome Slide design system and accessibility expectations.
+- AC-011: Static/read-only builds show the chat entry point but block write-capable runs and proposal apply actions.
+- AC-012: Users cannot start two active runs in the same session; cancel or terminal state is required before a new run starts.
+- AC-013: Stale proposals caused by independent source or metadata changes cannot be applied until refreshed or retried.
+- AC-014: Edge states for empty decks, missing slides, parse errors, unsupported metadata, and read-only files are visible and non-destructive.
+
+## Non-Functional Requirements
+
+- NFR-001: Context collection for a normal single-slide prompt should complete within 200ms on a warm local dev server.
+- NFR-002: Common single-slide proposal validation should complete within 200ms before enabling apply controls.
+- NFR-003: A queued run should emit an initial visible status or streamed event within 500ms after the local runtime accepts it.
+- NFR-004: Preview rendering must keep cancel, reject, and apply controls responsive while before/after artifacts are prepared.
+- NFR-005: Diagnostics copy and audit persistence must redact `.env*`, hidden-file contents, credential-like values, and raw provider secrets.
+
+## Dependencies and Assumptions
+
+- The active connection adapter, connection settings route, credential lookup, and provider-specific protocols are owned by `specs/006-agent-model-connections`.
+- The implementation reuses existing Awesome Slide slide canvas, slide management, theme discovery, guarded mutation, and Vite middleware patterns in `packages/core`.
+- Implementing this feature changes `@awesome-slide/core`, so the implementation phase must include a patch changeset before completion.
 
 ## Implementation Phases
 

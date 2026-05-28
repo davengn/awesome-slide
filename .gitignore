@@ -8,3 +8,5 @@ build
 *.tsbuildinfo
 .turbo
 .codegraph
+.awesome-slide/agent-chat/
+

@@ -1,4 +1,9 @@
-import type { AgentChatEvent, AgentChatRun, RunState } from '../app/lib/agent-chat-types.ts';
+import type {
+  AgentChatEvent,
+  AgentChatRun,
+  AgentEditProposal,
+  RunState,
+} from '../app/lib/agent-chat-types.ts';
 
 interface RunEntry {
   run: AgentChatRun;
@@ -8,6 +13,15 @@ interface RunEntry {
 }
 
 const activeRuns = new Map<string, RunEntry>();
+const EVENT_STATE_MAP: Partial<Record<AgentChatEvent['type'], RunState>> = {
+  queued: 'queued',
+  progress: 'loading',
+  token: 'streaming',
+  proposal: 'needs-review',
+  completed: 'completed',
+  cancelled: 'cancelled',
+  failed: 'failed',
+};
 
 export function getRun(runId: string): AgentChatRun | undefined {
   return activeRuns.get(runId)?.run;
@@ -42,13 +56,9 @@ export function addRunEvent(runId: string, type: AgentChatEvent['type'], payload
 
   entry.events.push(event);
 
-  // Update run state
-  if (
-    ['queued', 'loading', 'streaming', 'needs-review', 'completed', 'cancelled', 'failed'].includes(
-      type,
-    )
-  ) {
-    entry.run.state = type as RunState;
+  const nextState = EVENT_STATE_MAP[type];
+  if (nextState) {
+    entry.run.state = nextState;
   }
 
   // Notify listeners
@@ -96,4 +106,16 @@ export function abortRun(runId: string): boolean {
   entry.abortController.abort();
   addRunEvent(runId, 'cancelled', null);
   return true;
+}
+
+export function findProposal(proposalId: string): AgentEditProposal | undefined {
+  for (const entry of activeRuns.values()) {
+    const proposalEvent = entry.events.find(
+      (e) => e.type === 'proposal' && (e.payload as AgentEditProposal)?.id === proposalId,
+    );
+    if (proposalEvent) {
+      return proposalEvent.payload as AgentEditProposal;
+    }
+  }
+  return undefined;
 }

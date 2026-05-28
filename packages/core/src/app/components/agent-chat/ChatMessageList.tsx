@@ -1,14 +1,28 @@
 import { Bot, Loader2, User } from 'lucide-react';
 import type React from 'react';
-import type { AgentChatMessage } from '../../lib/agent-chat-types.ts';
+import type { AgentChatMessage, AgentEditProposal } from '../../lib/agent-chat-types.ts';
 import { cn } from '../../lib/utils.ts';
 import { ScrollArea } from '../ui/scroll-area.tsx';
+import { ProposalControls } from './ProposalControls.tsx';
+import { ProposalPreview } from './ProposalPreview.tsx';
 
 interface ChatMessageListProps {
   messages: AgentChatMessage[];
+  selectedOperationIds: Record<string, string[]>;
+  applyingProps: Record<string, boolean>;
+  onToggleOperation: (proposalId: string, opId: string) => void;
+  onApplyProposal: (proposalId: string) => void;
+  onRejectProposal: (proposalId: string) => void;
 }
 
-export const ChatMessageList: React.FC<ChatMessageListProps> = ({ messages }) => {
+export const ChatMessageList: React.FC<ChatMessageListProps> = ({
+  messages,
+  selectedOperationIds,
+  applyingProps,
+  onToggleOperation,
+  onApplyProposal,
+  onRejectProposal,
+}) => {
   return (
     <ScrollArea className="flex-1 p-4" aria-live="polite">
       <div className="flex flex-col gap-4">
@@ -57,6 +71,32 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({ messages }) =>
                             aria-hidden="true"
                           />
                           <span>{part.text}</span>
+                        </div>
+                      );
+                    }
+                    if (part.type === 'proposal-summary' && part.data) {
+                      const proposal = part.data as AgentEditProposal;
+                      const pId = proposal.id;
+                      const selOps = selectedOperationIds[pId] || [];
+                      const isApplying = applyingProps[pId] || false;
+
+                      return (
+                        <div
+                          key={partKey}
+                          className="mt-2 border border-neutral-200 rounded-md overflow-hidden bg-white max-w-full"
+                        >
+                          <ProposalPreview
+                            proposal={proposal}
+                            selectedOperationIds={selOps}
+                            onToggleOperation={(opId) => onToggleOperation(pId, opId)}
+                          />
+                          <ProposalControls
+                            proposal={proposal}
+                            selectedOperationIds={selOps}
+                            isApplying={isApplying}
+                            onApply={() => onApplyProposal(pId)}
+                            onReject={() => onRejectProposal(pId)}
+                          />
                         </div>
                       );
                     }

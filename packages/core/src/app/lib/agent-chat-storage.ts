@@ -1,4 +1,11 @@
-import type { AgentChatSession } from './agent-chat-types.ts';
+import { createAgentChatError } from './agent-chat-errors.ts';
+import type { AgentChatMessage, AgentChatSession } from './agent-chat-types.ts';
+
+const ACTIVE_MESSAGE_STATES = new Set<AgentChatMessage['state']>([
+  'queued',
+  'loading',
+  'streaming',
+]);
 
 export function capSession(session: AgentChatSession): AgentChatSession {
   let messages = [...session.messages];
@@ -51,8 +58,46 @@ export function loadSession(
     return null;
   }
   try {
-    return JSON.parse(data) as AgentChatSession;
+    return recoverInterruptedRun(JSON.parse(data) as AgentChatSession);
   } catch {
     return null;
   }
+}
+
+export function recoverInterruptedRun(session: AgentChatSession): AgentChatSession {
+  if (!session.currentRunId) {
+    return session;
+  }
+
+  let recovered = false;
+  const messages = session.messages.map((message) => {
+    if (
+      message.runId === session.currentRunId &&
+      message.role === 'assistant' &&
+      ACTIVE_MESSAGE_STATES.has(message.state)
+    ) {
+      recovered = true;
+      return {
+        ...message,
+        state: 'failed' as const,
+        completedAt: new Date().toISOString(),
+        error: createAgentChatError(
+          'timeout',
+          'The previous agent run was interrupted before it completed.',
+        ),
+      };
+    }
+    return message;
+  });
+
+  if (!recovered) {
+    return session;
+  }
+
+  return {
+    ...session,
+    currentRunId: undefined,
+    messages,
+    updatedAt: new Date().toISOString(),
+  };
 }

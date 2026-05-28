@@ -8,7 +8,7 @@ import type {
   RejectProposalResponse,
   RetryRunResponse,
 } from '../../http/agent-chat-types.ts';
-import type { AgentChatEvent, ContextPreference } from './agent-chat-types.ts';
+import type { AgentChatContext, AgentChatEvent, ContextPreference } from './agent-chat-types.ts';
 
 export async function getSession(): Promise<GetSessionResponse> {
   const res = await fetch('/__agent-chat/session');
@@ -23,12 +23,14 @@ export async function startRun(
   prompt: string,
   actionId?: string,
   contextPreferences: ContextPreference[] = [],
+  context?: AgentChatContext,
 ): Promise<CreateRunResponse> {
   const body: CreateRunRequest = {
     sessionId,
     prompt,
     actionId,
     contextPreferences,
+    context,
   };
   const res = await fetch('/__agent-chat/runs', {
     method: 'POST',
@@ -97,6 +99,7 @@ export function streamRunEvents(
   onError?: (err: Error) => void,
 ): { abort: () => void } {
   const eventSource = new EventSource(`/__agent-chat/runs/${runId}/events`);
+  let closedIntentionally = false;
 
   eventSource.onmessage = (event) => {
     try {
@@ -105,6 +108,7 @@ export function streamRunEvents(
 
       // Close on terminal events
       if (['completed', 'cancelled', 'failed'].includes(chatEvent.type)) {
+        closedIntentionally = true;
         eventSource.close();
       }
     } catch (err) {
@@ -116,13 +120,14 @@ export function streamRunEvents(
 
   eventSource.onerror = () => {
     eventSource.close();
-    if (onError) {
+    if (!closedIntentionally && onError) {
       onError(new Error('EventSource failed connection.'));
     }
   };
 
   return {
     abort: () => {
+      closedIntentionally = true;
       eventSource.close();
     },
   };
