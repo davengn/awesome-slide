@@ -1,815 +1,544 @@
+import { X } from 'lucide-react';
+import { type KeyboardEvent, useCallback, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { CreateSlideDialog } from '../components/slide-management/CreateSlideDialog';
+import { DeleteConfirmDialog } from '../components/slide-management/DeleteConfirmDialog';
+import { DuplicateSlideDialog } from '../components/slide-management/DuplicateSlideDialog';
 import {
-  ArrowDownAZ,
-  ChevronDown,
-  Clock,
-  Copy,
-  FolderInput,
-  FolderPlus,
-  MoreHorizontal,
-  Palette,
-  Pencil,
-  Search,
-  Trash2,
-  X,
-} from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { format, useLocale } from '@/lib/use-locale';
-import { cn } from '@/lib/utils';
-import { FolderIconChip, SLIDE_DND_MIME } from '../components/sidebar/folder-item';
-import { DRAFT_ID } from '../components/sidebar/sidebar';
-import { SlideCanvas } from '../components/slide-canvas';
-import { readStorageWithLegacy, writeStorageWithLegacy } from '../lib/compat-storage';
-import { SlidePageProvider } from '../lib/page-context';
-import type { Folder, FolderIcon, SlideModule } from '../lib/sdk';
-import { loadSlide, slideCreatedAt } from '../lib/slides';
-import type { HomeOutletContext } from './home-shell';
+  type ManagementSelection,
+  ManagementSidebar,
+} from '../components/slide-management/ManagementSidebar';
+import { SearchSortToolbar } from '../components/slide-management/SearchSortToolbar';
+import { SlideGrid } from '../components/slide-management/SlideGrid';
+import { SlideInspector } from '../components/slide-management/SlideInspector';
+import { SlideList } from '../components/slide-management/SlideList';
+import { type SlideSortMode, searchSlides, sortSlides, useManagement } from '../lib/management';
+import type { Deck, SlideMetadataPatch, SlideRecord } from '../lib/sdk';
 
-type SortKey = 'created-desc' | 'created-asc' | 'title-asc' | 'title-desc';
+type ViewMode = 'grid' | 'list';
 
-const SORT_KEYS: readonly SortKey[] = ['created-desc', 'created-asc', 'title-asc', 'title-desc'];
-
-const DEFAULT_SORT: SortKey = 'created-desc';
-const SORT_STORAGE_KEY = 'awesome-slide:home-sort';
-const LEGACY_SORT_STORAGE_KEY = 'open-slide:home-sort';
-
-function readSortPref(): SortKey {
-  if (typeof window === 'undefined') return DEFAULT_SORT;
-  try {
-    const raw = readStorageWithLegacy(
-      window.localStorage,
-      SORT_STORAGE_KEY,
-      LEGACY_SORT_STORAGE_KEY,
-    );
-    if (raw && (SORT_KEYS as readonly string[]).includes(raw)) return raw as SortKey;
-  } catch {}
-  return DEFAULT_SORT;
-}
-
-function useSortPref(): [SortKey, (next: SortKey) => void] {
-  const [sortKey, setSortKey] = useState<SortKey>(readSortPref);
-  const update = (next: SortKey) => {
-    setSortKey(next);
-    try {
-      writeStorageWithLegacy(window.localStorage, SORT_STORAGE_KEY, LEGACY_SORT_STORAGE_KEY, next);
-    } catch {}
-  };
-  return [sortKey, update];
-}
-
-const TITLE_COLLATOR = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+const LOADING_KEYS = ['preview-a', 'preview-b', 'preview-c', 'preview-d', 'preview-e', 'preview-f'];
+const DEFAULT_FOLDER_ICON = { type: 'color', value: '#2f6fed' } as const;
 
 export function Home() {
-  const {
-    manifest,
-    loading,
-    draftSlides,
-    slidesByFolder,
-    selectedId,
-    reportTitle,
-    titleMap,
-    assign,
-    renameSlide,
-    duplicateSlide,
-    deleteSlide,
-  } = useOutletContext<HomeOutletContext>();
-  const t = useLocale();
-
-  const selectedFolder =
-    selectedId === DRAFT_ID ? null : (manifest.folders.find((f) => f.id === selectedId) ?? null);
-  const visibleSlides = selectedId === DRAFT_ID ? draftSlides : (slidesByFolder[selectedId] ?? []);
-
-  const title = selectedFolder?.name ?? t.home.draft;
-  const headerIcon = selectedFolder?.icon ?? { type: 'emoji' as const, value: '📝' };
-  const isDraft = selectedId === DRAFT_ID;
-
+  const management = useManagement();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [sortMode, setSortMode] = useState<SlideSortMode>('manual');
   const [query, setQuery] = useState('');
-  const [sortKey, setSortKey] = useSortPref();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
+  const [duplicateSlideId, setDuplicateSlideId] = useState<string | null>(null);
+  const [deleteSlideId, setDeleteSlideId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const trimmedQuery = query.trim().toLowerCase();
-  const filteredSlides = useMemo(() => {
-    if (!trimmedQuery) return visibleSlides;
-    return visibleSlides.filter((id) => {
-      if (id.toLowerCase().includes(trimmedQuery)) return true;
-      const tl = titleMap[id]?.toLowerCase();
-      return tl ? tl.includes(trimmedQuery) : false;
-    });
-  }, [visibleSlides, titleMap, trimmedQuery]);
-  const sortedSlides = useMemo(() => {
-    const list = filteredSlides.slice();
-    const titleOf = (id: string) => titleMap[id] ?? id;
-    switch (sortKey) {
-      case 'title-asc':
-        list.sort((a, b) => TITLE_COLLATOR.compare(titleOf(a), titleOf(b)));
-        break;
-      case 'title-desc':
-        list.sort((a, b) => TITLE_COLLATOR.compare(titleOf(b), titleOf(a)));
-        break;
-      case 'created-asc':
-        list.sort((a, b) => (slideCreatedAt[a] ?? 0) - (slideCreatedAt[b] ?? 0));
-        break;
-      default:
-        list.sort((a, b) => (slideCreatedAt[b] ?? 0) - (slideCreatedAt[a] ?? 0));
-    }
-    return list;
-  }, [filteredSlides, sortKey, titleMap]);
-  const isSearching = trimmedQuery.length > 0;
-
-  return (
-    <>
-      <header className="mb-8 md:mb-12">
-        <div className="flex flex-wrap items-center gap-3">
-          <FolderIconChip icon={headerIcon} className="size-7 text-2xl" />
-          <h1 className="font-heading text-[32px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[44px]">
-            {title}
-          </h1>
-          {!loading && (
-            <span className="folio ml-1 self-end pb-2">
-              {(isSearching ? filteredSlides.length : visibleSlides.length)
-                .toString()
-                .padStart(2, '0')}
-              {isSearching && (
-                <span className="opacity-40">
-                  /{visibleSlides.length.toString().padStart(2, '0')}
-                </span>
-              )}
-            </span>
-          )}
-          <div className="ml-auto flex w-full flex-wrap items-center gap-2 md:w-auto md:flex-nowrap">
-            <SortControl value={sortKey} onChange={setSortKey} />
-            <SearchInput value={query} onChange={setQuery} />
-          </div>
-        </div>
-      </header>
-
-      {loading ? (
-        <HomeLoading />
-      ) : visibleSlides.length === 0 ? (
-        <EmptyState isDraft={isDraft} folderName={selectedFolder?.name} />
-      ) : filteredSlides.length === 0 ? (
-        <NoResultsState query={query} onClear={() => setQuery('')} />
-      ) : (
-        <ul className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-6 gap-y-9 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
-          {sortedSlides.map((id) => (
-            <li key={id}>
-              <SlideCard
-                id={id}
-                folders={manifest.folders}
-                currentFolderId={manifest.assignments[id] ?? null}
-                onRename={(name) => renameSlide(id, name)}
-                onDuplicate={async () => {
-                  const slideName = titleMap[id] ?? id;
-                  try {
-                    const newSlideId = await duplicateSlide(id);
-                    toast.success(
-                      format(t.home.toastSlideDuplicated, {
-                        slide: slideName,
-                        newSlide: newSlideId,
-                      }),
-                    );
-                  } catch {
-                    toast.error(t.home.toastSlideDuplicateFailed);
-                  }
-                }}
-                onMove={(folderId) => assign(id, folderId)}
-                onDelete={() => deleteSlide(id)}
-                onTitleResolved={reportTitle}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
+  const selection = useMemo(
+    () => selectionFromParams(searchParams, management.folders, management.decks),
+    [searchParams, management.folders, management.decks],
   );
-}
 
-function SearchInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const t = useLocale();
-  return (
-    <div className="relative w-full md:w-[240px]">
-      <Search
-        className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
-        aria-hidden
-      />
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={t.home.searchPlaceholder}
-        className="h-9 w-full rounded-full border border-border bg-background pl-8 pr-7 text-[12.5px] outline-none placeholder:text-muted-foreground/70 focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/30"
-      />
-      {value && (
-        <button
-          type="button"
-          onClick={() => onChange('')}
-          aria-label={t.home.clearSearch}
-          className="absolute right-1.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <X className="size-3" />
-        </button>
-      )}
-    </div>
+  const collectionSlides = useMemo(
+    () =>
+      slidesForSelection(management.slides, management.decks, management.manualOrder, selection),
+    [management.slides, management.decks, management.manualOrder, selection],
   );
-}
 
-function SortControl({ value, onChange }: { value: SortKey; onChange: (next: SortKey) => void }) {
-  const t = useLocale();
-  const labels: Record<SortKey, string> = {
-    'created-desc': t.home.sortByCreatedDesc,
-    'created-asc': t.home.sortByCreatedAsc,
-    'title-asc': t.home.sortByTitleAsc,
-    'title-desc': t.home.sortByTitleDesc,
-  };
-  const FieldIcon = ({ k, className }: { k: SortKey; className?: string }) =>
-    k === 'title-asc' || k === 'title-desc' ? (
-      <ArrowDownAZ className={className} aria-hidden />
-    ) : (
-      <Clock className={className} aria-hidden />
-    );
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          aria-label={`${t.home.sortLabel}: ${labels[value]}`}
-          className="flex h-9 items-center gap-1.5 rounded-full border border-border bg-background pl-3 pr-2 text-[12.5px] font-medium text-foreground outline-none hover:bg-muted focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/30"
-        >
-          <FieldIcon k={value} className="size-3.5 text-muted-foreground" />
-          <span>{labels[value]}</span>
-          <ChevronDown className="size-3 text-muted-foreground" aria-hidden />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-[180px]">
-        {SORT_KEYS.map((key) => {
-          const active = value === key;
-          return (
-            <DropdownMenuItem
-              key={key}
-              onSelect={() => onChange(key)}
-              className={cn(active && 'bg-muted text-foreground')}
-            >
-              <FieldIcon k={key} className="size-3.5 text-muted-foreground" />
-              <span>{labels[key]}</span>
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+  const filteredSlides = useMemo(
+    () => searchSlides(collectionSlides, query, management.folders, management.decks),
+    [collectionSlides, query, management.folders, management.decks],
   );
-}
 
-function HomeLoading() {
-  const t = useLocale();
-  return (
-    <div className="grid place-items-center px-8 py-24 text-muted-foreground">
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative h-px w-56 overflow-hidden bg-hairline">
-          <span
-            aria-hidden
-            className="line-loader-bar absolute inset-y-[-0.5px] left-0 w-1/4 bg-foreground"
-          />
-        </div>
-        <span className="eyebrow text-[11.5px]">{t.slide.loadingEyebrow}</span>
-      </div>
-    </div>
+  const visibleSlides = useMemo(
+    () => sortSlides(filteredSlides, sortMode),
+    [filteredSlides, sortMode],
   );
-}
 
-function NoResultsState({ query, onClear }: { query: string; onClear: () => void }) {
-  const t = useLocale();
-  return (
-    <div className="rounded-[24px] border border-border bg-block-cream px-8 py-20">
-      <div className="mx-auto flex max-w-md flex-col items-center text-center">
-        <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
-          <Search className="size-5" />
-        </div>
-        <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">
-          {t.home.noMatches}
-        </p>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-          {t.home.nothingMatchesPrefix}
-          <span className="font-medium text-foreground">&ldquo;{query}&rdquo;</span>
-          {t.home.nothingMatchesSuffix}
-        </p>
-        <Button variant="ghost" size="sm" className="mt-4" onClick={onClear}>
-          {t.home.clearSearch}
-        </Button>
-      </div>
-    </div>
+  const title = collectionTitle(selection, management.decks, management.folders);
+  const selectedSlide = management.slides.find((slide) => slide.id === selectedSlideId) ?? null;
+  const duplicateTarget = management.slides.find((slide) => slide.id === duplicateSlideId) ?? null;
+  const deleteTarget = management.slides.find((slide) => slide.id === deleteSlideId) ?? null;
+  const canMutate = management.mode === 'editable';
+
+  const selectCollection = useCallback(
+    (next: ManagementSelection) => {
+      setSearchParams(paramsForSelection(next), { replace: true });
+      setSidebarOpen(false);
+    },
+    [setSearchParams],
   );
-}
 
-function EmptyState({ isDraft, folderName }: { isDraft: boolean; folderName?: string }) {
-  const t = useLocale();
-  const folderEmptyTitle = t.home.folderEmptyTitle.replace(
-    '{name}',
-    folderName ?? t.home.folderEmptyTitle,
+  const patchCollection = useCallback(
+    async (slideId: string, patch: SlideMetadataPatch) => {
+      await management.patchMetadata(slideId, patch);
+    },
+    [management],
   );
-  return (
-    <div className="rounded-[24px] border border-border bg-block-lime px-8 py-20">
-      <div className="mx-auto flex max-w-md flex-col items-center text-center">
-        <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
-          <FolderPlus className="size-5" />
-        </div>
-        {isDraft ? (
-          <>
-            <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">
-              {t.home.noSlidesYet}
-            </p>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-              {t.home.createSlideHintPrefix}
-              <code className="rounded-[4px] bg-muted px-1.5 py-0.5 font-mono text-[11.5px] text-foreground">
-                /create-slide
-              </code>
-              {t.home.createSlideHintSuffix}
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="mt-4 font-heading text-[15px] font-semibold tracking-tight">
-              {folderEmptyTitle}
-            </p>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-              {t.home.folderEmptyHint}
-            </p>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
 
-function createDragChip(title: string): HTMLElement | null {
-  if (typeof document === 'undefined') return null;
-  const chip = document.createElement('div');
-  chip.style.cssText = [
-    'position: fixed',
-    'top: -9999px',
-    'left: -9999px',
-    'display: inline-flex',
-    'align-items: center',
-    'gap: 8px',
-    'padding: 6px 10px 6px 6px',
-    'border-radius: 6px',
-    'background: var(--card)',
-    'color: var(--foreground)',
-    'border: 1px solid var(--border)',
-    'box-shadow: 0 12px 32px -8px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.08)',
-    'font: 500 12.5px/1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
-    'white-space: nowrap',
-    'pointer-events: none',
-    'z-index: 9999',
-  ].join(';');
-
-  const thumb = document.createElement('span');
-  thumb.style.cssText = [
-    'display: inline-block',
-    'width: 30px',
-    'height: 18px',
-    'border-radius: 3px',
-    'background: var(--muted)',
-    'border: 1px solid var(--border)',
-    'flex: 0 0 auto',
-  ].join(';');
-
-  const label = document.createElement('span');
-  label.textContent = title;
-  label.style.cssText = 'overflow: hidden; text-overflow: ellipsis; max-width: 220px;';
-
-  chip.appendChild(thumb);
-  chip.appendChild(label);
-  document.body.appendChild(chip);
-  return chip;
-}
-
-type DialogKind = null | 'rename' | 'move' | 'delete';
-
-function SlideCard({
-  id,
-  folders,
-  currentFolderId,
-  onRename,
-  onDuplicate,
-  onMove,
-  onDelete,
-  onTitleResolved,
-}: {
-  id: string;
-  folders: Folder[];
-  currentFolderId: string | null;
-  onRename: (name: string) => Promise<void> | void;
-  onDuplicate: () => Promise<void> | void;
-  onMove: (folderId: string | null) => Promise<void> | void;
-  onDelete: () => Promise<void> | void;
-  onTitleResolved?: (id: string, title: string) => void;
-}) {
-  const [slide, setSlide] = useState<SlideModule | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const [dialog, setDialog] = useState<DialogKind>(null);
-  const tCard = useLocale();
-
-  useEffect(() => {
-    let cancelled = false;
-    loadSlide(id)
-      .then((mod) => {
-        if (!cancelled) setSlide(mod);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
-
-  const FirstPage = slide?.default[0];
-  const displayTitle = slide?.meta?.title ?? id;
-
-  useEffect(() => {
-    if (slide && onTitleResolved) onTitleResolved(id, displayTitle);
-  }, [id, slide, displayTitle, onTitleResolved]);
-
-  return (
-    <>
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: drag source wraps an interactive Link */}
-      <div
-        draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData(SLIDE_DND_MIME, id);
-          e.dataTransfer.effectAllowed = 'move';
-          const chip = createDragChip(displayTitle);
-          if (chip) {
-            e.dataTransfer.setDragImage(chip, 14, 14);
-            setTimeout(() => chip.remove(), 0);
-          }
-          setDragging(true);
-        }}
-        onDragEnd={() => setDragging(false)}
-        className={cn('group relative motion-safe:transition-opacity', dragging && 'opacity-40')}
-      >
-        <Link
-          to={`/s/${id}`}
-          className="block rounded-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-        >
-          {/* Slide thumb — tight border, grey baseboard, no shadcn rounded-xl */}
-          <div className="relative aspect-video overflow-hidden rounded-[8px] border border-hairline bg-card shadow-edge ring-1 ring-foreground/[0.04] group-hover:shadow-floating group-hover:ring-foreground/20 motion-safe:transition-[box-shadow,--tw-ring-color] motion-safe:duration-200">
-            {FirstPage ? (
-              <div className="h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.03]">
-                <SlideCanvas flat freezeMotion design={slide?.design}>
-                  <SlidePageProvider index={0} total={slide?.default.length ?? 1}>
-                    <FirstPage />
-                  </SlidePageProvider>
-                </SlideCanvas>
-              </div>
-            ) : (
-              <div className="grid h-full w-full place-items-center text-[10px] tracking-[0.16em] uppercase text-muted-foreground/60">
-                {tCard.common.loading}
-              </div>
-            )}
-          </div>
-        </Link>
-        <div className="mt-3 flex items-center gap-2">
-          <Link to={`/s/${id}`} className="min-w-0 flex-1 focus-visible:outline-none">
-            <h3 className="min-w-0 truncate font-heading text-[14px] font-medium tracking-tight">
-              {displayTitle}
-            </h3>
-          </Link>
-          {slide?.meta?.theme && (
-            <Link
-              to={`/themes/${encodeURIComponent(slide.meta.theme)}`}
-              className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-            >
-              <Palette className="size-3" aria-hidden />
-              <span className="max-w-[120px] truncate">{slide.meta.theme}</span>
-            </Link>
-          )}
-        </div>
-
-        {import.meta.env.DEV && (
-          <div className="absolute right-2 top-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }}
-                  className="flex size-7 items-center justify-center rounded-[5px] bg-card/90 text-foreground shadow-edge ring-1 ring-border opacity-0 backdrop-blur hover:bg-card group-hover:opacity-100 aria-expanded:opacity-100 motion-safe:transition-opacity"
-                  aria-label={tCard.home.slideActions}
-                >
-                  <MoreHorizontal className="size-3.5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[160px]">
-                <DropdownMenuItem onSelect={() => setDialog('rename')}>
-                  <Pencil />
-                  {tCard.common.rename}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onDuplicate()}>
-                  <Copy />
-                  {tCard.home.duplicate}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setDialog('move')}>
-                  <FolderInput />
-                  {tCard.home.moveToFolder}
-                </DropdownMenuItem>
-                <DropdownMenuItem variant="destructive" onSelect={() => setDialog('delete')}>
-                  <Trash2 />
-                  {tCard.common.delete}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
-      </div>
-
-      <RenameDialog
-        open={dialog === 'rename'}
-        initialName={displayTitle}
-        onOpenChange={(v) => setDialog(v ? 'rename' : null)}
-        onSubmit={async (name) => {
-          await onRename(name);
-          setDialog(null);
-        }}
-      />
-      <MoveDialog
-        open={dialog === 'move'}
-        slideName={displayTitle}
-        folders={folders}
-        currentFolderId={currentFolderId}
-        onOpenChange={(v) => setDialog(v ? 'move' : null)}
-        onSubmit={async (folderId) => {
-          await onMove(folderId);
-          setDialog(null);
-        }}
-      />
-      <DeleteDialog
-        open={dialog === 'delete'}
-        slideName={displayTitle}
-        onOpenChange={(v) => setDialog(v ? 'delete' : null)}
-        onConfirm={async () => {
-          await onDelete();
-          setDialog(null);
-        }}
-      />
-    </>
-  );
-}
-
-function RenameDialog({
-  open,
-  initialName,
-  onOpenChange,
-  onSubmit,
-}: {
-  open: boolean;
-  initialName: string;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (name: string) => Promise<void> | void;
-}) {
-  const [value, setValue] = useState(initialName);
-  const [submitting, setSubmitting] = useState(false);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const t = useLocale();
-
-  useEffect(() => {
-    if (open) {
-      setValue(initialName);
-      setSubmitting(false);
-      queueMicrotask(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      });
-    }
-  }, [open, initialName]);
-
-  const submit = async () => {
-    const trimmed = value.trim();
-    if (!trimmed || trimmed === initialName) {
-      onOpenChange(false);
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      if (selectedSlideId) setSelectedSlideId(null);
+      if (sidebarOpen) setSidebarOpen(false);
       return;
     }
-    setSubmitting(true);
-    try {
-      await onSubmit(trimmed);
-    } finally {
-      setSubmitting(false);
+
+    const target = event.target as HTMLElement;
+    const item = target.closest<HTMLElement>('[data-slide-item]');
+    if (!item) return;
+    if (target.closest('input, textarea, select, a, summary')) return;
+
+    const items = Array.from(
+      event.currentTarget.querySelectorAll<HTMLElement>('[data-slide-item]'),
+    );
+    const currentIndex = items.indexOf(item);
+    if (currentIndex === -1) return;
+
+    if (
+      event.key === 'ArrowRight' ||
+      event.key === 'ArrowDown' ||
+      event.key === 'ArrowLeft' ||
+      event.key === 'ArrowUp'
+    ) {
+      event.preventDefault();
+      const direction = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1;
+      const next = items[(currentIndex + direction + items.length) % items.length];
+      next?.focus();
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      const slideId = item.dataset.slideId;
+      if (slideId) {
+        event.preventDefault();
+        navigate(`/s/${slideId}`);
+      }
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <span className="eyebrow">{t.home.renameDialogEyebrow}</span>
-          <DialogTitle>{t.home.renameDialogTitle}</DialogTitle>
-          <DialogDescription>{t.home.renameDialogDescription}</DialogDescription>
-        </DialogHeader>
-        <input
-          ref={inputRef}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              submit();
+    <section
+      className="flex min-h-0 flex-1 overflow-hidden bg-canvas"
+      onKeyDown={handleKeyDown}
+      aria-label="Slide management"
+    >
+      <div className="hidden min-h-0 shrink-0 md:block">
+        <ManagementSidebar
+          slides={management.slides}
+          folders={management.folders}
+          decks={management.decks}
+          selection={selection}
+          canManage={canMutate}
+          onSelect={selectCollection}
+          onCreateFolder={async (name) => {
+            const folder = await management.createFolder({ name, icon: DEFAULT_FOLDER_ICON });
+            selectCollection({ type: 'folder', id: folder.id });
+          }}
+          onRenameFolder={async (folderId, name) => {
+            await management.updateFolder(folderId, { name });
+          }}
+          onDeleteFolder={async (folderId) => {
+            await management.deleteFolder(folderId);
+            if (selection.type === 'folder' && selection.id === folderId) {
+              selectCollection({ type: 'draft' });
             }
           }}
-          maxLength={80}
-          placeholder={t.home.slideNamePlaceholder}
-          className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-[13px] outline-none focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
+          onCreateDeck={async (name) => {
+            const deck = await management.createDeck({ name });
+            selectCollection({ type: 'deck', id: deck.id });
+          }}
+          onRenameDeck={async (deckId, name) => {
+            await management.updateDeck(deckId, { name });
+          }}
+          onDeleteDeck={async (deckId) => {
+            await management.deleteDeck(deckId);
+            if (selection.type === 'deck' && selection.id === deckId) {
+              selectCollection({ type: 'draft' });
+            }
+          }}
         />
-        <DialogFooter>
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            {t.common.cancel}
-          </Button>
-          <Button size="sm" disabled={submitting} onClick={submit}>
-            {t.common.save}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+      </div>
 
-function MoveDialog({
-  open,
-  slideName,
-  folders,
-  currentFolderId,
-  onOpenChange,
-  onSubmit,
-}: {
-  open: boolean;
-  slideName: string;
-  folders: Folder[];
-  currentFolderId: string | null;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (folderId: string | null) => Promise<void> | void;
-}) {
-  const [selected, setSelected] = useState<string | null>(currentFolderId);
-  const [submitting, setSubmitting] = useState(false);
-  const t = useLocale();
-
-  useEffect(() => {
-    if (open) {
-      setSelected(currentFolderId);
-      setSubmitting(false);
-    }
-  }, [open, currentFolderId]);
-
-  const submit = async () => {
-    if (selected === currentFolderId) {
-      onOpenChange(false);
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await onSubmit(selected);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <span className="eyebrow">{t.home.moveDialogEyebrow}</span>
-          <DialogTitle>{t.home.moveDialogTitle}</DialogTitle>
-          <DialogDescription>
-            {t.home.moveDialogDescriptionPrefix}
-            <span className="font-medium text-foreground">{slideName}</span>
-            {t.home.moveDialogDescriptionSuffix}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="max-h-[320px] overflow-y-auto rounded-[6px] border border-border bg-background">
-          <FolderOption
-            icon={{ type: 'emoji', value: '📝' }}
-            label={t.home.draft}
-            active={selected === null}
-            onClick={() => setSelected(null)}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-background/70 backdrop-blur-sm"
+            aria-label="Close collections"
+            onClick={() => setSidebarOpen(false)}
           />
-          {folders.map((f) => (
-            <FolderOption
-              key={f.id}
-              icon={f.icon}
-              label={f.name}
-              active={selected === f.id}
-              onClick={() => setSelected(f.id)}
+          <div className="absolute inset-y-0 left-0 w-[min(20rem,92vw)] bg-background shadow-floating">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="absolute right-3 top-3 z-10 inline-flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30"
+              aria-label="Close collections"
+            >
+              <X className="size-4" aria-hidden />
+            </button>
+            <ManagementSidebar
+              slides={management.slides}
+              folders={management.folders}
+              decks={management.decks}
+              selection={selection}
+              canManage={canMutate}
+              onSelect={selectCollection}
+              onCreateFolder={async (name) => {
+                const folder = await management.createFolder({ name, icon: DEFAULT_FOLDER_ICON });
+                selectCollection({ type: 'folder', id: folder.id });
+              }}
+              onRenameFolder={async (folderId, name) => {
+                await management.updateFolder(folderId, { name });
+              }}
+              onDeleteFolder={async (folderId) => {
+                await management.deleteFolder(folderId);
+                if (selection.type === 'folder' && selection.id === folderId) {
+                  selectCollection({ type: 'draft' });
+                }
+              }}
+              onCreateDeck={async (name) => {
+                const deck = await management.createDeck({ name });
+                selectCollection({ type: 'deck', id: deck.id });
+              }}
+              onRenameDeck={async (deckId, name) => {
+                await management.updateDeck(deckId, { name });
+              }}
+              onDeleteDeck={async (deckId) => {
+                await management.deleteDeck(deckId);
+                if (selection.type === 'deck' && selection.id === deckId) {
+                  selectCollection({ type: 'draft' });
+                }
+              }}
             />
-          ))}
+          </div>
         </div>
-        <DialogFooter>
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            {t.common.cancel}
-          </Button>
-          <Button size="sm" disabled={submitting || selected === currentFolderId} onClick={submit}>
-            {t.common.move}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      )}
+
+      <main className="flex min-w-0 flex-1 flex-col">
+        <header className="grid gap-4 border-b border-hairline bg-canvas px-4 py-4 md:px-7">
+          <div className="flex min-w-0 items-end gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate font-heading text-[26px] font-semibold leading-none tracking-normal md:text-[28px]">
+                {title}
+              </h1>
+              <p className="mt-1 text-[12.5px] text-muted-foreground">
+                {visibleSlides.length.toString().padStart(2, '0')} of{' '}
+                {collectionSlides.length.toString().padStart(2, '0')} slides
+              </p>
+            </div>
+          </div>
+          <SearchSortToolbar
+            query={query}
+            sortMode={sortMode}
+            viewMode={viewMode}
+            canCreate={management.capabilities.create}
+            refreshing={management.loading}
+            onQueryChange={setQuery}
+            onSortModeChange={setSortMode}
+            onViewModeChange={setViewMode}
+            onCreate={() => setCreateOpen(true)}
+            onRefresh={() => {
+              void management.refresh();
+            }}
+            onOpenSidebar={() => setSidebarOpen(true)}
+          />
+          {management.mode === 'readonly' && <ReadOnlyBanner />}
+          {management.mutation.error && (
+            <ActionError message={management.mutation.error} mode={management.mode} />
+          )}
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-7 md:py-7">
+          {management.error ? (
+            <StateBlock
+              title="Slides failed to load"
+              detail={`${management.error}. Check the local dev server and refresh the library.`}
+            />
+          ) : management.loading ? (
+            <LoadingGrid />
+          ) : visibleSlides.length === 0 ? (
+            <StateBlock
+              {...emptyState(query, management.slides.length, collectionSlides.length, selection)}
+            />
+          ) : viewMode === 'grid' ? (
+            <SlideGrid
+              slides={visibleSlides}
+              folders={management.folders}
+              decks={management.decks}
+              canMutate={canMutate}
+              onOpen={(slideId) => navigate(`/s/${slideId}`)}
+              onSelect={setSelectedSlideId}
+              onDuplicate={(slideId) => {
+                if (!canMutate) return;
+                setActionError(null);
+                setDuplicateSlideId(slideId);
+              }}
+              onDelete={(slideId) => {
+                if (!canMutate) return;
+                setActionError(null);
+                setDeleteSlideId(slideId);
+              }}
+              onPatchCollection={patchCollection}
+            />
+          ) : (
+            <SlideList
+              slides={visibleSlides}
+              folders={management.folders}
+              decks={management.decks}
+              canMutate={canMutate}
+              onOpen={(slideId) => navigate(`/s/${slideId}`)}
+              onSelect={setSelectedSlideId}
+              onDuplicate={(slideId) => {
+                if (!canMutate) return;
+                setActionError(null);
+                setDuplicateSlideId(slideId);
+              }}
+              onDelete={(slideId) => {
+                if (!canMutate) return;
+                setActionError(null);
+                setDeleteSlideId(slideId);
+              }}
+              onPatchCollection={patchCollection}
+            />
+          )}
+        </div>
+      </main>
+      <div className="hidden min-h-0 shrink-0 xl:block">
+        <SlideInspector
+          slide={selectedSlide}
+          folders={management.folders}
+          decks={management.decks}
+          mode={management.mode}
+          onClose={() => setSelectedSlideId(null)}
+          onSave={async (slideId, patch) => {
+            await management.patchMetadata(slideId, patch);
+            setSelectedSlideId(slideId);
+          }}
+        />
+      </div>
+      {selectedSlideId && selectedSlide && (
+        <div className="fixed inset-0 z-50 bg-background xl:hidden">
+          <SlideInspector
+            slide={selectedSlide}
+            folders={management.folders}
+            decks={management.decks}
+            mode={management.mode}
+            onClose={() => setSelectedSlideId(null)}
+            onSave={async (slideId, patch) => {
+              await management.patchMetadata(slideId, patch);
+              setSelectedSlideId(slideId);
+            }}
+          />
+        </div>
+      )}
+      <CreateSlideDialog
+        open={createOpen}
+        folders={management.folders}
+        decks={management.decks}
+        onOpenChange={setCreateOpen}
+        onCreate={management.createSlide}
+        onCreated={(response) => {
+          if (response.next.type === 'agent-chat') {
+            navigate(`/s/${response.next.seedSlideId}`);
+          } else {
+            navigate(`/s/${response.next.slideId}`);
+          }
+        }}
+      />
+      <DuplicateSlideDialog
+        open={duplicateSlideId !== null}
+        slide={duplicateTarget}
+        pending={management.mutation.pending.duplicate ?? false}
+        error={actionError}
+        onOpenChange={(open) => {
+          if (!open) setDuplicateSlideId(null);
+        }}
+        onConfirm={async (request) => {
+          if (!duplicateTarget) return;
+          setActionError(null);
+          try {
+            const response = await management.duplicateSlide(duplicateTarget.id, request);
+            setDuplicateSlideId(null);
+            setSelectedSlideId(response.slideId);
+          } catch (err) {
+            setActionError(err instanceof Error ? err.message : String(err));
+          }
+        }}
+      />
+      <DeleteConfirmDialog
+        open={deleteSlideId !== null}
+        slide={deleteTarget}
+        pending={management.mutation.pending.delete ?? false}
+        error={actionError}
+        onOpenChange={(open) => {
+          if (!open) setDeleteSlideId(null);
+        }}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          setActionError(null);
+          try {
+            await management.deleteSlide(deleteTarget.id);
+            if (selectedSlideId === deleteTarget.id) setSelectedSlideId(null);
+            setDeleteSlideId(null);
+          } catch (err) {
+            setActionError(err instanceof Error ? err.message : String(err));
+          }
+        }}
+      />
+    </section>
   );
 }
 
-function FolderOption({
-  icon,
-  label,
-  active,
-  onClick,
-}: {
-  icon: FolderIcon;
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  const tOpt = useLocale();
+function ReadOnlyBanner() {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'flex w-full items-center gap-2 border-b border-hairline px-3 py-2 text-left text-[13px] transition-colors last:border-b-0',
-        active ? 'bg-muted text-foreground' : 'hover:bg-muted/60',
-      )}
-    >
-      <FolderIconChip icon={icon} />
-      <span className="truncate">{label}</span>
-      {active && (
-        <span className="ml-auto inline-flex items-center gap-1 text-[10.5px] text-brand">
-          <span className="inline-block size-1 rounded-full bg-brand" aria-hidden />
-          {tOpt.common.selected}
-        </span>
-      )}
-    </button>
+    <div className="rounded-[8px] border border-hairline bg-background px-3 py-2 text-[12.5px] text-muted-foreground">
+      This is a read-only slide snapshot. Run the local Awesome Slide dev server to create, move,
+      duplicate, delete, or edit slide metadata.
+    </div>
   );
 }
 
-function DeleteDialog({
-  open,
-  slideName,
-  onOpenChange,
-  onConfirm,
-}: {
-  open: boolean;
-  slideName: string;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => Promise<void> | void;
-}) {
-  const [submitting, setSubmitting] = useState(false);
-  const t = useLocale();
+function ActionError({ message, mode }: { message: string; mode: 'editable' | 'readonly' }) {
+  return (
+    <div className="rounded-[8px] border border-destructive/20 bg-destructive/5 px-3 py-2 text-[12.5px] text-destructive">
+      {message}
+      {mode === 'readonly' ? ' Editing is available only in the local dev server.' : ''}
+    </div>
+  );
+}
 
-  useEffect(() => {
-    if (open) setSubmitting(false);
-  }, [open]);
+function StateBlock({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="grid min-h-[280px] place-items-center rounded-[8px] border border-hairline bg-muted/50 px-6 text-center">
+      <div className="max-w-sm">
+        <p className="font-heading text-[16px] font-semibold tracking-normal">{title}</p>
+        <p className="mt-2 text-[13px] text-muted-foreground">{detail}</p>
+      </div>
+    </div>
+  );
+}
 
-  const confirm = async () => {
-    setSubmitting(true);
-    try {
-      await onConfirm();
-    } finally {
-      setSubmitting(false);
-    }
+function LoadingGrid() {
+  return (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
+      {LOADING_KEYS.map((key) => (
+        <div key={key} className="grid gap-3">
+          <div className="aspect-video animate-pulse rounded-[8px] bg-muted" />
+          <div className="h-4 w-2/3 animate-pulse rounded-full bg-muted" />
+          <div className="h-3 w-1/3 animate-pulse rounded-full bg-muted" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function emptyState(
+  query: string,
+  totalSlides: number,
+  collectionCount: number,
+  selection: ManagementSelection,
+): { title: string; detail: string } {
+  if (query.trim()) {
+    return {
+      title: 'No search results',
+      detail: 'Try a title, slide ID, tag, folder name, or deck name.',
+    };
+  }
+  if (totalSlides === 0) {
+    return {
+      title: 'No slides yet',
+      detail: 'Create a blank slide, use a theme template, or seed one from a prompt.',
+    };
+  }
+  if (collectionCount === 0 && selection.type === 'deck') {
+    return {
+      title: 'No deck assignment',
+      detail: 'Use the item deck toggles or inspector to add slides to this deck.',
+    };
+  }
+  if (collectionCount === 0 && selection.type === 'folder') {
+    return {
+      title: 'No folder assignment',
+      detail: 'Move slides into this folder from an item row or the inspector.',
+    };
+  }
+  return {
+    title: 'No slides in this collection',
+    detail: 'Move slides here from another collection or create a new slide.',
   };
+}
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <span className="eyebrow text-destructive/80">{t.home.deleteDialogEyebrow}</span>
-          <DialogTitle>{t.home.deleteDialogTitle}</DialogTitle>
-          <DialogDescription>
-            {t.home.deleteDialogDescriptionPrefix}
-            <span className="font-medium text-foreground">{slideName}</span>
-            {t.home.deleteDialogDescriptionMid}
-            {t.home.deleteDialogDescriptionSuffix}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            {t.common.cancel}
-          </Button>
-          <Button variant="destructive" size="sm" disabled={submitting} onClick={confirm}>
-            {t.common.delete}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+function selectionFromParams(
+  searchParams: URLSearchParams,
+  folders: { id: string }[],
+  decks: Deck[],
+): ManagementSelection {
+  const deckId = searchParams.get('deck');
+  if (deckId && decks.some((deck) => deck.id === deckId)) return { type: 'deck', id: deckId };
+  const folderId = searchParams.get('f');
+  if (folderId && folders.some((folder) => folder.id === folderId)) {
+    return { type: 'folder', id: folderId };
+  }
+  return { type: 'draft' };
+}
+
+function paramsForSelection(selection: ManagementSelection): URLSearchParams {
+  const params = new URLSearchParams();
+  if (selection.type === 'folder') params.set('f', selection.id);
+  if (selection.type === 'deck') params.set('deck', selection.id);
+  return params;
+}
+
+function collectionTitle(
+  selection: ManagementSelection,
+  decks: Deck[],
+  folders: { id: string; name: string }[],
+): string {
+  if (selection.type === 'folder') {
+    return folders.find((folder) => folder.id === selection.id)?.name ?? 'Folder';
+  }
+  if (selection.type === 'deck') {
+    return decks.find((deck) => deck.id === selection.id)?.name ?? 'Deck';
+  }
+  return 'Drafts';
+}
+
+function slidesForSelection(
+  slides: SlideRecord[],
+  decks: Deck[],
+  manualOrder: Record<string, string[]>,
+  selection: ManagementSelection,
+): SlideRecord[] {
+  const byId = new Map(slides.map((slide) => [slide.id, slide]));
+  if (selection.type === 'deck') {
+    const deck = decks.find((item) => item.id === selection.id);
+    const ordered = orderByIds(deck?.slideOrder ?? [], byId);
+    const remaining = slides
+      .filter((slide) => slide.deckIds.includes(selection.id) && !ordered.includes(slide))
+      .sort(fallbackSort);
+    return [...ordered, ...remaining];
+  }
+
+  const collectionSlides =
+    selection.type === 'folder'
+      ? slides.filter((slide) => slide.folderId === selection.id)
+      : slides.filter((slide) => !slide.folderId);
+  const key = selection.type === 'folder' ? `folder:${selection.id}` : 'draft';
+  return [
+    ...orderByIds(manualOrder[key] ?? [], byId).filter((slide) => collectionSlides.includes(slide)),
+    ...collectionSlides
+      .filter((slide) => !(manualOrder[key] ?? []).includes(slide.id))
+      .sort(fallbackSort),
+  ];
+}
+
+function orderByIds(ids: string[], byId: Map<string, SlideRecord>): SlideRecord[] {
+  return ids.flatMap((id) => {
+    const slide = byId.get(id);
+    return slide ? [slide] : [];
+  });
+}
+
+function fallbackSort(a: SlideRecord, b: SlideRecord): number {
+  return (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '') || a.title.localeCompare(b.title);
 }

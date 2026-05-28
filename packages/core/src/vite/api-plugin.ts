@@ -1,4 +1,5 @@
 import type { Plugin } from 'vite';
+import { registerManagementRoutes } from '../http/management-api.ts';
 import { registerAssetRoutes } from './routes/assets.ts';
 import { registerCommentRoutes } from './routes/comments.ts';
 import { type ApiPluginOptions, makeContext } from './routes/context.ts';
@@ -26,6 +27,7 @@ export function apiPlugin(opts: ApiPluginOptions): Plugin {
       registerAssetRoutes(server, ctx);
       registerSvglRoutes(server);
       registerFolderRoutes(server, ctx);
+      registerManagementRoutes(server, ctx);
     },
   };
 }

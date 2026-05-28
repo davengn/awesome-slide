@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --c-ink: #090909;
+      --c-ink-muted: #666666;
+      --c-canvas: #ffffff;
+      --c-surface-1: #f5f5f5;
+      --c-surface-2: #ececec;
+      --c-hairline: #e5e5e5;
+      --c-accent: #0099ff;
+      --c-grad-violet: #6a4cf5;
+      --c-grad-magenta: #d44df0;
+      --c-grad-orange: #ff7a3d;
+      --c-grad-coral: #ff5577;
+      --c-success: #22c55e;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --c-ink: #ffffff;
+        --c-ink-muted: #999999;
+        --c-canvas: #090909;
+        --c-surface-1: #141414;
+        --c-surface-2: #1c1c1c;
+        --c-hairline: #262626;
+      }
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--c-canvas);
+      color: var(--c-ink);
+      font-family: 'Inter', sans-serif;
+      font-feature-settings: 'cv05', 'cv11', 'ss03';
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* NAV */
+    nav {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      border-bottom: 1px solid var(--c-hairline);
+      position: sticky;
+      top: 0;
+      background: var(--c-canvas);
+      z-index: 10;
+    }
+
+    .nav-logo {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-link {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--c-ink-muted);
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 100px;
+      transition: background .15s, color .15s;
+    }
+
+    .nav-link:hover {
+      background: var(--c-surface-1);
+      color: var(--c-ink);
+    }
+
+    .btn-primary {
+      background: var(--c-ink);
+      color: var(--c-canvas);
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: 100px;
+      padding: 10px 16px;
+      cursor: pointer;
+      letter-spacing: -0.14px;
+      transition: opacity .15s, transform .1s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn-primary:hover {
+      opacity: .85;
+    }
+
+    .btn-primary:active {
+      transform: scale(.97);
+    }
+
+    .btn-secondary {
+      background: var(--c-surface-1);
+      color: var(--c-ink);
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: 100px;
+      padding: 10px 16px;
+      cursor: pointer;
+      letter-spacing: -0.14px;
+      transition: background .15s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn-secondary:hover {
+      background: var(--c-surface-2);
+    }
+
+    /* HERO */
+    .hero {
+      padding: 96px 32px 80px;
+      text-align: center;
+    }
+
+    .hero-eyebrow {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--c-ink-muted);
+      letter-spacing: -0.13px;
+      margin-bottom: 28px;
+      background: var(--c-surface-1);
+      border-radius: 100px;
+      padding: 6px 14px;
+    }
+
+    .hero-headline {
+      font-size: clamp(52px, 8vw, 85px);
+      font-weight: 500;
+      line-height: 0.95;
+      letter-spacing: -4.25px;
+      color: var(--c-ink);
+      font-family: 'Inter', sans-serif;
+      margin-bottom: 28px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-sub {
+      font-size: 18px;
+      font-weight: 400;
+      line-height: 1.3;
+      color: var(--c-ink-muted);
+      letter-spacing: -0.18px;
+      max-width: 480px;
+      margin: 0 auto 36px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* GRID */
+    .section {
+      padding: 64px 32px;
+    }
+
+    .section-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--c-ink-muted);
+      letter-spacing: -0.13px;
+      margin-bottom: 48px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--c-surface-1);
+      border-radius: 20px;
+      padding: 28px;
+    }
+
+    .card-title {
+      font-size: 32px;
+      font-weight: 500;
+      line-height: 1.1;
+      letter-spacing: -1px;
+      margin-bottom: 10px;
+      color: var(--c-ink);
+    }
+
+    .card-body {
+      font-size: 15px;
+      color: var(--c-ink-muted);
+      line-height: 1.3;
+      letter-spacing: -0.15px;
+    }
+
+    /* SPOTLIGHT CARDS */
+    .spotlight {
+      border-radius: 30px;
+      padding: 32px;
+      color: #fff;
+    }
+
+    .spotlight.violet {
+      background: linear-gradient(135deg, #6a4cf5 0%, #9b59f7 100%);
+    }
+
+    .spotlight.magenta {
+      background: linear-gradient(135deg, #d44df0 0%, #f06292 100%);
+    }
+
+    .spotlight.orange {
+      background: linear-gradient(135deg, #ff7a3d 0%, #ffc043 100%);
+    }
+
+    .spotlight .card-title {
+      color: #fff;
+    }
+
+    .spotlight .card-body {
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    /* SECTION HEADLINE */
+    .section-headline {
+      font-size: clamp(40px, 6vw, 62px);
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: -3.1px;
+      color: var(--c-ink);
+      margin-bottom: 48px;
+      max-width: 600px;
+    }
+
+    /* FEATURE ROWS */
+    .feature-list {
+      border-top: 1px solid var(--c-hairline);
+    }
+
+    .feature-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--c-hairline);
+      gap: 16px;
+    }
+
+    .feature-name {
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: -0.15px;
+      color: var(--c-ink);
+    }
+
+    .feature-check {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--c-success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .feature-check svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    /* PRICING */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .price-card {
+      background: var(--c-surface-1);
+      border-radius: 20px;
+      padding: 24px;
+    }
+
+    .price-card.featured {
+      background: var(--c-surface-2);
+      outline: 2px solid var(--c-ink);
+      outline-offset: -2px;
+    }
+
+    .price-tier {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--c-ink-muted);
+      letter-spacing: -0.13px;
+      margin-bottom: 12px;
+    }
+
+    .price-amount {
+      font-size: 32px;
+      font-weight: 500;
+      letter-spacing: -1px;
+      color: var(--c-ink);
+      margin-bottom: 4px;
+    }
+
+    .price-period {
+      font-size: 13px;
+      color: var(--c-ink-muted);
+      letter-spacing: -0.13px;
+      margin-bottom: 20px;
+    }
+
+    .price-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .price-features li {
+      font-size: 14px;
+      color: var(--c-ink-muted);
+      letter-spacing: -0.14px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .price-features li::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--c-ink-muted);
+      flex-shrink: 0;
+    }
+
+    /* TABS */
+    .tabs {
+      display: inline-flex;
+      background: var(--c-surface-1);
+      border-radius: 100px;
+      padding: 4px;
+      gap: 2px;
+      margin-bottom: 32px;
+    }
+
+    .tab {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--c-ink-muted);
+      letter-spacing: -0.14px;
+      padding: 7px 14px;
+      border-radius: 100px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      font-family: 'Inter', sans-serif;
+      transition: background .15s, color .15s;
+    }
+
+    .tab.active {
+      background: var(--c-surface-2);
+      color: var(--c-ink);
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--c-hairline);
+      padding: 48px 32px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+
+    .footer-brand {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      color: var(--c-ink);
+      margin-bottom: 8px;
+    }
+
+    .footer-copy {
+      font-size: 13px;
+      color: var(--c-ink-muted);
+      letter-spacing: -0.13px;
+    }
+
+    .footer-col-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--c-ink);
+      letter-spacing: -0.13px;
+      margin-bottom: 12px;
+    }
+
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .footer-links a {
+      font-size: 13px;
+      color: var(--c-ink-muted);
+      text-decoration: none;
+      letter-spacing: -0.13px;
+      transition: color .15s;
+    }
+
+    .footer-links a:hover {
+      color: var(--c-ink);
+    }
+
+    /* DIVIDER */
+    .divider {
+      height: 1px;
+      background: var(--c-hairline);
+      margin: 0 32px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <!-- NAV -->
+    <nav>
+      <div class="nav-logo">AwesomeSlide</div>
+      <div class="nav-links">
+        <a href="#" class="nav-link">Features</a>
+        <a href="#" class="nav-link">Templates</a>
+        <a href="#" class="nav-link">Pricing</a>
+        <button class="btn-secondary" style="margin-right:4px">Sign in</button>
+        <button class="btn-primary">Get started</button>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+      <span class="hero-eyebrow">Now in public beta</span>
+      <h1 class="hero-headline">Design slides<br>that move people.</h1>
+      <p class="hero-sub">A canvas-first slide builder for teams who care about how their work looks.</p>
+      <div class="hero-ctas">
+        <button class="btn-primary" style="font-size:15px; padding:12px 22px;">Start for free</button>
+        <button class="btn-secondary" style="font-size:15px; padding:12px 22px;">See templates →</button>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- CARD GRID WITH SPOTLIGHTS -->
+    <section class="section">
+      <p class="section-label">What makes it different</p>
+      <div class="card-grid">
+        <div class="card spotlight violet">
+          <div class="card-title">Canvas first.</div>
+          <div class="card-body">Place anything anywhere. No invisible boxes forcing your layout.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Real-time collaboration.</div>
+          <div class="card-body">Cursors, presence, comments. Everything your team needs to work together.</div>
+        </div>
+        <div class="card spotlight magenta">
+          <div class="card-title">AI inside.</div>
+          <div class="card-body">Generate, rewrite, and redesign slides without leaving the canvas.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Templates that look human.</div>
+          <div class="card-body">500+ layouts designed by people who actually use decks to get things done.</div>
+        </div>
+        <div class="card spotlight orange">
+          <div class="card-title">Export anywhere.</div>
+          <div class="card-body">PDF, PPTX, or a live web link that always shows the latest version.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Speed without compromise.</div>
+          <div class="card-body">Renders at 60fps. Even with 200-slide decks and embedded video.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- FEATURES -->
+    <section class="section">
+      <h2 class="section-headline">Everything in one place.</h2>
+      <div class="feature-list">
+        <div class="feature-row">
+          <span class="feature-name">Drag-and-drop canvas editor</span>
+          <div class="feature-check"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polyline points="2,6 5,9 10,3" stroke="white" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg></div>
+        </div>
+        <div class="feature-row">
+          <span class="feature-name">500+ premium templates</span>
+          <div class="feature-check"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polyline points="2,6 5,9 10,3" stroke="white" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg></div>
+        </div>
+        <div class="feature-row">
+          <span class="feature-name">Real-time multiplayer editing</span>
+          <div class="feature-check"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polyline points="2,6 5,9 10,3" stroke="white" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg></div>
+        </div>
+        <div class="feature-row">
+          <span class="feature-name">AI writing and design assist</span>
+          <div class="feature-check"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polyline points="2,6 5,9 10,3" stroke="white" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg></div>
+        </div>
+        <div class="feature-row">
+          <span class="feature-name">Brand kit enforcement</span>
+          <div class="feature-check"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polyline points="2,6 5,9 10,3" stroke="white" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg></div>
+        </div>
+        <div class="feature-row">
+          <span class="feature-name">Publish as a live web presentation</span>
+          <div class="feature-check"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polyline points="2,6 5,9 10,3" stroke="white" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg></div>
+        </div>
+        <div class="feature-row">
+          <span class="feature-name">Analytics and viewer tracking</span>
+          <div class="feature-check"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polyline points="2,6 5,9 10,3" stroke="white" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- PRICING -->
+    <section class="section">
+      <h2 class="section-headline">Simple pricing.</h2>
+      <div class="tabs">
+        <button class="tab active">Monthly</button>
+        <button class="tab">Yearly</button>
+      </div>
+      <div class="pricing-grid">
+        <div class="price-card">
+          <div class="price-tier">Starter</div>
+          <div class="price-amount">Free</div>
+          <div class="price-period">forever</div>
+          <ul class="price-features">
+            <li>3 decks</li>
+            <li>20 templates</li>
+            <li>AwesomeSlide watermark</li>
+          </ul>
+          <button class="btn-secondary" style="width:100%">Get started</button>
+        </div>
+        <div class="price-card featured">
+          <div class="price-tier">Pro</div>
+          <div class="price-amount">$15</div>
+          <div class="price-period">per month</div>
+          <ul class="price-features">
+            <li>Unlimited decks</li>
+            <li>All templates</li>
+            <li>AI assist (100 req/mo)</li>
+            <li>Custom domain</li>
+          </ul>
+          <button class="btn-primary" style="width:100%">Start Pro</button>
+        </div>
+        <div class="price-card">
+          <div class="price-tier">Business</div>
+          <div class="price-amount">$49</div>
+          <div class="price-period">per month</div>
+          <ul class="price-features">
+            <li>Everything in Pro</li>
+            <li>Brand kit</li>
+            <li>Analytics</li>
+            <li>SSO + SAML</li>
+          </ul>
+          <button class="btn-secondary" style="width:100%">Start Business</button>
+        </div>
+        <div class="price-card">
+          <div class="price-tier">Enterprise</div>
+          <div class="price-amount">Custom</div>
+          <div class="price-period">talk to us</div>
+          <ul class="price-features">
+            <li>Dedicated support</li>
+            <li>SLA</li>
+            <li>On-prem option</li>
+            <li>Audit logs</li>
+          </ul>
+          <button class="btn-secondary" style="width:100%">Talk to sales</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- FOOTER -->
+    <footer>
+      <div>
+        <div class="footer-brand">AwesomeSlide</div>
+        <div class="footer-copy">© 2026 AwesomeSlide, Inc.</div>
+      </div>
+      <div>
+        <div class="footer-col-title">Product</div>
+        <ul class="footer-links">
+          <li><a href="#">Features</a></li>
+          <li><a href="#">Templates</a></li>
+          <li><a href="#">Pricing</a></li>
+          <li><a href="#">Changelog</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Company</div>
+        <ul class="footer-links">
+          <li><a href="#">About</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Press</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Legal</div>
+        <ul class="footer-links">
+          <li><a href="#">Privacy</a></li>
+          <li><a href="#">Terms</a></li>
+          <li><a href="#">Security</a></li>
+        </ul>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', function () {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+  </script>
+</body>
+
+</html>

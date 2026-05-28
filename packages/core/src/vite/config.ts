@@ -51,7 +51,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       openSlidePlugin({ userCwd, config }),
       themesPlugin({ userCwd, config }),
       designPlugin({ userCwd }),
-      apiPlugin({ userCwd, slidesDir, assetsDir }),
+      apiPlugin({ userCwd, slidesDir, themesDir, assetsDir }),
       notesPlugin({ userCwd, slidesDir }),
       currentPlugin({ userCwd, slidesDir }),
     ],
