@@ -85,7 +85,7 @@ export function ThumbnailRail({
     const scale = HORIZONTAL_THUMB_HEIGHT / CANVAS_HEIGHT;
     const width = CANVAS_WIDTH * scale;
     return (
-      <div className="bg-sidebar">
+      <div className="bg-background">
         <div className="overflow-x-auto overflow-y-hidden">
           <div className="flex items-center gap-2 px-3 py-2.5">
             {pages.map((PageComp, i) => {
@@ -232,8 +232,8 @@ export function ThumbnailRail({
 
 function thumbButtonClass(active: boolean): string {
   return cn(
-    'group/thumb flex w-full items-start gap-2.5 rounded-[6px] p-1.5 text-left motion-safe:transition-colors',
-    'hover:bg-muted/60',
+    'group/thumb flex w-full items-start gap-2.5 rounded-[8px] p-1.5 text-left motion-safe:transition-colors',
+    'hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30',
     active && 'bg-muted',
   );
 }

@@ -1,4 +1,4 @@
-import type { DesignSystem, Page, SlideMeta, SlideTransition } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta, SlideTransition } from '@awesome-slide/core';
 import type { CSSProperties } from 'react';
 
 export const design: DesignSystem = {
@@ -47,7 +47,7 @@ const Cover: Page = () => (
       padding: '120px 144px',
     }}
   >
-    <div style={EYEBROW}>open-slide · field notes</div>
+    <div style={EYEBROW}>Awesome Slide · field notes</div>
     <div style={{ alignSelf: 'center' }}>
       <h1
         style={{

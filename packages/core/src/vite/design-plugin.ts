@@ -264,6 +264,7 @@ function findDesignObjectNode(ast: AstNode): AstNode | null {
 }
 
 type ImportInfo = { node: AstNode; source: string; specifiers: AstNode[] };
+const CORE_IMPORT_SOURCES = ['@awesome-slide/core', '@open-slide/core'] as const;
 
 function findImports(ast: AstNode): ImportInfo[] {
   const body = (ast as unknown as { program?: { body?: AstNode[] } }).program?.body ?? [];
@@ -283,7 +284,9 @@ function ensureDesignSystemImport(
   ast: AstNode,
 ): { source: string; offsetShift: number } {
   const imports = findImports(ast);
-  const coreImport = imports.find((imp) => imp.source === '@open-slide/core');
+  const coreImport = imports.find((imp) =>
+    CORE_IMPORT_SOURCES.includes(imp.source as (typeof CORE_IMPORT_SOURCES)[number]),
+  );
   if (coreImport) {
     const hasDesignSystem = coreImport.specifiers.some((spec) => {
       if (spec.type !== 'ImportSpecifier') return false;
@@ -305,8 +308,8 @@ function ensureDesignSystemImport(
     return { source: next, offsetShift: insertText.length };
   }
 
-  // No @open-slide/core import — add one after the last import (or at top).
-  const stmt = `import type { DesignSystem } from '@open-slide/core';\n`;
+  // No core import - add one after the last import (or at top).
+  const stmt = `import type { DesignSystem } from '@awesome-slide/core';\n`;
   if (imports.length > 0) {
     const last = imports[imports.length - 1];
     const insertAt = last.node.end;
@@ -371,7 +374,7 @@ export function designPlugin(opts: DesignPluginOptions): Plugin {
   const slidesDir = opts.slidesDir ?? 'slides';
 
   return {
-    name: 'open-slide:design',
+    name: 'awesome-slide:design',
     apply: 'serve',
     configureServer(server: ViteDevServer) {
       server.middlewares.use('/__design', async (req, res, next) => {

@@ -11,7 +11,7 @@
     "noEmit": true,
     "strict": true,
     "skipLibCheck": true,
-    "types": ["@open-slide/core/env"]
+    "types": ["@awesome-slide/core/env"]
   },
-  "include": ["slides/**/*", "open-slide.config.ts"]
+  "include": ["slides/**/*", "awesome-slide.config.ts"]
 }

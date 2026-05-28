@@ -19,7 +19,7 @@ const FONT_PRESETS: Array<{ label: string; value: string }> = [
   { label: 'Helvetica', value: '"Helvetica Neue", Helvetica, Arial, sans-serif' },
   { label: 'Georgia', value: 'Georgia, "Times New Roman", serif' },
   { label: 'Times', value: '"Times New Roman", Times, serif' },
-  { label: 'SF Mono', value: '"SF Mono", "JetBrains Mono", Menlo, monospace' },
+  { label: 'SF Mono', value: '"SF Mono", "Google Sans Flex Variable", Menlo, monospace' },
 ];
 
 type DesignPanelProps = {

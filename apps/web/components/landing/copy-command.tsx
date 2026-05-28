@@ -26,18 +26,17 @@ export function CopyCommand({ command, size = 'lg' }: { command: string; size?: 
       type="button"
       onClick={onCopy}
       style={{
-        boxShadow:
-          '0 0 0 1px color-mix(in oklab, var(--color-accent) 15%, transparent), 0 20px 80px -20px color-mix(in oklab, var(--color-accent) 35%, transparent)',
+        boxShadow: '0 0 0 1px var(--color-accent), 0 1px 0 rgb(0 0 0 / 0.12)',
       }}
-      className={`group relative inline-flex items-center gap-3 ${height} ${pad} rounded-[6px] border border-[color:var(--color-accent)]/40 bg-[color:var(--color-panel)] text-[color:var(--color-text)] font-[family-name:var(--font-mono)] ${text} hover:border-[color:var(--color-accent)] transition`}
+      className={`group relative inline-flex items-center gap-3 ${height} ${pad} rounded-full border border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-inverse-text)] font-[family-name:var(--font-mono)] ${text} transition hover:bg-[color:var(--color-text-soft)]`}
     >
-      <span aria-hidden className="text-[color:var(--color-accent)]">
+      <span aria-hidden className="text-[color:var(--color-inverse-text)]/80">
         $
       </span>
-      <span className="tracking-[-0.01em]">{command}</span>
+      <span className="min-w-0 max-w-[min(72vw,24rem)] truncate tracking-normal">{command}</span>
       <span
         aria-hidden
-        className="ml-1 inline-flex items-center gap-1.5 text-[color:var(--color-muted)] group-hover:text-[color:var(--color-accent)] transition-colors"
+        className="ml-1 inline-flex items-center gap-1.5 text-[color:var(--color-inverse-text)]/70 transition-colors group-hover:text-[color:var(--color-inverse-text)]"
       >
         <span className="h-4 w-px bg-[color:var(--color-rule)]" />
         <span className="relative inline-flex h-[14px] w-[14px] items-center justify-center">
@@ -45,7 +44,7 @@ export function CopyCommand({ command, size = 'lg' }: { command: string; size?: 
             className={`absolute inset-0 transition-opacity duration-200 ${copied ? 'opacity-0' : 'opacity-100'}`}
           />
           <CheckGlyph
-            className={`absolute inset-0 text-[color:var(--color-mint)] transition-opacity duration-200 ${copied ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute inset-0 text-[color:var(--color-success)] transition-opacity duration-200 ${copied ? 'opacity-100' : 'opacity-0'}`}
           />
         </span>
       </span>

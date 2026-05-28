@@ -1,8 +1,8 @@
-# open-slide workspace
+# Awesome Slide workspace
 
-Slides as React components. Each slide lives under `slides/<id>/index.tsx` and default-exports an array of page components. The `@open-slide/core` runtime handles layout, scaling, navigation, thumbnails, and fullscreen play mode — you just write the pages.
+Slides are React components. Each slide lives under `slides/<id>/index.tsx` and default-exports an array of page components. The `@awesome-slide/core` runtime handles layout, scaling, navigation, thumbnails, and fullscreen play mode; you write the pages.
 
-## Getting started
+## Getting Started
 
 ```bash
 pnpm install
@@ -18,22 +18,21 @@ Then open the dev server and edit `slides/getting-started/index.tsx`, or create 
 | `pnpm dev` | Start the dev server with hot reload. |
 | `pnpm build` | Build a static bundle you can deploy. |
 | `pnpm preview` | Preview the built bundle locally. |
+| `pnpm sync:skills` | Sync the bundled agent skills from `@awesome-slide/core`. |
 
-## Authoring a slide
+## Authoring A Slide
 
 ```tsx
 // slides/my-slide/index.tsx
-import type { Page, SlideMeta } from '@open-slide/core';
+import type { Page, SlideMeta } from '@awesome-slide/core';
 
-const Cover: Page = () => (
-  <div style={{ width: '100%', height: '100%' }}>Hello</div>
-);
+const Cover: Page = () => <div style={{ width: '100%', height: '100%' }}>Hello</div>;
 
 export const meta: SlideMeta = { title: 'My slide' };
 export default [Cover] satisfies Page[];
 ```
 
-Every page renders into a fixed **1920 × 1080** canvas — design with absolute pixel values. Put images, videos, and fonts under `slides/<id>/assets/` and import them directly.
+Every page renders into a fixed **1920 x 1080** canvas. Design with absolute pixel values. Put images, videos, and fonts under `slides/<id>/assets/` and import them directly.
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full authoring guide.
 
@@ -41,24 +40,24 @@ See [`CLAUDE.md`](./CLAUDE.md) for the full authoring guide.
 
 - Arrow keys / PageUp / PageDown move between pages.
 - `F` enters fullscreen play mode; Esc exits.
-- In play mode: Space / → next, ← prev.
+- In play mode: Space / right arrow moves next, left arrow moves previous.
 
-## Claude Code integration
+## Agent Integration
 
-This workspace ships with Claude Code skills preconfigured under `.claude/skills/` and `.agents/skills/`. Ask Claude Code to "make slides about X" and the `create-slide` skill takes over. Use `apply-comments` to iterate via inspector-style markers inside your source.
+This workspace ships with agent skills preconfigured under `.agents/skills/` and `.claude/skills/`. Ask your coding agent to "make slides about X" and the `create-slide` skill takes over. Use `apply-comments` to iterate via inspector-style markers inside your source.
 
 ## Config
 
-Optional `open-slide.config.ts` at the workspace root:
+Optional `awesome-slide.config.ts` at the workspace root:
 
 ```ts
-import type { OpenSlideConfig } from '@open-slide/core';
+import type { AwesomeSlideConfig } from '@awesome-slide/core';
 
-const openSlideConfig: OpenSlideConfig = {
+const awesomeSlideConfig: AwesomeSlideConfig = {
   port: 5173,
 };
 
-export default openSlideConfig;
+export default awesomeSlideConfig;
 ```
 
-Supported fields: `slidesDir`, `port`.
+Supported fields: `slidesDir`, `themesDir`, `assetsDir`, `port`, `locale`, and `build`.

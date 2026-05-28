@@ -65,7 +65,7 @@ export type LocTagsPluginOptions = {
 export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
   const slidesRoot = path.resolve(opts.userCwd, opts.slidesDir ?? 'slides');
   return {
-    name: 'open-slide:loc-tags',
+    name: 'awesome-slide:loc-tags',
     apply: 'serve',
     // Must run before @vitejs/plugin-react so the JSX transform
     // sees our injected attributes.

@@ -240,6 +240,7 @@ export type Locale = {
     commentsApplyHintPrefix: string;
     commentsApplyHintSuffix: string;
     commentDeleteAria: string;
+    commentsButtonAria: string;
     /** Prefix for the toast shown when one or more buffered edits fail to write to disk. */
     saveFailed: string;
   };

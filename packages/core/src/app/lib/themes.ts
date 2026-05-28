@@ -1,4 +1,4 @@
-import { loadThemeDemo as load, themes as raw } from 'virtual:open-slide/themes';
+import { loadThemeDemo as load, themes as raw } from 'virtual:awesome-slide/themes';
 import type { DesignSystem } from './design';
 import type { Page } from './sdk';
 

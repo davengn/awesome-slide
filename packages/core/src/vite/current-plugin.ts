@@ -1,6 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Plugin, ViteDevServer } from 'vite';
+import {
+  AWESOME_SLIDE_PROTOCOL_PREFIX,
+  AWESOME_SLIDE_RUNTIME_DIR,
+  OPEN_SLIDE_PROTOCOL_PREFIX,
+  OPEN_SLIDE_RUNTIME_DIR,
+} from '../brand.ts';
 
 const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
 const TEXT_SNIPPET_MAX = 120;
@@ -66,17 +72,20 @@ function parseSelection(raw: unknown): Selection | null {
 export function currentPlugin(opts: CurrentPluginOptions): Plugin {
   const userCwd = opts.userCwd;
   const slidesDir = opts.slidesDir ?? 'slides';
-  const outDir = path.join(userCwd, 'node_modules', '.open-slide');
+  const outDir = path.join(userCwd, 'node_modules', AWESOME_SLIDE_RUNTIME_DIR);
   const outFile = path.join(outDir, 'current.json');
   const tmpFile = `${outFile}.tmp`;
+  const legacyOutDir = path.join(userCwd, 'node_modules', OPEN_SLIDE_RUNTIME_DIR);
+  const legacyOutFile = path.join(legacyOutDir, 'current.json');
+  const legacyTmpFile = `${legacyOutFile}.tmp`;
 
   let cached: Cached | null = null;
 
   return {
-    name: 'open-slide:current',
+    name: 'awesome-slide:current',
     apply: 'serve',
     configureServer(server: ViteDevServer) {
-      server.ws.on('open-slide:current', async (raw: IncomingPayload) => {
+      const handleCurrent = async (raw: IncomingPayload) => {
         const next: Cached = cached
           ? { ...cached }
           : {
@@ -134,10 +143,15 @@ export function currentPlugin(opts: CurrentPluginOptions): Plugin {
           await fs.mkdir(outDir, { recursive: true });
           await fs.writeFile(tmpFile, `${JSON.stringify(body, null, 2)}\n`, 'utf8');
           await fs.rename(tmpFile, outFile);
+          await fs.mkdir(legacyOutDir, { recursive: true });
+          await fs.writeFile(legacyTmpFile, `${JSON.stringify(body, null, 2)}\n`, 'utf8');
+          await fs.rename(legacyTmpFile, legacyOutFile);
         } catch {
           // Best-effort: a transient FS error here shouldn't crash the dev server.
         }
-      });
+      };
+      server.ws.on(`${AWESOME_SLIDE_PROTOCOL_PREFIX}:current`, handleCurrent);
+      server.ws.on(`${OPEN_SLIDE_PROTOCOL_PREFIX}:current`, handleCurrent);
     },
   };
 }

@@ -1,4 +1,4 @@
-import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@awesome-slide/core';
 
 export const meta: SlideMeta = {
   title: 'Vercel Labs · 2026',
@@ -38,7 +38,7 @@ const palette = {
 
 const fonts = {
   sans: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif",
-  mono: "'Geist Mono', 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace",
+  mono: "'Geist Mono', 'Google Sans Flex Variable', 'SF Mono', ui-monospace, Menlo, monospace",
 };
 
 const fill = {
@@ -218,7 +218,7 @@ const FooterRule = ({ note }: { note?: string }) => (
       }}
     />
     <span className="vl-fade" style={{ animationDelay: '600ms' }}>
-      open-slide · vercel labs
+      Awesome Slide · vercel labs
     </span>
     <span className="vl-fade" style={{ animationDelay: '700ms' }}>
       {note ?? '▲ github.com/vercel-labs'}

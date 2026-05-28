@@ -1,10 +1,15 @@
-import { type DesignSystem, type Page, type SlideMeta, useSlidePageNumber } from '@open-slide/core';
+import {
+  type DesignSystem,
+  type Page,
+  type SlideMeta,
+  useSlidePageNumber,
+} from '@awesome-slide/core';
 
 export const design: DesignSystem = {
   palette: { bg: '#05070a', text: '#e6edf3', accent: '#39ff88' },
   fonts: {
-    display: "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace",
-    body: "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace",
+    display: "'Google Sans Flex Variable', 'SF Mono', Menlo, Consolas, monospace",
+    body: "'Google Sans Flex Variable', 'SF Mono', Menlo, Consolas, monospace",
   },
   typeScale: { hero: 156, body: 24 },
   radius: 0,

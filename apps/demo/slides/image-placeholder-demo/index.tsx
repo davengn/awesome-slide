@@ -1,4 +1,4 @@
-import { ImagePlaceholder, type Page, type SlideMeta } from '@open-slide/core';
+import { ImagePlaceholder, type Page, type SlideMeta } from '@awesome-slide/core';
 
 const fill = {
   width: '100%',

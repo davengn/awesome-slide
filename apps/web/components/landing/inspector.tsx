@@ -148,7 +148,7 @@ function AgentApplyVisual() {
             <div className="relative inline-flex w-fit">
               <motion.span
                 aria-hidden
-                className="absolute -inset-[0.6cqw] border-2 border-[#3b82f6] bg-[#3b82f6]/10 pointer-events-none"
+                className="absolute -inset-[0.6cqw] pointer-events-none border-2 border-[color:var(--color-block-lilac)] bg-[color:var(--color-block-lilac)]/20"
                 animate={
                   active
                     ? {
@@ -194,7 +194,7 @@ function AgentApplyVisual() {
             aria-hidden
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#3b82f6"
+            stroke="var(--color-block-lilac)"
             strokeWidth={1.6}
             strokeLinecap="round"
             className="absolute pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]"
@@ -221,7 +221,7 @@ function AgentApplyVisual() {
             <line x1="12" y1="15" x2="12" y2="22" />
             <line x1="2" y1="12" x2="9" y2="12" />
             <line x1="15" y1="12" x2="22" y2="12" />
-            <circle cx="12" cy="12" r="2.5" fill="#3b82f6" fillOpacity={0.25} />
+            <circle cx="12" cy="12" r="2.5" fill="var(--color-block-lilac)" fillOpacity={0.25} />
           </motion.svg>
 
           {/* "Agent applying..." status pill — appears after submit, fades before style change settles */}
@@ -456,7 +456,7 @@ function VisualEditorVisual() {
             <div className="relative inline-flex w-fit">
               <span
                 aria-hidden
-                className="absolute -inset-[0.6cqw] border-2 border-[#3b82f6] bg-[#3b82f6]/10 pointer-events-none"
+                className="absolute -inset-[0.6cqw] pointer-events-none border-2 border-[color:var(--color-block-lilac)] bg-[color:var(--color-block-lilac)]/20"
               />
               <motion.span
                 className="relative font-[family-name:var(--font-sans)] font-semibold tracking-[-0.035em] leading-[1.0] text-[color:var(--color-accent)]"
@@ -604,7 +604,7 @@ function VisualEditorVisual() {
           <PanelSection label="Color">
             <PanelRow label="Text">
               <PanelSwatch color="var(--color-accent)" />
-              <PanelInput value="#D56B48" mono uppercase />
+              <PanelInput value="#C5B0F4" mono uppercase />
             </PanelRow>
           </PanelSection>
         </div>

@@ -1,4 +1,4 @@
-import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@awesome-slide/core';
 import type { ReactNode } from 'react';
 
 // ─── Panel-tweakable design tokens ────────────────────────────────────────────
@@ -37,7 +37,7 @@ const palette = {
 const font = {
   display: design.fonts.display,
   body: design.fonts.body,
-  mono: '"JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace',
+  mono: '"Google Sans Flex Variable", "SF Mono", ui-monospace, Menlo, monospace',
 };
 
 const fill = {

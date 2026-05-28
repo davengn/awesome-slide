@@ -1,4 +1,9 @@
-import { type DesignSystem, type Page, type SlideMeta, useSlidePageNumber } from '@open-slide/core';
+import {
+  type DesignSystem,
+  type Page,
+  type SlideMeta,
+  useSlidePageNumber,
+} from '@awesome-slide/core';
 
 export const design: DesignSystem = {
   palette: { bg: '#f7f5f0', text: '#1a1814', accent: '#6d4cff' },
@@ -38,7 +43,7 @@ const tokenColors = [
 const fonts = {
   serif: '"Times New Roman", "Georgia", serif',
   sans: '-apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", system-ui, sans-serif',
-  mono: '"SF Mono", "JetBrains Mono", "Menlo", monospace',
+  mono: '"SF Mono", "Google Sans Flex Variable", "Menlo", monospace',
 };
 
 const fill = {

@@ -29,18 +29,18 @@ const palette = {
   dim: '#3e4048',
   border: 'rgba(255,255,255,0.07)',
   borderBright: 'rgba(255,255,255,0.14)',
-  accent: '#7170ff',
-  accentSoft: '#a3a0ff',
-  accent2: '#5e6ad2',
-  mint: '#68cc9a',
-  amber: '#e0b25c',
-  inspect: '#3b82f6',
-  inspectFill: 'rgba(59,130,246,0.10)',
+  accent: '#c5b0f4',
+  accentSoft: '#dceeb1',
+  accent2: '#c8e6cd',
+  mint: '#c8e6cd',
+  cream: '#f4ecd6',
+  inspect: '#dceeb1',
+  inspectFill: 'rgba(220,238,177,0.14)',
 };
 
 const font = {
   sans: '"Inter", "SF Pro Display", system-ui, -apple-system, sans-serif',
-  mono: '"JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace',
+  mono: '"Google Sans Flex Variable", "SF Mono", ui-monospace, Menlo, monospace',
 };
 
 const fill = {
@@ -49,7 +49,7 @@ const fill = {
   background: palette.bg,
   color: palette.text,
   fontFamily: font.sans,
-  letterSpacing: '-0.015em',
+  letterSpacing: 0,
   overflow: 'hidden',
   position: 'relative' as const,
 };
@@ -188,7 +188,7 @@ const Eyebrow = ({
 
 const TrafficLights = () => (
   <div style={{ display: 'flex', gap: 10 }}>
-    {['#ff5f56', '#ffbd2e', '#27c93f'].map((c) => (
+    {['#000000', '#dceeb1', '#c5b0f4'].map((c) => (
       <span
         key={c}
         style={{
@@ -288,7 +288,7 @@ const AgentLine = ({
       ? palette.mint
       : speaker === 'assistant'
         ? palette.accentSoft
-        : palette.amber;
+        : palette.cream;
   return (
     <div
       className="gs-stream"
@@ -406,7 +406,7 @@ const Cover: Page = () => (
         }}
       >
         <Eyebrow className="es-fadeUp" style={{ animationDelay: '0.05s' }}>
-          open-slide · getting started
+          Awesome Slide · getting started
         </Eyebrow>
         <div
           className="es-fadeUp"
@@ -499,7 +499,7 @@ const Cover: Page = () => (
 const Init: Page = () => {
   const stream = [
     '',
-    'Created open-slide workspace in /Users/you/my-slide',
+    'Created Awesome Slide workspace in /Users/you/my-slide',
     '',
     'Next steps:',
     '  cd my-slide',
@@ -564,7 +564,7 @@ const Init: Page = () => {
             <div style={{ display: 'flex', gap: 16 }}>
               <span style={{ color: palette.mint }}>$</span>
               <span className="gs-type" style={{ color: palette.text }}>
-                npx @open-slide/cli init my-slide
+                npx @awesome-slide/cli init my-slide
               </span>
             </div>
             <div style={{ height: 18 }} />
@@ -2163,7 +2163,7 @@ const Apply: Page = () => (
             }}
           >
             <AgentLine speaker="user" delay={0.2}>
-              <SlashCmd name="apply-comments" color={palette.amber} />
+              <SlashCmd name="apply-comments" color={palette.cream} />
             </AgentLine>
             <AgentLine speaker="assistant" delay={1.0}>
               1 marker found. Applying…
@@ -2325,7 +2325,7 @@ const Apply: Page = () => (
 // ─── Slide 6: Recap ──────────────────────────────────────────────────────────
 const Recap: Page = () => {
   const steps = [
-    { n: '01', title: 'init', caption: 'npx @open-slide/cli init' },
+    { n: '01', title: 'init', caption: 'npx @awesome-slide/cli init' },
     { n: '02', title: 'prompt', caption: 'create-slide' },
     { n: '03', title: 'edit', caption: 'click → save' },
     { n: '04', title: 'assets', caption: 'drag · drop · svgl' },
@@ -2442,7 +2442,7 @@ const Recap: Page = () => {
             edit <span style={{ color: palette.text }}>slides/&lt;your-slide&gt;/index.tsx</span> —
             HMR does the rest
           </span>
-          <span>open-slide</span>
+          <span>Awesome Slide</span>
         </div>
       </div>
     </div>
@@ -2472,7 +2472,7 @@ const AgentAgnostic: Page = () => {
         }}
       >
         <div className="es-fadeUp">
-          <Eyebrow>why open-slide · 01</Eyebrow>
+          <Eyebrow>why Awesome Slide · 01</Eyebrow>
           <h2
             style={{
               marginTop: 24,
@@ -2505,8 +2505,8 @@ const AgentAgnostic: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            open-slide speaks plain React and a file-convention protocol. Any agent can author and
-            edit slides — no lock-in, no bespoke SDK.
+            Awesome Slide speaks plain React and a file-convention protocol. Any agent can author
+            and edit slides — no lock-in, no bespoke SDK.
           </p>
         </div>
 
@@ -2796,7 +2796,7 @@ const FreeLayout: Page = () => {
         }}
       >
         <div className="es-fadeUp">
-          <Eyebrow>why open-slide · 02</Eyebrow>
+          <Eyebrow>why Awesome Slide · 02</Eyebrow>
           <h2
             style={{
               marginTop: 24,
@@ -2896,7 +2896,7 @@ const GitTracked: Page = () => {
         }}
       >
         <div className="es-fadeUp">
-          <Eyebrow>why open-slide · 03</Eyebrow>
+          <Eyebrow>why Awesome Slide · 03</Eyebrow>
           <h2
             style={{
               marginTop: 20,
@@ -2969,7 +2969,7 @@ const GitTracked: Page = () => {
                     padding: '6px 0',
                   }}
                 >
-                  <span style={{ color: palette.amber }}>*</span>
+                  <span style={{ color: palette.cream }}>*</span>
                   <span style={{ color: palette.accentSoft }}>{c.hash}</span>
                   {c.head && <span style={{ color: palette.mint }}>{c.head}</span>}
                   <span style={{ color: palette.text }}>{c.msg}</span>
@@ -3083,7 +3083,7 @@ const DeployAnywhere: Page = () => {
         }}
       >
         <div className="es-fadeUp">
-          <Eyebrow>why open-slide · 04</Eyebrow>
+          <Eyebrow>why Awesome Slide · 04</Eyebrow>
           <h2
             style={{
               marginTop: 24,
@@ -3116,8 +3116,8 @@ const DeployAnywhere: Page = () => {
               letterSpacing: '-0.01em',
             }}
           >
-            open-slide builds to plain static assets. Drop them on Vercel, Cloudflare, Zeabur — or
-            any server that serves HTML.
+            Awesome Slide builds to plain static assets. Drop them on Vercel, Cloudflare, Zeabur —
+            or any server that serves HTML.
           </p>
         </div>
 
@@ -3168,7 +3168,7 @@ const DeployAnywhere: Page = () => {
 
 // ─── Slide export ────────────────────────────────────────────────────────────
 export const meta: SlideMeta = {
-  title: 'Getting started with open-slide',
+  title: 'Getting started with Awesome Slide',
   theme: 'dark',
 };
 

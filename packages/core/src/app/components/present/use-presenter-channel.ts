@@ -28,21 +28,28 @@ export function usePresenterChannel(slideId: string, onMessage?: Handler) {
   onMessageRef.current = onMessage;
 
   const channelRef = useRef<BroadcastChannel | null>(null);
+  const legacyChannelRef = useRef<BroadcastChannel | null>(null);
   const [available, setAvailable] = useState(false);
 
   useEffect(() => {
     if (!SUPPORTED) return;
-    const channel = new BroadcastChannel(`open-slide:presenter:${slideId}`);
+    const channel = new BroadcastChannel(`awesome-slide:presenter:${slideId}`);
+    const legacyChannel = new BroadcastChannel(`open-slide:presenter:${slideId}`);
     channelRef.current = channel;
+    legacyChannelRef.current = legacyChannel;
     setAvailable(true);
     const handler = (e: MessageEvent<PresenterCommand>) => {
       onMessageRef.current?.(e.data);
     };
     channel.addEventListener('message', handler);
+    legacyChannel.addEventListener('message', handler);
     return () => {
       channel.removeEventListener('message', handler);
+      legacyChannel.removeEventListener('message', handler);
       channel.close();
+      legacyChannel.close();
       if (channelRef.current === channel) channelRef.current = null;
+      if (legacyChannelRef.current === legacyChannel) legacyChannelRef.current = null;
       setAvailable(false);
     };
   }, [slideId]);
@@ -52,6 +59,7 @@ export function usePresenterChannel(slideId: string, onMessage?: Handler) {
       send(msg: PresenterCommand) {
         try {
           channelRef.current?.postMessage(msg);
+          legacyChannelRef.current?.postMessage(msg);
         } catch {
           // Channel may have been closed between the availability check
           // and the send (e.g. StrictMode unmount mid-flush). Treat as no-op.

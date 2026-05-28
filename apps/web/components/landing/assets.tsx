@@ -49,39 +49,40 @@ const callouts: { eyebrow: string; title: string; body: ReactNode }[] = [
 
 export function Assets() {
   return (
-    <section id="assets" className="relative">
-      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-rule)]" />
-      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2 className="text-[32px] sm:text-[44px] lg:text-[64px] leading-[1.1] sm:leading-[1.05] tracking-[-0.03em] max-w-[820px] mb-14 sm:mb-20">
-          <span className="font-[family-name:var(--font-sans)] font-medium">Drop in images.</span>
-          <br />
-          <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-warm)]">
-            Pull in logos.
-          </span>
-        </h2>
+    <section id="assets" className="landing-section relative">
+      <div className="mx-auto max-w-[1360px] px-5 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-32">
+        <div className="landing-color-block bg-[color:var(--color-block-cream)] p-7 sm:p-10 lg:p-12">
+          <h2 className="mb-10 max-w-[820px] text-[32px] leading-[1.1] tracking-normal sm:mb-14 sm:text-[44px] lg:text-[58px]">
+            <span className="font-[family-name:var(--font-sans)] font-medium">Drop in images.</span>
+            <br />
+            <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-block-navy)]">
+              Pull in logos.
+            </span>
+          </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          {/* asset manager mock */}
-          <div className="lg:col-span-8">
-            <AssetManagerMock />
-          </div>
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12 lg:gap-8">
+            {/* asset manager mock */}
+            <div className="lg:col-span-8">
+              <AssetManagerMock />
+            </div>
 
-          {/* side callouts */}
-          <div className="lg:col-span-4 flex flex-col gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden">
-            {callouts.map((c) => (
-              <div
-                key={c.eyebrow}
-                className="bg-[color:var(--color-ink)] p-6 sm:p-7 lg:p-8 flex flex-col gap-3"
-              >
-                <span className="caption">{c.eyebrow}</span>
-                <h3 className="text-[22px] lg:text-[24px] font-medium tracking-[-0.025em] leading-[1.2]">
-                  {c.title}
-                </h3>
-                <p className="text-[14px] leading-[1.6] text-[color:var(--color-text-soft)] max-w-[40ch]">
-                  {c.body}
-                </p>
-              </div>
-            ))}
+            {/* side callouts */}
+            <div className="lg:col-span-4 flex flex-col gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden">
+              {callouts.map((c) => (
+                <div
+                  key={c.eyebrow}
+                  className="bg-[color:var(--color-ink)] p-6 sm:p-7 lg:p-8 flex flex-col gap-3"
+                >
+                  <span className="caption">{c.eyebrow}</span>
+                  <h3 className="text-[22px] lg:text-[24px] font-medium tracking-[-0.025em] leading-[1.2]">
+                    {c.title}
+                  </h3>
+                  <p className="text-[14px] leading-[1.6] text-[color:var(--color-text-soft)] max-w-[40ch]">
+                    {c.body}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -95,9 +96,9 @@ function AssetManagerMock() {
       {/* window header */}
       <div className="flex items-center px-4 sm:px-5 h-10 sm:h-11 border-b border-[color:var(--color-rule)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
         <div className="flex items-center gap-2">
-          <span className="size-[10px] rounded-full bg-[#ff5f56]" />
-          <span className="size-[10px] rounded-full bg-[#ffbd2e]" />
-          <span className="size-[10px] rounded-full bg-[#27c93f]" />
+          <span className="size-[10px] rounded-full bg-[color:var(--color-text)]" />
+          <span className="size-[10px] rounded-full bg-[color:var(--color-block-lime)]" />
+          <span className="size-[10px] rounded-full bg-[color:var(--color-block-lilac)]" />
         </div>
         <span className="flex-1 text-center">localhost:5173 · assets</span>
         <span className="w-[40px]" />

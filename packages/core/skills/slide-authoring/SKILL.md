@@ -1,9 +1,9 @@
 ---
 name: slide-authoring
-description: Technical reference for writing or editing open-slide pages — file contract, 1920×1080 canvas, type scale, layout, palette/visual direction, and assets. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "investigate the slide framework", "how do slides work here".
+description: Technical reference for writing or editing Awesome Slide pages — file contract, 1920×1080 canvas, type scale, layout, palette/visual direction, and assets. Consult this whenever you are about to write or modify any file under `slides/<id>/`, including from inside the `create-slide` or `apply-comments` workflows, or for any ad-hoc slide edit. Triggers on phrases like "edit slide", "tweak this page", "fix the layout", "change the palette", "investigate the slide framework", "how do slides work here".
 ---
 
-# Authoring open-slide pages
+# Authoring Awesome Slide pages
 
 This skill is the **technical reference** for everything that happens inside `slides/<id>/index.tsx`. It does not own a workflow:
 
@@ -18,7 +18,7 @@ When any of those paths reach the point of *writing React code for a page*, this
 
 - Put the slide under `slides/<kebab-case-id>/`.
 - Entry is `slides/<id>/index.tsx`. Images/videos/fonts go under `slides/<id>/assets/`.
-- Do **not** touch `package.json`, `open-slide.config.ts`, or other slides.
+- Do **not** touch `package.json`, `awesome-slide.config.ts`, or other slides.
 - Do not add dependencies. Only `react` and standard web APIs are available.
 - A slide is **one `index.tsx` plus `assets/`** — nothing else. Do not create sibling `.tsx`/`.ts` files (`Card.tsx`, `components/`, `helpers.ts`, etc.); helper components and constants go inside `index.tsx`. Do not create `README.md` or other prose files either.
 
@@ -26,7 +26,7 @@ When any of those paths reach the point of *writing React code for a page*, this
 
 ```tsx
 // slides/<id>/index.tsx
-import type { Page, SlideMeta } from '@open-slide/core';
+import type { Page, SlideMeta } from '@awesome-slide/core';
 
 const Cover: Page = () => <div>…</div>;
 const Body: Page = () => <div>…</div>;
@@ -132,7 +132,7 @@ Themes are produced by the `create-theme` skill and are pure documentation: copy
 A slide can declare its own typed design tokens at the top of `index.tsx`:
 
 ```tsx
-import type { DesignSystem, Page } from '@open-slide/core';
+import type { DesignSystem, Page } from '@awesome-slide/core';
 
 export const design: DesignSystem = {
   palette: { bg: '#f7f5f0', text: '#1a1814', accent: '#6d4cff' },
@@ -169,12 +169,12 @@ The dev UI has a **Design** button in the slide header (next to Inspect). Edits 
 Format constraints (for the panel's AST writer):
 - Must be `[export] const design: DesignSystem = { … }` (or `as DesignSystem` / `satisfies DesignSystem`) at module top level.
 - Object initializer must be a literal — no spreads, no helper calls. Plain values only.
-- `DesignSystem` must be imported from `@open-slide/core` (the panel adds the import automatically when creating a fresh block).
+- `DesignSystem` must be imported from `@awesome-slide/core` (the panel adds the import automatically when creating a fresh block).
 
 ## Starter template
 
 ```tsx
-import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';
+import type { DesignSystem, Page, SlideMeta } from '@awesome-slide/core';
 
 export const design: DesignSystem = {
   palette: { bg: '#0f172a', text: '#f8fafc', accent: '#fbbf24' },
@@ -278,7 +278,7 @@ Skip the `assets/` folder entirely for pure-text slides.
 When a page genuinely needs a real image **the user has to provide** — a product screenshot, a team photo, a chart from their data — leave a typed placeholder instead of inventing a stand-in:
 
 ```tsx
-import { ImagePlaceholder } from '@open-slide/core';
+import { ImagePlaceholder } from '@awesome-slide/core';
 
 <ImagePlaceholder hint="Product hero screenshot" width={1280} height={720} />
 ```
@@ -296,7 +296,7 @@ Size the placeholder to the slot it occupies. Pass `width`/`height` when the lay
 If a footer shows the current page (`03 / 12`, `Page 3`, etc.), read it from `useSlidePageNumber()` — **never hardcode** `n` / `TOTAL`. Inserting, reordering, or deleting a page would otherwise force you to retouch every footer.
 
 ```tsx
-import { useSlidePageNumber } from '@open-slide/core';
+import { useSlidePageNumber } from '@awesome-slide/core';
 
 const Footer = () => {
   const { current, total } = useSlidePageNumber();
@@ -319,7 +319,7 @@ The framework can run an enter/exit animation between every slide change. There'
 Module-level for the whole deck; per-page to override. The **incoming page wins**: navigating A → B uses `pages[B].transition ?? module.transition`. Its `exit` plays on A, its `enter` plays on B. Going back B → A uses A's transition.
 
 ```tsx
-import type { Page, SlideTransition } from '@open-slide/core';
+import type { Page, SlideTransition } from '@awesome-slide/core';
 
 const Cover: Page = () => <section>…</section>;
 const Body:  Page = () => <section>…</section>;
@@ -557,7 +557,7 @@ This applies whenever the *visual element* repeats, not whenever the *data* does
 - ❌ Installing packages. Only `react` and standard web APIs are available.
 - ❌ Writing CSS to a shared file. Inline styles or scoped classnames only.
 - ❌ Creating `README.md` or other prose files inside the slide folder.
-- ❌ Editing `package.json`, `open-slide.config.ts`, or other slides.
+- ❌ Editing `package.json`, `awesome-slide.config.ts`, or other slides.
 - ❌ Sprinkling `<ImagePlaceholder>` across pages "for visual interest". Placeholders are for content the user owns; they're not stock-photo slots.
 - ❌ Using a placeholder for an icon or decorative shape — those are typography/SVG problems, not asset problems.
 - ❌ Rendering visually repeated elements with `array.map(...)` over a data array. Define a component and instantiate it explicitly per item (`<Card />`, `<Card />`, `<Card />`) so the inspector can edit each independently — a shared `map` body mutates every instance at once.

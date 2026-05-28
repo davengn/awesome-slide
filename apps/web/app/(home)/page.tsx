@@ -48,7 +48,7 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Nav githubStars={githubStars} />
-      <main className="relative flex-1">
+      <main id="main-content" className="relative flex-1">
         <Hero />
         <LiveDemo />
         <HowItWorks />

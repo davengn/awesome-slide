@@ -1,6 +1,6 @@
 # Implementation Plan: Rebrand and Redesign as Awesome Slide
 
-**Branch**: `main` | **Date**: 2026-05-26 | **Spec**: [spec.md](./spec.md)
+**Branch**: `001-rebrand-awesome-slide` | **Date**: 2026-05-27 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/001-rebrand-awesome-slide/spec.md`
 
@@ -8,7 +8,19 @@
 
 ## Summary
 
-Rebrand the open-slide fork into `awesome-slide` / `Awesome Slide` across runtime UI, CLI, templates, docs, package metadata, and marketing surfaces while preserving existing slide projects through explicit compatibility aliases. The implementation will introduce a documented Awesome Slide design system, migrate user-facing copy through existing locale/docs/template surfaces, and phase public package, binary, config, virtual module, HMR event, and storage-key changes so existing projects continue to load.
+Rebrand the open-slide fork into `awesome-slide` / `Awesome Slide` across runtime UI, CLI, templates, docs, package metadata, and marketing surfaces while preserving existing slide projects through explicit compatibility aliases. The implementation uses `references/REBRANDING_DESIGN_FINAL.md` as the complete visual source of truth, including the token front matter missing from the earlier `references/REBRANDING_DESIGN.md`, introduces a documented Awesome Slide design system, migrates user-facing copy through existing locale/docs/template surfaces, and phases public package, binary, config, virtual module, HMR event, and storage-key changes so existing projects continue to load.
+
+## Current Implementation State
+
+As of 2026-05-27 on branch `001-rebrand-awesome-slide`, setup, inventory, naming, compatibility, starter, marketing/docs copy, initial design token CSS, docs chrome, demo rebrand, repository guide/template copy, and the required changeset are implemented and reflected in [tasks.md](./tasks.md). A follow-up analysis found that the current implementation is only partially aligned with `references/REBRANDING_DESIGN_FINAL.md`: runtime and landing tokens use a warm vermillion accent and the landing page defaults to a dark shell, while the final reference calls for a black/white primary system, scarce magenta promo accent, white marketing canvas, and pastel color-block rhythm. Runtime editor visual polish tasks that touch sidebar, inspector, theme/assets views, presenter/player surfaces, and manual responsive/accessibility review remain open, along with final full-command validation.
+
+## Design Alignment Findings
+
+- `references/REBRANDING_DESIGN_FINAL.md` is normative for palette and marketing rhythm.
+- Existing CSS token bindings are useful scaffolding, but token values must be realigned to the final black/white, pastel block, and magenta promo system.
+- Marketing should not default to an all-dark shell. Dark surfaces are limited to inverse sections such as marquee/footer, the navy block, or embedded product previews.
+- The app shell remains allowed to adapt density and reduce color usage, but primary actions stay black/white and pastel blocks remain reserved for major context shifts.
+- Final validation must include a design-alignment audit in addition to responsive and accessibility review.
 
 ## Technical Context
 
@@ -127,7 +139,7 @@ Research output is recorded in [research.md](./research.md). Key decisions:
 
 - Use `Awesome Slide` for user-facing product copy and `awesome-slide` for technical identifiers.
 - Introduce `@awesome-slide/core`, `@awesome-slide/cli`, and `awesome-slide` as canonical targets, but keep existing `@open-slide/*`, `open-slide`, `open-slide.config.ts`, `virtual:open-slide/*`, HMR events, and persisted paths as compatibility aliases for one major cycle.
-- Use a repo-local design source of truth plus CSS custom properties/Tailwind tokens rather than a new design-system dependency.
+- Use `references/REBRANDING_DESIGN_FINAL.md` plus the repo-local Awesome Slide design source of truth and CSS custom properties/Tailwind tokens rather than a new design-system dependency.
 - Migrate copy through locale files, docs, templates, and package metadata instead of scattering literals inside components.
 
 ## Phase 1: Design and Contracts
@@ -162,9 +174,10 @@ Gate status: **PASS**.
 
 ### Phase 2: Design System Foundation
 
-- Create the Awesome Slide design source of truth from `references/REBRANDING_DESIGN.md`.
-- Map tokens into `packages/core/src/app/styles.css` without editing generated shadcn components.
+- Create the Awesome Slide design source of truth from `references/REBRANDING_DESIGN_FINAL.md`, treating the earlier `references/REBRANDING_DESIGN.md` as superseded because it omitted required token metadata.
+- Map final reference tokens into `packages/core/src/app/styles.css` without editing generated shadcn components.
 - Define app, marketing, and docs treatments for navigation, panels, cards, dialogs, empty states, loading states, focus rings, and responsive breakpoints.
+- Treat vermillion/red accent usage and dark-default marketing shells as drift unless explicitly approved.
 
 ### Phase 3: Runtime App and Template Rebrand
 
@@ -182,5 +195,6 @@ Gate status: **PASS**.
 
 - Run `pnpm check`, `pnpm typecheck`, `pnpm test`, targeted package builds, and web validation.
 - Review responsive behavior at 375px, 768px, 1024px, and 1440px.
+- Run a design-alignment audit against `references/REBRANDING_DESIGN_FINAL.md` for runtime, docs, marketing, and demo surfaces.
 - Validate existing `open-slide` projects still load through compatibility paths.
 - Add changesets for `packages/core` and `packages/cli` changes.

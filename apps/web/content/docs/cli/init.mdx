@@ -1,10 +1,10 @@
 ---
-title: open-slide init
+title: awesome-slide init
 description: Scaffold a new workspace.
 ---
 
 ```npm
-npx @open-slide/cli init [directory]
+npx @awesome-slide/cli init [directory]
 ```
 
 If `directory` is omitted, the scaffolder uses the current folder. If it's
@@ -31,7 +31,7 @@ specific manager — handy in CI or when `npx` was run under a different
 agent than the one you actually want to use.
 
 When `--locale` is omitted, an interactive run asks you to pick a language
-and writes the matching preset into `open-slide.config.ts` (see the
+and writes the matching preset into `awesome-slide.config.ts` (see the
 [Locale reference](/docs/reference/locale)). Non-interactive runs default
 to `en`.
 
@@ -43,7 +43,7 @@ my-deck/
 │   └── getting-started/
 │       └── index.tsx       # starter slide
 ├── themes/                 # empty
-├── open-slide.config.ts    # framework config
+├── awesome-slide.config.ts    # framework config
 ├── CLAUDE.md               # mirrors AGENTS.md
 ├── AGENTS.md               # agent rules
 ├── package.json

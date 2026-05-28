@@ -16,34 +16,40 @@ const agents: Agent[] = [
 ];
 
 export function Agents() {
-  // double the list so the marquee loops seamlessly
   const track = [...agents, ...agents];
 
   return (
-    <section id="agents" className="relative overflow-hidden">
-      <div className="border-y border-[color:var(--color-rule)] bg-[color:var(--color-panel)]">
-        <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-10 sm:py-12">
-          <span className="font-[family-name:var(--font-sans)] text-[18px] sm:text-[20px] text-[color:var(--color-text-soft)]">
-            Bring your own agent. Anything that edits React works.
-          </span>
+    <section
+      id="agents"
+      className="landing-section relative overflow-hidden bg-[color:var(--color-ink)]"
+    >
+      <div className="mx-auto max-w-[1360px] px-5 py-20 sm:px-8 sm:py-28 lg:px-12">
+        <div className="mb-10 max-w-[760px]">
+          <span className="caption">Agent ready</span>
+          <h2 className="mt-4 text-[32px] font-medium leading-[1.12] tracking-normal sm:text-[44px] lg:text-[58px]">
+            Bring whatever writes React.
+          </h2>
         </div>
 
-        <div
-          className="relative"
-          style={{
-            WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)',
-            maskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)',
-          }}
-        >
-          <div className="marquee-track py-10 will-change-transform">
-            {track.map((agent, i) => (
-              <span key={`${agent.file}-${i}`} className="inline-flex items-center gap-4">
-                <AgentLogo agent={agent} />
-                <span className="font-[family-name:var(--font-sans)] text-[color:var(--color-text)] text-[22px] sm:text-[28px] lg:text-[36px] tracking-[-0.02em]">
-                  {agent.name}
+        <div className="agent-inverse overflow-hidden rounded-[24px] bg-[color:var(--color-inverse)] text-[color:var(--color-inverse-text)]">
+          <div
+            className="relative"
+            style={{
+              WebkitMaskImage:
+                'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)',
+              maskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)',
+            }}
+          >
+            <div className="marquee-track py-9 will-change-transform">
+              {track.map((agent, i) => (
+                <span key={`${agent.file}-${i}`} className="inline-flex items-center gap-4">
+                  <AgentLogo agent={agent} />
+                  <span className="font-[family-name:var(--font-sans)] text-[22px] tracking-normal sm:text-[28px] lg:text-[36px]">
+                    {agent.name}
+                  </span>
                 </span>
-              </span>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>

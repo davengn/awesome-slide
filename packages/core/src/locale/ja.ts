@@ -36,7 +36,7 @@ export const ja: Locale = {
   },
 
   home: {
-    appTitle: 'open-slide',
+    appTitle: 'Awesome Slide',
     draft: '下書き',
     duplicate: '複製',
     themes: 'テーマ',
@@ -242,6 +242,7 @@ export const ja: Locale = {
     commentsApplyHintPrefix: 'エージェントで ',
     commentsApplyHintSuffix: ' を実行して適用してください。',
     commentDeleteAria: '削除',
+    commentsButtonAria: 'Toggle slide comments',
     saveFailed: '保存に失敗しました:',
   },
 

@@ -29,7 +29,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-border": "var(--border)",
           "--border-radius": "8px",
           "--font-family":
-            "Geist Variable, -apple-system, BlinkMacSystemFont, sans-serif",
+            "Google Sans Flex Variable, -apple-system, BlinkMacSystemFont, sans-serif",
         } as React.CSSProperties
       }
       toastOptions={{

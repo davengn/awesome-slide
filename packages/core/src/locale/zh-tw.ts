@@ -36,7 +36,7 @@ export const zhTW: Locale = {
   },
 
   home: {
-    appTitle: 'open-slide',
+    appTitle: 'Awesome Slide',
     draft: '草稿',
     duplicate: '複製',
     themes: '主題',
@@ -239,6 +239,7 @@ export const zhTW: Locale = {
     commentsApplyHintPrefix: '在你的代理中執行 ',
     commentsApplyHintSuffix: ' 以套用這些變更。',
     commentDeleteAria: '刪除',
+    commentsButtonAria: 'Toggle slide comments',
     saveFailed: '儲存失敗：',
   },
 

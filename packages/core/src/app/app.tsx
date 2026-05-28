@@ -1,4 +1,5 @@
-import config from 'virtual:open-slide/config';
+import config from 'virtual:awesome-slide/config';
+import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { useLocale } from './lib/use-locale';
@@ -10,6 +11,12 @@ import { Slide } from './routes/slide';
 import { ThemeDetailPage, ThemesGalleryPage } from './routes/themes';
 
 export function App() {
+  const t = useLocale();
+
+  useEffect(() => {
+    document.title = t.home.appTitle;
+  }, [t.home.appTitle]);
+
   return (
     <BrowserRouter>
       <Routes>

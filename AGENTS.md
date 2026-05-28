@@ -1,6 +1,6 @@
-# open-slide — Framework Repo Guide
+# Awesome Slide — Framework Repo Guide
 
-You are working on the **open-slide framework** — the runtime, CLI, and tooling that ship to npm.
+You are working on the **Awesome Slide framework** — the runtime, CLI, and tooling that ship to npm.
 
 (Slide-authoring guidance lives in the `slide-authoring` / `create-slide` skills under `apps/demo/.claude/skills/`. Use those only when editing files inside `apps/demo/slides/`.)
 
@@ -10,9 +10,9 @@ pnpm + Turbo monorepo.
 
 | Path | Package | Role |
 | --- | --- | --- |
-| `packages/core` | `@open-slide/core` | Runtime (viewer, present mode, inspector), Vite plugin, `open-slide` dev/build CLI. |
-| `packages/cli` | `@open-slide/cli` | `npx @open-slide/cli init` scaffolder + project template. |
-| `apps/demo` | private | Local consumer of `@open-slide/core` via `workspace:*`. Dogfood target — run `pnpm dev` here to exercise the framework. |
+| `packages/core` | `@awesome-slide/core` | Runtime (viewer, present mode, inspector), Vite plugin, `awesome-slide` dev/build CLI. |
+| `packages/cli` | `@awesome-slide/cli` | `npx @awesome-slide/cli init` scaffolder + project template. |
+| `apps/demo` | private | Local consumer of `@awesome-slide/core` via `workspace:*`. Dogfood target — run `pnpm dev` here to exercise the framework. |
 | `apps/web` | private | Marketing site (Next.js). |
 
 Shared config: `biome.json`, `turbo.json`, `pnpm-workspace.yaml`, `tsconfig` per package.
@@ -49,5 +49,6 @@ Filter to one package: `pnpm core <script>` / `pnpm cli <script>`.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read:
-specs/001-rebrand-awesome-slide/plan.md
+- specs/001-rebrand-awesome-slide/plan.md
+- specs/002-reshape-landing-navigation/plan.md
 <!-- SPECKIT END -->

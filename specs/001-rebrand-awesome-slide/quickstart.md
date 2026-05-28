@@ -39,7 +39,11 @@ For public surfaces, add tests that prove old names still work before making the
 
 ## 4. Implement Design Tokens First
 
-Create or update a durable design source of truth before broad UI edits. Then map the approved tokens into:
+Create or update a durable design source of truth before broad UI edits. Treat
+`references/REBRANDING_DESIGN_FINAL.md` as normative for color and marketing
+rhythm: black/white primary system, exact pastel block family, scarce
+`#ff3d8b` magenta promo accent, and white marketing canvas with limited inverse
+sections. Then map the approved tokens into:
 
 - `packages/core/src/app/styles.css`
 - runtime app component classes in `packages/core/src/app`
@@ -81,6 +85,9 @@ Review redesigned surfaces at:
 
 Check:
 
+- implemented colors match `references/REBRANDING_DESIGN_FINAL.md`
+- marketing does not default to an all-dark shell
+- vermillion/red accent drift is absent unless explicitly approved
 - no horizontal scroll in standard app views
 - visible focus states
 - readable contrast

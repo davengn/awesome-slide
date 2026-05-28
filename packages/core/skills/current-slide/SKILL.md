@@ -1,6 +1,6 @@
 ---
 name: current-slide
-description: Resolve which slide, page, and (optionally) selected element the user is currently viewing in the open-slide dev server. Consult this whenever the user references "this page", "this slide", "this element", "the slide I'm on", "the current page", or any deictic reference to slide content without naming it. Re-read `node_modules/.open-slide/current.json` at the start of every such turn — the user navigates between turns, so a value you read earlier in the conversation is almost certainly stale.
+description: Resolve which slide, page, and (optionally) selected element the user is currently viewing in the awesome-slide dev server. Consult this whenever the user references "this page", "this slide", "this element", "the slide I'm on", "the current page", or any deictic reference to slide content without naming it. Re-read `node_modules/.awesome-slide/current.json` at the start of every such turn — the user navigates between turns, so a value you read earlier in the conversation is almost certainly stale.
 ---
 
 # Where is the user right now?
@@ -20,7 +20,7 @@ A "continue editing" follow-up is exactly the case where the user has likely jus
 ## How to read it
 
 ```
-node_modules/.open-slide/current.json
+node_modules/.awesome-slide/current.json
 ```
 
 Path is relative to the project root (the user's `cwd`, the directory that contains `slides/` and `package.json`). Use the `Read` tool. The file is JSON.
@@ -90,7 +90,7 @@ A *newer* `updatedAt` than the one you saw last turn is the normal signal that t
 
 User: "tighten the spacing on this page"
 
-1. Read `node_modules/.open-slide/current.json`.
+1. Read `node_modules/.awesome-slide/current.json`.
 2. Check `updatedAt` is recent.
 3. Read `pagePath` (e.g. `slides/q2-roadmap/index.tsx`).
 4. Identify the page at `pageIndex` in the default-exported array.
@@ -102,7 +102,7 @@ If `current.json` is missing or stale, ask: "Which slide and page should I tight
 
 User: "make this bigger"
 
-1. Read `node_modules/.open-slide/current.json`.
+1. Read `node_modules/.awesome-slide/current.json`.
 2. If `selection` is non-null, the user means that element. Read `pagePath`, jump to `selection.line`, and find the JSX opening tag near that line/column. Confirm with the snippet in `selection.text` and the `tagName`.
 3. Consult `slide-authoring` for type-scale and layout rules before editing.
 4. Edit the JSX node in place.

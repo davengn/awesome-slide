@@ -17,20 +17,20 @@ const steps: Step[] = [
     num: '01',
     kicker: 'scaffold',
     title: 'Spin up a workspace',
-    body: 'Creates the slide workspace. Every future deck you author lives inside it.',
+    body: 'Create the deck shell, scripts, config, and starter slide in one command.',
     code: {
       prompt: '$',
-      line: 'npx @open-slide/cli init my-deck',
-      tail: '✓ ready in 3s',
+      line: 'npx @awesome-slide/cli init my-deck',
+      tail: 'ready in 3s',
     },
   },
   {
     num: '02',
     kicker: 'author',
     title: 'Ask your agent',
-    body: 'Your agent drafts pages as arbitrary React components. You guide with prompts.',
+    body: 'Your agent drafts pages as arbitrary React components that you can review as source.',
     code: {
-      prompt: '›',
+      prompt: '>',
       line: '/create-slide for Q2 roadmap',
       tail: <AgentRow />,
     },
@@ -39,11 +39,11 @@ const steps: Step[] = [
     num: '03',
     kicker: 'iterate',
     title: 'Edit, comment, apply',
-    body: 'Click any element to tweak it visually. Or leave a comment for the agent to apply.',
+    body: 'Click the canvas, leave a note, or edit the generated component directly.',
     code: {
-      prompt: '›',
+      prompt: '>',
       line: '/apply-comment',
-      tail: '✓ applied change',
+      tail: 'applied change',
     },
   },
 ];
@@ -59,8 +59,8 @@ function renderLine(line: string) {
     const cmd = match[0];
     parts.push(
       <span key={`cmd-${start}`}>
-        <span className="text-[color:var(--color-accent)]">/</span>
-        <span className="text-[color:var(--color-accent-soft)]">{cmd.slice(1)}</span>
+        <span className="text-[color:var(--color-text)]">/</span>
+        <span className="text-[color:var(--color-text)]">{cmd.slice(1)}</span>
       </span>,
     );
     last = start + cmd.length;
@@ -76,13 +76,13 @@ function AgentRow() {
     ['cursor-dark.svg', 'Cursor'],
     ['gemini.svg', 'Gemini CLI'],
   ];
-  const cls = 'agent-mono h-[14px] w-auto object-contain shrink-0';
+  const cls = 'agent-mono h-[14px] w-auto shrink-0 object-contain';
   return (
     <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-2 normal-case tracking-normal">
       {agents.map(([file, name]) => (
         <img key={file} src={`/assets/${file}`} alt={name} className={cls} />
       ))}
-      <span className="text-[10px] tracking-[0.1em] uppercase text-[color:var(--color-muted)]">
+      <span className="text-[10px] uppercase tracking-[0.1em] text-[color:var(--color-muted)]">
         ...
       </span>
     </span>
@@ -91,50 +91,53 @@ function AgentRow() {
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="relative">
-      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-rule)]" />
-      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2 className="text-[32px] sm:text-[44px] lg:text-[64px] leading-[1.1] sm:leading-[1.05] tracking-[-0.03em] max-w-[820px] mb-14 sm:mb-20">
-          <span className="font-[family-name:var(--font-sans)] font-medium">Slides as code.</span>
-          <br />
-          <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-accent)]">
-            Crafted by agents.
-          </span>
-        </h2>
+    <section id="how-it-works" className="landing-section relative">
+      <div className="mx-auto max-w-[1360px] px-5 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-32">
+        <div className="landing-color-block bg-[color:var(--color-block-lime)] p-7 sm:p-10 lg:p-12">
+          <div className="mb-10 max-w-[760px] sm:mb-14">
+            <span className="caption">Workflow</span>
+            <h2 className="mt-4 text-[32px] font-medium leading-[1.1] tracking-normal sm:text-[46px] lg:text-[58px]">
+              Slides stay simple because the source stays yours.
+            </h2>
+          </div>
 
-        <ol className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden">
-          {steps.map((s) => (
-            <li
-              key={s.num}
-              className="group relative p-8 sm:p-10 lg:p-12 bg-[color:var(--color-ink)] flex flex-col gap-7 transition-colors hover:bg-[color:var(--color-panel)]"
-            >
-              <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
-                {s.num} · {s.kicker}
-              </span>
-
-              <div>
-                <h3 className="text-[22px] sm:text-[26px] lg:text-[30px] font-medium tracking-[-0.025em] leading-[1.15]">
-                  {s.title}
-                </h3>
-                <p className="mt-4 text-[15px] leading-[1.65] text-[color:var(--color-text-soft)] max-w-[36ch]">
-                  {s.body}
-                </p>
-              </div>
-
-              <div className="rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] p-4 font-[family-name:var(--font-mono)] text-[13px]">
-                <div className="flex items-center gap-2">
-                  <span className="text-[color:var(--color-accent)]">{s.code.prompt}</span>
-                  <span className="text-[color:var(--color-text)] truncate">
-                    {renderLine(s.code.line)}
-                  </span>
+          <ol className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {steps.map((s) => (
+              <li
+                key={s.num}
+                className="flex min-h-[340px] flex-col gap-7 rounded-[8px] border border-[color:var(--color-text)] bg-[color:var(--color-panel)] p-6 text-[color:var(--color-text)] sm:p-7 lg:p-8"
+              >
+                <div className="flex items-center justify-between gap-4 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-[color:var(--color-muted)]">
+                  <span>{s.num}</span>
+                  <span>{s.kicker}</span>
                 </div>
-                <div className="mt-3 text-[11px] tracking-[0.1em] uppercase text-[color:var(--color-muted)]">
-                  {s.code.tail}
+
+                <div>
+                  <h3 className="text-[22px] font-medium leading-[1.15] tracking-normal sm:text-[25px]">
+                    {s.title}
+                  </h3>
+                  <p className="mt-4 max-w-[36ch] text-[15px] leading-[1.65] text-[color:var(--color-text)]">
+                    {s.body}
+                  </p>
                 </div>
-              </div>
-            </li>
-          ))}
-        </ol>
+
+                <div className="mt-auto rounded-[8px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] p-4 font-[family-name:var(--font-mono)] text-[13px]">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="shrink-0 text-[color:var(--color-muted)]">
+                      {s.code.prompt}
+                    </span>
+                    <span className="min-w-0 truncate text-[color:var(--color-text)]">
+                      {renderLine(s.code.line)}
+                    </span>
+                  </div>
+                  <div className="mt-3 text-[11px] uppercase tracking-[0.1em] text-[color:var(--color-muted)]">
+                    {s.code.tail}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
     </section>
   );

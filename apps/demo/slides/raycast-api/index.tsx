@@ -1,4 +1,9 @@
-import { type DesignSystem, type Page, type SlideMeta, useSlidePageNumber } from '@open-slide/core';
+import {
+  type DesignSystem,
+  type Page,
+  type SlideMeta,
+  useSlidePageNumber,
+} from '@awesome-slide/core';
 import raycastIcon from './assets/raycast.svg';
 
 export const design: DesignSystem = {
@@ -24,7 +29,7 @@ const palette = {
 
 const fonts = {
   sans: '-apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", system-ui, sans-serif',
-  mono: '"SF Mono", "JetBrains Mono", "Menlo", monospace',
+  mono: '"SF Mono", "Google Sans Flex Variable", "Menlo", monospace',
 };
 
 const fill = {

@@ -2,11 +2,6 @@ import { useEffect, useState } from 'react';
 
 type Pos = { x: number; y: number } | null;
 
-/**
- * Soft red dot that follows the cursor when the laser tool is active.
- * Hides the system cursor on the player root via a `cursor-none` class
- * applied by the parent.
- */
 export function PresentLaserPointer({ enabled }: { enabled: boolean }) {
   const [pos, setPos] = useState<Pos>(null);
 
@@ -31,8 +26,8 @@ export function PresentLaserPointer({ enabled }: { enabled: boolean }) {
         transform: `translate3d(${pos.x - 9}px, ${pos.y - 9}px, 0)`,
         willChange: 'transform',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, oklch(0.66 0.24 28 / 0.95) 30%, transparent 70%)',
-        boxShadow: '0 0 18px 4px oklch(0.66 0.24 28 / 0.55)',
+        background: 'radial-gradient(circle, rgb(0 0 0 / 0.96) 30%, transparent 70%)',
+        boxShadow: '0 0 0 1px rgb(255 255 255 / 0.85), 0 0 18px 4px rgb(255 255 255 / 0.55)',
       }}
     />
   );

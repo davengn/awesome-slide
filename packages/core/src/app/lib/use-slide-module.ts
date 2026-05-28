@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SlideModule } from './sdk';
 import { loadSlide, slideChangeIncludes } from './slides';
 
+const SLIDE_CHANGED_EVENTS = ['awesome-slide:slide-changed', 'open-slide:slide-changed'] as const;
+
 export function useSlideModule(slideId: string) {
   const [slide, setSlide] = useState<SlideModule | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,10 +39,10 @@ export function useSlideModule(slideId: string) {
         });
       }
     };
-    import.meta.hot.on('open-slide:slide-changed', handler);
+    for (const event of SLIDE_CHANGED_EVENTS) import.meta.hot.on(event, handler);
     return () => {
       cancelled = true;
-      import.meta.hot?.off('open-slide:slide-changed', handler);
+      for (const event of SLIDE_CHANGED_EVENTS) import.meta.hot?.off(event, handler);
     };
   }, [slideId, reload]);
 

@@ -1,6 +1,6 @@
-# open-slide workspace
+# Awesome Slide workspace
 
-Slides as React components. Each slide lives under `slides/<id>/index.tsx` and default-exports an array of page components. The `@open-slide/core` runtime handles layout, scaling, navigation, thumbnails, and fullscreen play mode — you just write the pages.
+Slides are React components. Each slide lives under `slides/<id>/index.tsx` and default-exports an array of page components. The `@awesome-slide/core` runtime handles layout, scaling, navigation, thumbnails, and fullscreen play mode; you write the pages.
 
 ## Getting started
 
@@ -23,7 +23,7 @@ Then open the dev server and create a new slide at `slides/<your-slide>/index.ts
 
 ```tsx
 // slides/my-slide/index.tsx
-import type { Page, SlideMeta } from '@open-slide/core';
+import type { Page, SlideMeta } from '@awesome-slide/core';
 
 const Cover: Page = () => (
   <div style={{ width: '100%', height: '100%' }}>Hello</div>
@@ -49,16 +49,16 @@ This workspace ships with Claude Code skills preconfigured under `.claude/skills
 
 ## Config
 
-Optional `open-slide.config.ts` at the workspace root:
+Optional `awesome-slide.config.ts` at the workspace root:
 
 ```ts
-import type { OpenSlideConfig } from '@open-slide/core';
+import type { AwesomeSlideConfig } from '@awesome-slide/core';
 
-const openSlideConfig: OpenSlideConfig = {
+const awesomeSlideConfig: AwesomeSlideConfig = {
   port: 5173,
 };
 
-export default openSlideConfig;
+export default awesomeSlideConfig;
 ```
 
 Supported fields: `slidesDir`, `port`.

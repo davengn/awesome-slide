@@ -84,6 +84,8 @@ Represents a reusable visual decision in the Awesome Slide system.
 - Text-bearing color pairs must meet WCAG AA contrast.
 - Motion tokens must document reduced-motion behavior.
 - App tokens must avoid viewport-scaled font sizes.
+- Color tokens must preserve the final reference palette unless a documented design decision explicitly approves a deviation.
+- The magenta accent is marketing-only promo color; runtime primary actions use black/white.
 
 ## ComponentTreatment
 

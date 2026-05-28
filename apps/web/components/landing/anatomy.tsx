@@ -12,19 +12,19 @@ type Variant = {
 const variants: Variant[] = [
   {
     word: 'deck',
-    accent: '#d56b48',
+    accent: '#dceeb1',
     label: '01',
     subtitle: 'A React slide, rendered live.',
   },
   {
     word: 'pitch',
-    accent: '#ffb547',
+    accent: '#c5b0f4',
     label: '02',
     subtitle: 'No DSL. No templates. Just code.',
   },
   {
     word: 'story',
-    accent: '#68cc9a',
+    accent: '#c8e6cd',
     label: '03',
     subtitle: 'Versioned, reviewable, yours.',
   },
@@ -34,14 +34,14 @@ const CYCLE_MS = 3200;
 
 function buildCode({ accent, word, subtitle }: Variant): string[] {
   return [
-    "import type { Page } from '@open-slide/core';",
+    "import type { Page } from '@awesome-slide/core';",
     '',
     `const ACCENT = '${accent}';`,
     `const WORD = '${word}';`,
     `const SUBTITLE = '${subtitle}';`,
     '',
     'const Cover: Page = () => (',
-    "  <div style={{ background: '#08090a', color: '#f7f8f8' }}>",
+    "  <div style={{ background: '#000000', color: '#ffffff' }}>",
     "    <h1 style={{ fontSize: 188, letterSpacing: '-0.04em' }}>",
     '      Hello, <em style={{ color: ACCENT }}>{WORD}</em>.',
     '    </h1>',
@@ -66,71 +66,73 @@ export function Anatomy() {
   const lines = buildCode(v);
 
   return (
-    <section id="anatomy" className="relative">
-      <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-12 py-20 sm:py-32 lg:py-40">
-        <h2 className="text-[32px] sm:text-[44px] lg:text-[64px] leading-[1.1] sm:leading-[1.05] tracking-[-0.03em] max-w-[820px] mb-14 sm:mb-20">
-          <span className="font-[family-name:var(--font-sans)] font-medium">
-            A slide is a file.
-          </span>
-          <br />
-          <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-muted)]">
-            Just React, nothing else.
-          </span>
-        </h2>
+    <section id="anatomy" className="landing-section relative">
+      <div className="mx-auto max-w-[1360px] px-5 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-32">
+        <div className="landing-color-block bg-[color:var(--color-block-lilac)] p-7 sm:p-10 lg:p-12">
+          <h2 className="mb-10 max-w-[820px] text-[32px] leading-[1.1] tracking-normal sm:mb-14 sm:text-[44px] lg:text-[58px]">
+            <span className="font-[family-name:var(--font-sans)] font-medium">
+              A slide is a file.
+            </span>
+            <br />
+            <span className="font-[family-name:var(--font-display)] italic text-[color:var(--color-text)]">
+              Just React, nothing else.
+            </span>
+          </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          {/* code pane */}
-          <div className="lg:col-span-7">
-            <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
-              <div className="flex items-center justify-between px-4 sm:px-5 h-10 sm:h-11 border-b border-[color:var(--color-rule)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
-                <div className="flex items-center gap-3">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full transition-colors duration-500"
-                    style={{ background: v.accent }}
-                  />
-                  <span>slides/hello/index.tsx</span>
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12 lg:gap-8">
+            {/* code pane */}
+            <div className="rounded-[8px] bg-[color:var(--color-panel)] p-2 lg:col-span-7">
+              <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] overflow-hidden">
+                <div className="flex items-center justify-between px-4 sm:px-5 h-10 sm:h-11 border-b border-[color:var(--color-rule)] font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--color-muted)]">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full transition-colors duration-500"
+                      style={{ background: v.accent }}
+                    />
+                    <span>slides/hello/index.tsx</span>
+                  </div>
+                  <span className="tracking-[0.14em] uppercase">tsx · {lines.length} lines</span>
                 </div>
-                <span className="tracking-[0.14em] uppercase">tsx · {lines.length} lines</span>
+                <pre className="p-4 sm:p-6 text-[12px] sm:text-[13.5px] leading-[1.65] sm:leading-[1.75] overflow-x-auto font-[family-name:var(--font-mono)]">
+                  <code>
+                    {lines.map((line, idx) => {
+                      const changing = CHANGING_LINES.has(idx);
+                      return (
+                        <div
+                          key={changing ? `${idx}-${i}` : idx}
+                          className={`-mx-2 px-2 rounded-[3px] ${changing ? 'code-pulse' : ''}`}
+                          // highlight output is escaped + whitelisted spans — safe markup
+                          dangerouslySetInnerHTML={{
+                            __html: highlight(line) || '&nbsp;',
+                          }}
+                        />
+                      );
+                    })}
+                  </code>
+                </pre>
               </div>
-              <pre className="p-4 sm:p-6 text-[12px] sm:text-[13.5px] leading-[1.65] sm:leading-[1.75] overflow-x-auto font-[family-name:var(--font-mono)]">
-                <code>
-                  {lines.map((line, idx) => {
-                    const changing = CHANGING_LINES.has(idx);
-                    return (
-                      <div
-                        key={changing ? `${idx}-${i}` : idx}
-                        className={`-mx-2 px-2 rounded-[3px] ${changing ? 'code-pulse' : ''}`}
-                        // highlight output is escaped + whitelisted spans — safe markup
-                        dangerouslySetInnerHTML={{
-                          __html: highlight(line) || '&nbsp;',
-                        }}
-                      />
-                    );
-                  })}
-                </code>
-              </pre>
             </div>
-          </div>
 
-          {/* preview pane */}
-          <div className="lg:col-span-5">
-            <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-4 sm:p-5">
-              <div className="flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.14em] uppercase text-[color:var(--color-muted)] mb-4">
-                <span>rendered output</span>
-                <span className="flex items-center gap-2">
-                  <span
-                    className="h-1.5 w-1.5 rounded-full transition-colors duration-500"
-                    style={{ background: v.accent }}
-                  />
-                  live
-                </span>
-              </div>
+            {/* preview pane */}
+            <div className="rounded-[8px] bg-[color:var(--color-panel)] p-2 lg:col-span-5">
+              <div className="relative rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel)] p-4 sm:p-5">
+                <div className="flex items-center justify-between font-[family-name:var(--font-mono)] text-[11px] tracking-[0.14em] uppercase text-[color:var(--color-muted)] mb-4">
+                  <span>rendered output</span>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className="h-1.5 w-1.5 rounded-full transition-colors duration-500"
+                      style={{ background: v.accent }}
+                    />
+                    live
+                  </span>
+                </div>
 
-              <div
-                className="relative rounded-[6px] overflow-hidden border border-[color:var(--color-rule)]"
-                style={{ aspectRatio: '16 / 9', containerType: 'inline-size' }}
-              >
-                <SlidePreview variant={v} index={i} />
+                <div
+                  className="relative rounded-[6px] overflow-hidden border border-[color:var(--color-rule)]"
+                  style={{ aspectRatio: '16 / 9', containerType: 'inline-size' }}
+                >
+                  <SlidePreview variant={v} index={i} />
+                </div>
               </div>
             </div>
           </div>
@@ -146,8 +148,8 @@ function SlidePreview({ variant, index }: { variant: Variant; index: number }) {
     <div
       className="absolute inset-0"
       style={{
-        background: '#08090a',
-        color: '#f7f8f8',
+        background: '#000000',
+        color: '#ffffff',
         fontFamily: 'var(--font-sans), system-ui, sans-serif',
       }}
     >
@@ -187,7 +189,7 @@ function SlidePreview({ variant, index }: { variant: Variant; index: number }) {
             className="inline-block rounded-full transition-colors duration-500"
             style={{ width: '0.9cqw', height: '0.9cqw', background: accent }}
           />
-          <span>open-slide · {label}</span>
+          <span>Awesome Slide · {label}</span>
         </span>
         <span>2026</span>
       </div>
@@ -267,7 +269,7 @@ function highlight(src: string): string {
 
   const palette = {
     kw: 'var(--color-accent-soft)',
-    str: 'var(--color-warm)',
+    str: 'var(--color-block-navy)',
     num: 'var(--color-mint)',
     cmt: 'var(--color-muted)',
     tag: 'var(--color-accent)',

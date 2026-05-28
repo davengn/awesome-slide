@@ -101,6 +101,22 @@ describe('applyRevertAsset', () => {
     expect(r.source).toMatch(/import \{ type Page, ImagePlaceholder \} from '@open-slide\/core';/);
   });
 
+  it('adds ImagePlaceholder to an existing @awesome-slide/core named import', () => {
+    const src = [
+      "import { type Page } from '@awesome-slide/core';",
+      "import hero from './assets/hero.png';",
+      'export default [() => (',
+      "  <img src={hero} alt='x' style={{ objectFit: 'cover' }} />",
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyRevertAsset(src, './assets/hero.png');
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    expect(r.source).toMatch(
+      /import \{ type Page, ImagePlaceholder \} from '@awesome-slide\/core';/,
+    );
+  });
+
   it('adds a separate value import when the only @open-slide/core import is type-only', () => {
     const src = [
       "import type { DesignSystem, Page, SlideMeta } from '@open-slide/core';",
@@ -115,10 +131,10 @@ describe('applyRevertAsset', () => {
     expect(r.source).toMatch(
       /import type \{ DesignSystem, Page, SlideMeta \} from '@open-slide\/core';/,
     );
-    expect(r.source).toContain("import { ImagePlaceholder } from '@open-slide/core';");
+    expect(r.source).toContain("import { ImagePlaceholder } from '@awesome-slide/core';");
   });
 
-  it('adds a fresh @open-slide/core import when none exists', () => {
+  it('adds a fresh @awesome-slide/core import when none exists', () => {
     const src = [
       "import hero from './assets/hero.png';",
       'export default [() => (',
@@ -128,7 +144,7 @@ describe('applyRevertAsset', () => {
     ].join('\n');
     const r = applyRevertAsset(src, './assets/hero.png');
     if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
-    expect(r.source.split('\n')[0]).toBe("import { ImagePlaceholder } from '@open-slide/core';");
+    expect(r.source.split('\n')[0]).toBe("import { ImagePlaceholder } from '@awesome-slide/core';");
   });
 
   it('is a no-op when the asset is not imported', () => {

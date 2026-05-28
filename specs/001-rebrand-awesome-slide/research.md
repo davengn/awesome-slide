@@ -46,7 +46,7 @@
 
 ## Decision: Adapt the rebrand reference for app surfaces
 
-**Decision**: Use `references/REBRANDING_DESIGN.md` as the primary visual direction: monochrome core UI, editorial typography, restrained shadows, pill text CTAs, circular icon buttons, and oversized pastel color-block moments. For the app shell, apply color blocks selectively to onboarding, empty states, theme previews, and major context changes rather than every repeated card.
+**Decision**: Use `references/REBRANDING_DESIGN_FINAL.md` as the primary visual direction because it includes the complete token front matter missing from `references/REBRANDING_DESIGN.md`: monochrome core UI, editorial typography, restrained shadows, pill text CTAs, circular icon buttons, magenta promo accent, and oversized pastel color-block moments. For the app shell, apply color blocks selectively to onboarding, empty states, theme previews, and major context changes rather than every repeated card.
 
 **Rationale**: Slide creation needs a calm, durable workspace where the slide canvas stays dominant. The reference is expressive enough for marketing and empty states, but dense editor surfaces need restraint.
 
@@ -54,6 +54,17 @@
 
 - Apply full marketing color-block styling to all app panels. Rejected because it would reduce scanability in slide management and inspector workflows.
 - Use a dark dashboard palette because the app is an editor. Rejected because it conflicts with the rebrand reference and would make Awesome Slide feel like a generic SaaS dashboard.
+
+## Decision: Treat final reference colors as normative
+
+**Decision**: Preserve the final reference's black/white primary system, exact pastel block family, and `#ff3d8b` magenta promo accent in implementation. Runtime app density may be adapted, but replacing the palette with vermillion/red accents or making the marketing shell dark by default is design drift.
+
+**Rationale**: The final reference explicitly defines token values and usage rules. Letting implementation substitute a different accent system makes the plan and code appear compliant while producing a different brand.
+
+**Alternatives considered**:
+
+- Keep the warm vermillion implementation as an Awesome Slide-specific evolution. Rejected for this feature because the user explicitly asked to update the plan around the completed final reference.
+- Use dark marketing by default and treat the final reference as inspiration. Rejected because the final reference states the marketing canvas is black-and-white with white hero/canvas rhythm and dark surfaces only in limited inverse sections.
 
 ## Decision: Migrate strings through existing localization and docs surfaces
 

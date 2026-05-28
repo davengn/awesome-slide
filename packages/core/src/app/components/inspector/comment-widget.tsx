@@ -12,20 +12,21 @@ export function CommentWidget() {
   return (
     <div data-inspector-ui className="absolute right-4 bottom-4 z-20 flex flex-col items-end gap-2">
       {open && (
-        <div className="w-80 rounded-md border bg-card shadow-xl animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
-          <div className="flex items-center justify-between border-b px-3 py-2">
-            <span className="text-xs font-semibold">
+        <div className="w-80 rounded-[8px] border border-hairline bg-popover shadow-floating animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
+            <span className="font-heading text-[12px] font-semibold tracking-tight">
               {format(plural(count, t.inspector.commentsCount), { count })}
             </span>
             <button
               type="button"
-              className="text-muted-foreground hover:text-foreground"
+              className="flex size-6 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
               onClick={() => setOpen(false)}
+              aria-label={t.common.close}
             >
               <X className="size-3.5" />
             </button>
           </div>
-          {error && <p className="px-3 py-2 text-xs text-red-600">{error}</p>}
+          {error && <p className="px-3 py-2 text-xs text-destructive">{error}</p>}
           {count === 0 ? (
             <p className="px-3 py-6 text-center text-xs text-muted-foreground">
               {t.inspector.commentsEmpty}
@@ -36,7 +37,7 @@ export function CommentWidget() {
                 {comments.map((c) => (
                   <li
                     key={c.id}
-                    className="flex items-start gap-2 border-b px-3 py-2 last:border-0"
+                    className="flex items-start gap-2 border-b border-hairline px-3 py-2 last:border-0"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="text-[10px] font-mono text-muted-foreground">
@@ -47,7 +48,7 @@ export function CommentWidget() {
                     <button
                       type="button"
                       onClick={() => remove(c.id)}
-                      className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-600"
+                      className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
                       title={t.inspector.commentDeleteAria}
                     >
                       <Trash2 className="size-3.5" />
@@ -55,9 +56,9 @@ export function CommentWidget() {
                   </li>
                 ))}
               </ul>
-              <div className="border-t px-3 py-2 text-[11px] text-muted-foreground">
+              <div className="border-t border-hairline px-3 py-2 text-[11px] text-muted-foreground">
                 {t.inspector.commentsApplyHintPrefix}
-                <code className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
+                <code className="rounded-[4px] bg-muted px-1 py-0.5 font-mono text-foreground">
                   /apply-comments
                 </code>
                 {t.inspector.commentsApplyHintSuffix}
@@ -69,7 +70,8 @@ export function CommentWidget() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-full border bg-card px-3 py-2 text-xs font-medium shadow-lg hover:bg-muted"
+        className="flex h-10 items-center gap-2 rounded-full border border-hairline bg-popover px-3 text-[12px] font-medium shadow-floating hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+        aria-label={t.inspector.commentsButtonAria}
       >
         <MessageSquare className="size-4" />
         {count}

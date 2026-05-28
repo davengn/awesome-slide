@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
+const ASSETS_CHANGED_EVENTS = [
+  'awesome-slide:assets-changed',
+  'open-slide:assets-changed',
+] as const;
+
 export type AssetEntry = {
   name: string;
   size: number;
@@ -202,9 +207,9 @@ export function useAssets(slideId: string): UseAssetsResult {
         refresh().catch(() => {});
       }
     };
-    import.meta.hot.on('open-slide:assets-changed', handler);
+    for (const event of ASSETS_CHANGED_EVENTS) import.meta.hot.on(event, handler);
     return () => {
-      import.meta.hot?.off('open-slide:assets-changed', handler);
+      for (const event of ASSETS_CHANGED_EVENTS) import.meta.hot?.off(event, handler);
     };
   }, [slideId, refresh]);
 

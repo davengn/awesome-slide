@@ -4,8 +4,10 @@ import { PANEL_TRANSITION_MS, usePanelMount } from '@/components/panel/panel-she
 import { useNotes } from '@/lib/inspector/use-notes';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
+import { readStorageWithLegacy, writeStorageWithLegacy } from '../lib/compat-storage';
 
-const STORAGE_KEY = 'open-slide:notes-drawer-open';
+const STORAGE_KEY = 'awesome-slide:notes-drawer-open';
+const LEGACY_STORAGE_KEY = 'open-slide:notes-drawer-open';
 const DRAWER_CONTENT_H = 166;
 
 type Props = {
@@ -19,7 +21,7 @@ export function NotesDrawer({ slideId, index, total, initial }: Props) {
   const t = useLocale();
   const [open, setOpen] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(STORAGE_KEY) === '1';
+    return readStorageWithLegacy(window.localStorage, STORAGE_KEY, LEGACY_STORAGE_KEY) === '1';
   });
   const { value, setValue, status, flush } = useNotes(slideId, index, initial);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -27,7 +29,7 @@ export function NotesDrawer({ slideId, index, total, initial }: Props) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem(STORAGE_KEY, open ? '1' : '0');
+    writeStorageWithLegacy(window.localStorage, STORAGE_KEY, LEGACY_STORAGE_KEY, open ? '1' : '0');
   }, [open]);
 
   const statusLabel = (() => {

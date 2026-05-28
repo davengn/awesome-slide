@@ -1,4 +1,4 @@
-import { type Page, useSlidePageNumber } from '@open-slide/core';
+import { type Page, useSlidePageNumber } from '@awesome-slide/core';
 import type { ReactNode } from 'react';
 
 const styles = `
@@ -7,7 +7,7 @@ const styles = `
 `;
 
 const SANS = "-apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', system-ui, sans-serif";
-const MONO = "'SF Mono', 'JetBrains Mono', 'Menlo', monospace";
+const MONO = "'SF Mono', 'Google Sans Flex Variable', 'Menlo', monospace";
 
 const Title = ({ children }: { children: ReactNode }) => (
   <h1

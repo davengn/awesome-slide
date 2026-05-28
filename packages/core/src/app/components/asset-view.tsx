@@ -118,7 +118,7 @@ export function AssetView({ slideId }: Props) {
   return (
     <section
       aria-label={t.asset.sectionAria}
-      className={cn('relative flex h-full flex-col bg-background')}
+      className={cn('relative flex h-full flex-col bg-canvas')}
       onDragEnter={(e) => {
         if (!hasFiles(e)) return;
         e.preventDefault();
@@ -144,7 +144,7 @@ export function AssetView({ slideId }: Props) {
         }
       }}
     >
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline bg-sidebar px-6 py-3">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline bg-background px-6 py-3">
         <div className="flex min-w-0 items-center gap-3">
           {lockedToGlobal ? (
             <span className="eyebrow">{t.asset.eyebrow}</span>
@@ -177,7 +177,7 @@ export function AssetView({ slideId }: Props) {
             type="button"
             onClick={() => setLogoSearchOpen(true)}
             className={cn(
-              'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[5px] border border-border bg-card px-2.5 text-[12.5px] font-medium transition-colors',
+              'inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-3 text-[12.5px] font-medium transition-colors',
               'hover:bg-muted/60 hover:border-foreground/20 active:translate-y-px',
             )}
           >
@@ -187,7 +187,7 @@ export function AssetView({ slideId }: Props) {
           <label
             htmlFor={inputId}
             className={cn(
-              'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[5px] bg-foreground px-3 text-[12.5px] font-medium text-background transition-colors',
+              'inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-foreground px-3 text-[12.5px] font-medium text-background transition-colors',
               'shadow-[inset_0_1px_0_oklch(1_0_0/0.12),0_1px_0_oklch(0_0_0/0.12)]',
               'hover:bg-foreground/90 active:translate-y-px',
             )}
@@ -346,7 +346,7 @@ export function AssetView({ slideId }: Props) {
 function EmptyState() {
   const t = useLocale();
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+    <div className="flex h-full flex-col items-center justify-center gap-4 bg-block-mint px-6 py-16 text-center">
       <div className="flex size-12 items-center justify-center rounded-full border border-hairline bg-card text-muted-foreground">
         <ImageIcon className="size-5" />
       </div>
@@ -387,7 +387,7 @@ function AssetCard({
   const isImage = asset.mime.startsWith('image/');
   const t = useLocale();
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-[6px] border border-border bg-card shadow-edge transition-shadow hover:shadow-floating focus-within:ring-2 focus-within:ring-ring/30">
+    <div className="group relative flex flex-col overflow-hidden rounded-[8px] border border-border bg-card shadow-edge transition-shadow hover:shadow-floating focus-within:ring-2 focus-within:ring-ring/30">
       <button
         type="button"
         onClick={onPreview}
@@ -492,15 +492,15 @@ function RenameCard({
 
   const isImage = asset.mime.startsWith('image/');
   return (
-    <div className="relative flex flex-col overflow-hidden rounded-xl border-2 border-primary bg-card shadow-sm">
-      <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:16px_16px]">
+    <div className="relative flex flex-col overflow-hidden rounded-[8px] border border-brand bg-card shadow-floating">
+      <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-[repeating-conic-gradient(theme(colors.muted)_0_25%,transparent_0_50%)] bg-[length:14px_14px]">
         {isImage ? (
           <img src={asset.url} alt="" className="size-full object-contain" draggable={false} />
         ) : (
           <FileIcon className="size-10 text-muted-foreground" />
         )}
       </div>
-      <div className="border-t bg-card px-2 py-2">
+      <div className="border-t border-hairline bg-card px-2 py-2">
         <input
           ref={inputRef}
           value={value}
@@ -519,7 +519,7 @@ function RenameCard({
             }
           }}
           maxLength={120}
-          className="w-full rounded-md border bg-background px-2 py-1 text-sm outline-none ring-ring/40 focus:ring-2"
+          className="w-full rounded-[6px] border border-border bg-background px-2 py-1 text-[12.5px] outline-none ring-ring/40 focus:ring-2"
         />
       </div>
     </div>

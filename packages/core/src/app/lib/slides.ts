@@ -3,7 +3,7 @@ import {
   slideIds as ids,
   loadSlide as load,
   slideThemes as themes,
-} from 'virtual:open-slide/slides';
+} from 'virtual:awesome-slide/slides';
 import type { SlideModule } from './sdk';
 
 export const slideIds: string[] = ids;

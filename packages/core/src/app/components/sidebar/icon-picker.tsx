@@ -4,14 +4,14 @@ import type { FolderIcon } from '@/lib/sdk';
 import { useLocale } from '@/lib/use-locale';
 
 export const PRESET_COLORS = [
-  '#c0392b', // vermillion
-  '#b8743e', // ochre
-  '#6f7a3a', // olive
-  '#2f6a4f', // forest
-  '#3a5a7c', // ink blue
-  '#6b4675', // plum
-  '#a3543b', // terracotta
-  '#3a3a3a', // graphite
+  '#000000',
+  '#dceeb1',
+  '#c5b0f4',
+  '#f4ecd6',
+  '#c8e6cd',
+  '#efd4d4',
+  '#f3c9b6',
+  '#1f1d3d',
 ];
 
 export function IconPicker({
@@ -49,9 +49,10 @@ export function IconPicker({
               key={c}
               type="button"
               onClick={() => onChange({ type: 'color', value: c })}
-              className="size-6 rounded-[4px] ring-1 ring-foreground/10 shadow-[inset_0_1px_0_oklch(1_0_0/0.18)] transition-transform hover:scale-110"
+              aria-pressed={value.type === 'color' && value.value === c}
+              className="size-7 rounded-[4px] ring-1 ring-foreground/10 shadow-[inset_0_1px_0_oklch(1_0_0/0.18)] transition-transform hover:scale-105 aria-pressed:ring-2 aria-pressed:ring-foreground"
               style={{ background: c }}
-              aria-label={c}
+              aria-label={`Use folder color ${c}`}
             />
           ))}
         </div>
