@@ -1,5 +1,6 @@
 import config from 'virtual:awesome-slide/config';
 import {
+  Bot,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -43,6 +44,7 @@ import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
+import { AgentChatDrawer, AgentChatPanel } from '../components/agent-chat/index.ts';
 import { ClickNavZones } from '../components/click-nav-zones';
 import { NotesDrawer } from '../components/notes-drawer';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
@@ -69,6 +71,7 @@ export function Slide() {
   const [linkCopied, setLinkCopied] = useState(false);
   const linkCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [designOpen, setDesignOpen] = useState(false);
+  const [agentChatOpen, setAgentChatOpen] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -515,6 +518,18 @@ export function Slide() {
                 <DesignToggleButton active={designOpen} onToggle={() => setDesignOpen((v) => !v)} />
               )}
               {view === 'slides' && <InspectToggleButton />}
+              {view === 'slides' && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  title="Agent Chat"
+                  aria-label="Toggle Agent Chat"
+                  onClick={() => setAgentChatOpen((v) => !v)}
+                  className={cn(agentChatOpen && 'bg-muted text-foreground')}
+                >
+                  <Bot className="size-4" />
+                </Button>
+              )}
               <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-hairline md:block" />
               {view === 'slides' && (
                 <div className="inline-flex items-stretch">
@@ -632,6 +647,18 @@ export function Slide() {
                   </div>
                   <InspectorPanel />
                   <DesignPanel open={designOpen} onClose={() => setDesignOpen(false)} />
+                  {agentChatOpen && (
+                    <div className="hidden md:block shrink-0 h-full">
+                      <AgentChatPanel onClose={() => setAgentChatOpen(false)} slideId={slideId} />
+                    </div>
+                  )}
+                  <div className="md:hidden">
+                    <AgentChatDrawer
+                      isOpen={agentChatOpen}
+                      onClose={() => setAgentChatOpen(false)}
+                      slideId={slideId}
+                    />
+                  </div>
                 </div>
                 {import.meta.env.DEV && (
                   <NotesDrawer
