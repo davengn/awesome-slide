@@ -153,7 +153,7 @@ export function FolderItem({
       className={cn(
         'group relative grid min-h-[var(--sidebar-row-height)] grid-cols-[1.5rem_minmax(0,1fr)_var(--sidebar-count-width)] items-center gap-2 rounded-[var(--sidebar-row-radius)] px-2.5 text-[12.5px] transition-colors',
         selected
-          ? 'bg-sidebar-primary font-medium text-sidebar-primary-foreground before:absolute before:inset-y-1.5 before:-left-0.5 before:w-[2px] before:rounded-full before:bg-sidebar-primary'
+          ? 'bg-sidebar-primary font-medium text-sidebar-primary-foreground'
           : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
         slideDragActive && acceptsSlideDrop && !dragOver && 'ring-1 ring-foreground/10',
         dragOver &&

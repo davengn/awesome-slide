@@ -242,7 +242,7 @@ export function InspectorPanel() {
               {t.inspector.inspect}
             </span>
             <span aria-hidden className="h-3 w-px bg-hairline" />
-            <span className="rounded-[3px] border border-hairline bg-card px-1.5 py-px font-mono text-[10.5px] text-foreground/85">
+            <span className="rounded-sm border border-hairline bg-card px-1.5 py-px font-mono text-[10.5px] text-foreground/85">
               &lt;{pinSelected.anchor.tagName.toLowerCase()}&gt;
             </span>
           </div>
@@ -847,7 +847,7 @@ function AgentWatchingBadge() {
         <TooltipTrigger asChild>
           <button
             type="button"
-            className="flex shrink-0 cursor-help items-center gap-1.5 rounded-[3px] border border-hairline bg-card px-1.5 py-px text-[10.5px] text-foreground/85 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+            className="flex shrink-0 cursor-help items-center gap-1.5 rounded-full border border-hairline bg-card px-1.5 py-px text-[10.5px] text-foreground/85 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
           >
             <span aria-hidden className="relative flex size-1.5 items-center justify-center">
               {connected ? (
@@ -911,7 +911,7 @@ function CommentsSection({
   return (
     <Section title={t.inspector.leaveComment}>
       <div className="flex flex-col gap-2">
-        <div ref={wrapRef} className="comment-cue rounded-[6px]">
+        <div ref={wrapRef} className="comment-cue rounded-md">
           <Textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}

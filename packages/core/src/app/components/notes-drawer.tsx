@@ -109,7 +109,7 @@ export function NotesDrawer({ slideId, index, total, initial }: Props) {
               placeholder={t.notesDrawer.placeholder}
               rows={6}
               spellCheck
-              className="block h-[150px] w-full resize-none rounded-[6px] border border-border bg-card px-3 py-2 text-[13px] leading-relaxed text-card-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="block h-[150px] w-full resize-none rounded-md border border-border bg-card px-3 py-2 text-[13px] leading-relaxed text-card-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
             />
           </div>
         </div>

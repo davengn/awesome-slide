@@ -26,12 +26,12 @@ export function Agents() {
       <div className="mx-auto max-w-[1360px] px-5 py-20 sm:px-8 sm:py-28 lg:px-12">
         <div className="mb-10 max-w-[760px]">
           <span className="caption">Agent ready</span>
-          <h2 className="mt-4 text-[32px] font-medium leading-[1.12] tracking-normal sm:text-[44px] lg:text-[58px]">
+          <h2 className="mt-4 text-[32px] font-medium leading-[1.12] tracking-[-1px] sm:text-[44px] sm:tracking-[-2px] lg:text-[58px] lg:tracking-[-3px]">
             Bring whatever writes React.
           </h2>
         </div>
 
-        <div className="agent-inverse overflow-hidden rounded-[24px] bg-[color:var(--color-inverse)] text-[color:var(--color-inverse-text)]">
+        <div className="agent-inverse overflow-hidden rounded-xl bg-[color:var(--color-inverse)] text-[color:var(--color-inverse-text)]">
           <div
             className="relative"
             style={{
@@ -44,7 +44,7 @@ export function Agents() {
               {track.map((agent, i) => (
                 <span key={`${agent.file}-${i}`} className="inline-flex items-center gap-4">
                   <AgentLogo agent={agent} />
-                  <span className="font-[family-name:var(--font-sans)] text-[22px] tracking-normal sm:text-[28px] lg:text-[36px]">
+                  <span className="font-[family-name:var(--font-sans)] text-[22px] tracking-[-0.8px] sm:text-[28px] sm:tracking-[-1px] lg:text-[36px] lg:tracking-[-1.5px]">
                     {agent.name}
                   </span>
                 </span>

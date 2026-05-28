@@ -151,7 +151,7 @@ export function HomeShell() {
         />
       </div>
 
-      <div className="paper relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-canvas">
+      <div className="paper relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-canvas">
         <div
           className={cn(
             'flex min-h-14 items-center justify-between border-b border-hairline bg-background px-4 md:hidden',

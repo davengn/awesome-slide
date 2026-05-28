@@ -10,6 +10,8 @@ export { cssVarsToString, defaultDesign, designToCssVars } from './app/lib/desig
 export { useSlidePageNumber } from './app/lib/page-context.tsx';
 export type { Page, SlideMeta, SlideModule } from './app/lib/sdk.ts';
 export { CANVAS_HEIGHT, CANVAS_WIDTH } from './app/lib/sdk.ts';
+export type { SlideTransition, TransitionPhase } from './app/lib/transition.ts';
+export type { BrandCompatibilitySurface } from './brand.ts';
 export {
   AWESOME_SLIDE_BINARY,
   AWESOME_SLIDE_BRAND,
@@ -30,8 +32,6 @@ export {
   OPEN_SLIDE_TECHNICAL_NAME,
   OPEN_SLIDE_VIRTUAL_PREFIX,
 } from './brand.ts';
-export type { BrandCompatibilitySurface } from './brand.ts';
-export type { SlideTransition, TransitionPhase } from './app/lib/transition.ts';
 export type {
   AwesomeSlideBuildConfig,
   AwesomeSlideConfig,

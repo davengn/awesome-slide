@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: AwesomeSlide-design-analysis
-description: "A confident light-canvas builder marketing site that treats the page like a working artboard — pure white surfaces, dark display type set in GT Walsheim Medium with aggressive negative tracking, and a single confident blue (#0099ff) reserved for hyperlinks and selection states. The page rhythm is broken by oversized vibrant gradient atmosphere panels — magenta, violet, orange spotlights — that act as living showcase tiles, not decoration. Every CTA is a black pill on light; every card is a light-gray surface; every section title pulls letter-spacing tight enough to feel like a poster."
+description: "A confident light-canvas builder marketing site that treats the page like a working artboard — pure white surfaces, dark display type set in Inter with aggressive negative tracking, and a single confident blue (#0099ff) reserved for hyperlinks and selection states. The page rhythm is broken by oversized vibrant gradient atmosphere panels — magenta, violet, orange spotlights — that act as living showcase tiles, not decoration. Every CTA is a black pill on light; every card is a light-gray surface; every section title pulls letter-spacing tight enough to feel like a poster."
 
 colors:
   primary: "#000000"
@@ -37,29 +37,29 @@ colors:
 
 typography:
   display-xxl:
-    fontFamily: GT Walsheim Framer Medium
+    fontFamily: Inter Variable
     fontSize: 110px
-    fontWeight: 500
+    fontWeight: 700
     lineHeight: 0.85
     letterSpacing: -5.5px
   display-xl:
-    fontFamily: GT Walsheim Medium
+    fontFamily: Inter Variable
     fontSize: 85px
-    fontWeight: 500
+    fontWeight: 700
     lineHeight: 0.95
     letterSpacing: -4.25px
     fontFeature: ss02
   display-lg:
-    fontFamily: GT Walsheim Medium
+    fontFamily: Inter Variable
     fontSize: 62px
-    fontWeight: 500
+    fontWeight: 600
     lineHeight: 1.00
     letterSpacing: -3.1px
     fontFeature: ss02
   display-md:
-    fontFamily: GT Walsheim Medium
+    fontFamily: Inter Variable
     fontSize: 32px
-    fontWeight: 500
+    fontWeight: 600
     lineHeight: 1.13
     letterSpacing: -1.0px
   headline:
@@ -375,7 +375,7 @@ components:
 
 ## Overview
 
-AwesomeSlide's marketing canvas is a clean, crisp, light-theme artboard by default. The dominant surface is `{colors.canvas}` — pure white — and on top of it sits oversized near-black display type set in **GT Walsheim Medium** with letter-spacing pulled to extreme negative values (-5.5px on the 110px display, -4.25px on the 85px hero). The page reads like a poster: one assertive statement per band, generous breathing room above and below.
+AwesomeSlide's marketing canvas is a clean, crisp, light-theme artboard by default. The dominant surface is `{colors.canvas}` — pure white — and on top of it sits oversized near-black display type set in **Inter** with letter-spacing pulled to extreme negative values (-5.5px on the 110px display, -4.25px on the 85px hero). The page reads like a poster: one assertive statement per band, generous breathing room above and below.
 
 The single accent is `{colors.accent-blue}` — used scarcely, mostly for hyperlinks, selection halos, and a subtle blue-tinted shadow ring on focused inputs. The brand chrome itself is monochrome: black pill buttons, light-gray cards, gray secondary text. What makes AwesomeSlide distinctive is the rhythm break — every few sections the page drops in a **vibrant gradient atmosphere card**: a magenta-violet spotlight, a sunset-orange wash, a coral-pink panel. These aren't section backgrounds; they're individual cards arranged in a card grid, each one a small living poster that shows what AwesomeSlide can produce.
 
@@ -438,7 +438,7 @@ These four sit as oversized atmospheric tiles inside otherwise monochrome card g
 
 ### Font Family
 
-- **GT Walsheim Framer Medium** / **GT Walsheim Medium** — AwesomeSlide's display typeface. Geometric, slightly humanist, very confident at large sizes with extreme negative tracking. Fallbacks: `GT Walsheim Medium Placeholder` system font.
+- **Inter Variable** — AwesomeSlide's display and body typeface. Geometric, slightly humanist, very confident at large sizes with extreme negative tracking. Fallbacks: system sans-serif.
 - **Inter Variable** — System body typeface. Used with extensive OpenType character variants: `cv01` (alternate "1"), `cv05` (alternate "g"), `cv09` (alternate "i" / "l"), `cv11` (alternate "0"), `ss03` / `ss07` stylistic sets, `dlig` discretionary ligatures, and `tnum` for numerics in tabular contexts. The result is a body voice that feels bespoke without commissioning a custom face.
 - **Inter** — Used selectively for `{typography.headline}` (the 22px / 20px tier). The non-variable cut catches small tracking targets that the variable file rounds.
 
@@ -466,9 +466,9 @@ These four sit as oversized atmospheric tiles inside otherwise monochrome card g
 - **Weight stays in a narrow band.** Display sits at 500, body at 400, body-sm/caption at 500. Hierarchy is carried by size + tracking, not by 700/900 ramps.
 - **Tight line-heights everywhere.** Even body runs at 1.30 — AwesomeSlide's editorial tone is denser than typical SaaS marketing.
 
-### Note on Font Substitutes
+### Typography Baseline
 
-If implementing without GT Walsheim Medium, suitable open-source substitutes include **Mona Sans**, **Geist**, or **Inter** at weight 600–700 with manually tightened tracking. Mona Sans's hairline weights at 100–300 are particularly close to AwesomeSlide's cleaner section openers. Inter Variable is open-source — keep it as-is and preserve the documented OpenType variants.
+AwesomeSlide utilizes **Inter Variable** as the single typography baseline across the entire application and design system, configured with tight tracking for display headers to ensure a clean, high-contrast, poster-like character.
 
 ## Layout
 

@@ -38,7 +38,7 @@ export function validateMutationRequest(
 ): MutationRequestValidationResult {
   if (opts.requireJsonBody) {
     const contentType = headerValue(req, 'content-type')?.toLowerCase();
-    if (!contentType || !contentType.startsWith('application/json')) {
+    if (!contentType?.startsWith('application/json')) {
       return {
         ok: false,
         status: 415,

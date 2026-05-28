@@ -1,14 +1,12 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import './global.css';
 import type { Metadata, Viewport } from 'next';
-import { Instrument_Serif } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import { appName, gitConfig, siteUrl } from '@/lib/shared';
 
-const instrument = Instrument_Serif({
-  variable: '--font-instrument-serif',
+const inter = Inter({
+  variable: '--font-sans',
   subsets: ['latin'],
-  weight: '400',
-  style: ['normal', 'italic'],
   display: 'swap',
 });
 
@@ -87,18 +85,9 @@ export const viewport: Viewport = {
 
 export default function Layout({ children }: LayoutProps<'/'>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={instrument.variable}
-    >
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="flex flex-col min-h-screen" style={{ fontFamily: '"Google Sans Flex Variable", sans-serif' }}>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
+      <head />
+      <body className="flex flex-col min-h-screen font-sans">
         <RootProvider>{children}</RootProvider>
       </body>
     </html>

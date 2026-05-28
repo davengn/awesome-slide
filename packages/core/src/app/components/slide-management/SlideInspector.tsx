@@ -2,13 +2,7 @@ import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import type {
-  Deck,
-  Folder,
-  ManagementMode,
-  SlideMetadataPatch,
-  SlideRecord,
-} from '@/lib/sdk';
+import type { Deck, Folder, ManagementMode, SlideMetadataPatch, SlideRecord } from '@/lib/sdk';
 
 type SlideInspectorProps = {
   slide: SlideRecord | null;
@@ -52,8 +46,7 @@ export function SlideInspector({
     setError(null);
   }, [slide]);
 
-  const sourceEditable =
-    mode === 'editable' && slide?.sourceState === 'supported';
+  const sourceEditable = mode === 'editable' && slide?.sourceState === 'supported';
   const collectionEditable = mode === 'editable';
 
   const parsedTags = useMemo(
@@ -67,7 +60,7 @@ export function SlideInspector({
   );
 
   if (!slide) {
-    return <></>;
+    return null;
   }
 
   const save = async () => {
@@ -101,9 +94,7 @@ export function SlideInspector({
           <p className="truncate font-heading text-[15px] font-semibold tracking-normal">
             {slide.title || slide.id}
           </p>
-          <p className="truncate font-mono text-[11px] text-muted-foreground">
-            {slide.id}
-          </p>
+          <p className="truncate font-mono text-[11px] text-muted-foreground">{slide.id}</p>
         </div>
         <button
           type="button"
@@ -117,7 +108,7 @@ export function SlideInspector({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {!sourceEditable && (
-          <div className="mb-4 rounded-[8px] border border-hairline bg-muted p-3 text-[12px] text-muted-foreground">
+          <div className="mb-4 rounded-md border border-hairline bg-muted p-3 text-[12px] text-muted-foreground">
             {sourceWarning(slide.sourceState, mode)}
           </div>
         )}
@@ -130,7 +121,7 @@ export function SlideInspector({
               disabled={!sourceEditable}
               maxLength={80}
               aria-label="Title"
-              className="h-10 w-full rounded-[8px] border border-hairline bg-muted px-3 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="h-10 w-full rounded-md border border-hairline bg-muted px-3 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
             />
           </Field>
           <Field label="Description">
@@ -141,7 +132,7 @@ export function SlideInspector({
               maxLength={280}
               rows={3}
               aria-label="Description"
-              className="min-h-20 w-full resize-y rounded-[8px] border border-hairline bg-muted px-3 py-2 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="min-h-20 w-full resize-y rounded-md border border-hairline bg-muted px-3 py-2 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
             />
           </Field>
           <Field label="Tags">
@@ -150,7 +141,7 @@ export function SlideInspector({
               onChange={(event) => setTags(event.target.value)}
               disabled={!sourceEditable}
               aria-label="Tags"
-              className="h-10 w-full rounded-[8px] border border-hairline bg-muted px-3 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="h-10 w-full rounded-md border border-hairline bg-muted px-3 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
             />
           </Field>
           <div className="grid grid-cols-2 gap-3">
@@ -160,18 +151,16 @@ export function SlideInspector({
                 onChange={(event) => setTheme(event.target.value)}
                 disabled={!sourceEditable}
                 aria-label="Theme"
-                className="h-10 w-full rounded-[8px] border border-hairline bg-muted px-3 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-10 w-full rounded-md border border-hairline bg-muted px-3 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
               />
             </Field>
             <Field label="Status">
               <select
                 value={status}
-                onChange={(event) =>
-                  setStatus(event.target.value as SlideRecord['status'])
-                }
+                onChange={(event) => setStatus(event.target.value as SlideRecord['status'])}
                 disabled={!sourceEditable}
                 aria-label="Status"
-                className="h-10 w-full rounded-[8px] border border-hairline bg-muted px-3 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-10 w-full rounded-md border border-hairline bg-muted px-3 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
               >
                 <option value="draft">Draft</option>
                 <option value="ready">Ready</option>
@@ -187,7 +176,7 @@ export function SlideInspector({
               maxLength={2000}
               rows={5}
               aria-label="Notes"
-              className="min-h-28 w-full resize-y rounded-[8px] border border-hairline bg-muted px-3 py-2 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="min-h-28 w-full resize-y rounded-md border border-hairline bg-muted px-3 py-2 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
             />
           </Field>
 
@@ -197,7 +186,7 @@ export function SlideInspector({
               onChange={(event) => setFolderId(event.target.value)}
               disabled={!collectionEditable}
               aria-label="Folder"
-              className="h-10 w-full rounded-[8px] border border-hairline bg-muted px-3 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="h-10 w-full rounded-md border border-hairline bg-muted px-3 text-[13px] text-foreground outline-none disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-ring/30"
             >
               <option value="">Drafts</option>
               {folders.map((folder) => (
@@ -209,14 +198,12 @@ export function SlideInspector({
           </Field>
 
           <div className="grid gap-2">
-            <span className="text-[12px] font-medium text-muted-foreground">
-              Decks
-            </span>
+            <span className="text-[12px] font-medium text-muted-foreground">Decks</span>
             <div className="grid gap-1">
               {decks.map((deck) => (
                 <label
                   key={deck.id}
-                  className="flex min-h-9 items-center gap-2 rounded-[7px] bg-muted px-2 text-[13px]"
+                  className="flex min-h-9 items-center gap-2 rounded-sm bg-muted px-2 text-[13px]"
                 >
                   <input
                     type="checkbox"
@@ -234,7 +221,7 @@ export function SlideInspector({
                 </label>
               ))}
               {decks.length === 0 && (
-                <p className="rounded-[7px] bg-muted px-2 py-2 text-[12px] text-muted-foreground">
+                <p className="rounded-sm bg-muted px-2 py-2 text-[12px] text-muted-foreground">
                   No decks
                 </p>
               )}
@@ -249,11 +236,7 @@ export function SlideInspector({
         <Button variant="ghost" size="sm" onClick={onClose}>
           Close
         </Button>
-        <Button
-          size="sm"
-          disabled={saving || mode !== 'editable'}
-          onClick={save}
-        >
+        <Button size="sm" disabled={saving || mode !== 'editable'} onClick={save}>
           Save
         </Button>
       </div>
@@ -264,18 +247,13 @@ export function SlideInspector({
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid gap-1.5">
-      <span className="text-[12px] font-medium text-muted-foreground">
-        {label}
-      </span>
+      <span className="text-[12px] font-medium text-muted-foreground">{label}</span>
       {children}
     </div>
   );
 }
 
-function sourceWarning(
-  sourceState: SlideRecord['sourceState'],
-  mode: ManagementMode,
-): string {
+function sourceWarning(sourceState: SlideRecord['sourceState'], mode: ManagementMode): string {
   if (mode === 'readonly') return 'Editing requires the local dev server.';
   if (sourceState === 'readable-unsupported') {
     return 'Slide source uses an unsupported metadata shape.';

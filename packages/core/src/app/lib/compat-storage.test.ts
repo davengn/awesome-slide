@@ -34,9 +34,9 @@ describe('compat storage', () => {
     const storage = new MemoryStorage();
     storage.setItem('open-slide:home-sort', 'title-asc');
 
-    expect(
-      readStorageWithLegacy(storage, 'awesome-slide:home-sort', 'open-slide:home-sort'),
-    ).toBe('title-asc');
+    expect(readStorageWithLegacy(storage, 'awesome-slide:home-sort', 'open-slide:home-sort')).toBe(
+      'title-asc',
+    );
     expect(storage.getItem('awesome-slide:home-sort')).toBe('title-asc');
   });
 
@@ -45,11 +45,16 @@ describe('compat storage', () => {
     storage.setItem('awesome-slide:home-sort', 'created-desc');
     storage.setItem('open-slide:home-sort', 'title-asc');
 
-    expect(
-      readStorageWithLegacy(storage, 'awesome-slide:home-sort', 'open-slide:home-sort'),
-    ).toBe('created-desc');
+    expect(readStorageWithLegacy(storage, 'awesome-slide:home-sort', 'open-slide:home-sort')).toBe(
+      'created-desc',
+    );
 
-    writeStorageWithLegacy(storage, 'awesome-slide:home-sort', 'open-slide:home-sort', 'title-desc');
+    writeStorageWithLegacy(
+      storage,
+      'awesome-slide:home-sort',
+      'open-slide:home-sort',
+      'title-desc',
+    );
 
     expect(storage.getItem('awesome-slide:home-sort')).toBe('title-desc');
     expect(storage.getItem('open-slide:home-sort')).toBe('title-desc');

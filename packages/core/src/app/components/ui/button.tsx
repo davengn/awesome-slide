@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 const buttonVariants = cva(
   [
     "group/button relative inline-flex shrink-0 items-center justify-center",
-    "rounded-[6px] text-[13px] font-medium whitespace-nowrap select-none",
+    "rounded-full text-[13px] font-medium whitespace-nowrap select-none",
     "outline-none transition-[background-color,color,border-color,box-shadow,transform] duration-100",
     "focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background",
     "active:not-aria-[haspopup]:translate-y-px",
@@ -56,14 +56,14 @@ const buttonVariants = cva(
         link: 'text-foreground underline decoration-foreground/30 decoration-1 underline-offset-[3px] hover:decoration-foreground/70 [&_svg]:hidden',
       },
       size: {
-        default: 'h-8 gap-1.5 px-3',
-        xs: 'h-6 gap-1 rounded-[5px] px-2 text-[11.5px]',
-        sm: 'h-7 gap-1.5 rounded-[5px] px-2.5 text-[12px]',
-        lg: 'h-9 gap-1.5 px-3.5 text-[13.5px]',
-        icon: 'size-8',
-        'icon-xs': 'size-6 rounded-[5px]',
-        'icon-sm': 'size-7 rounded-[5px]',
-        'icon-lg': 'size-9',
+        default: 'h-8 gap-1.5 px-3 rounded-full',
+        xs: 'h-6 gap-1 rounded-full px-2 text-[11.5px]',
+        sm: 'h-7 gap-1.5 rounded-full px-2.5 text-[12px]',
+        lg: 'h-9 gap-1.5 px-3.5 text-[13.5px] rounded-full',
+        icon: 'size-8 rounded-full',
+        'icon-xs': 'size-6 rounded-full',
+        'icon-sm': 'size-7 rounded-full',
+        'icon-lg': 'size-9 rounded-full',
       },
     },
     defaultVariants: {

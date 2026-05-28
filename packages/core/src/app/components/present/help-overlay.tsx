@@ -42,7 +42,7 @@ export function PresentHelpOverlay({ open, onOpenChange, container }: Props) {
                 {row.keys.map((k) => (
                   <kbd
                     key={k}
-                    className="rounded-[4px] border border-border bg-muted px-1.5 py-0.5 font-mono text-[10.5px] tabular-nums"
+                    className="rounded-xs border border-border bg-muted px-1.5 py-0.5 font-mono text-[10.5px] tabular-nums"
                   >
                     {k}
                   </kbd>

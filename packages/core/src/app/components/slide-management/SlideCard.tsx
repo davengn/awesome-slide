@@ -55,7 +55,7 @@ export function SlideCard({
         onClick={() => onOpen(slide.id)}
         data-slide-item
         data-slide-id={slide.id}
-        className="relative aspect-video overflow-hidden rounded-[8px] border border-hairline bg-card text-left shadow-edge outline-none ring-1 ring-foreground/[0.04] transition-[box-shadow,transform,--tw-ring-color] duration-200 hover:-translate-y-0.5 hover:shadow-floating hover:ring-foreground/20 focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="relative aspect-video overflow-hidden rounded-xl border border-hairline bg-card text-left shadow-edge outline-none ring-1 ring-foreground/[0.04] transition-[box-shadow,transform,--tw-ring-color] duration-200 hover:-translate-y-0.5 hover:shadow-floating hover:ring-foreground/20 focus-visible:ring-2 focus-visible:ring-ring/40"
       >
         {FirstPage ? (
           <div className="h-full w-full transition-transform duration-300 group-hover:scale-[1.025]">
@@ -93,7 +93,7 @@ export function SlideCard({
           {slide.tags.slice(0, 2).map((tag) => (
             <span
               key={tag}
-              className="max-w-[8rem] truncate rounded-[5px] bg-muted px-1.5 py-0.5 text-[11px]"
+              className="max-w-[8rem] truncate rounded-sm bg-muted px-1.5 py-0.5 text-[11px]"
             >
               {tag}
             </span>

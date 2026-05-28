@@ -32,9 +32,9 @@
   --color-block-coral: #f3c9b6;
   --color-block-navy: #1f1d3d;
 
-  --font-display: var(--font-instrument-serif);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-jetbrains-mono);
+  --font-display: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 
   background: var(--color-ink);
   color: var(--color-text);
@@ -50,7 +50,8 @@
 }
 
 html.light .os-landing,
-html.dark .os-landing {
+.light .os-landing,
+[data-theme="light"] .os-landing {
   --color-ink: #ffffff;
   --color-paper: #000000;
   --color-panel: #ffffff;
@@ -66,6 +67,36 @@ html.dark .os-landing {
   --color-accent: #000000;
   --color-accent-soft: #4d4d4d;
   --color-accent-deep: #000000;
+  --color-promo: #ff3d8b;
+  --color-success: #1ea64a;
+  --color-mint: #c8e6cd;
+  --color-block-lime: #dceeb1;
+  --color-block-lilac: #c5b0f4;
+  --color-block-cream: #f4ecd6;
+  --color-block-mint: #c8e6cd;
+  --color-block-pink: #efd4d4;
+  --color-block-coral: #f3c9b6;
+  --color-block-navy: #1f1d3d;
+}
+
+html.dark .os-landing,
+.dark .os-landing,
+[data-theme="dark"] .os-landing {
+  --color-ink: #090909;
+  --color-paper: #ffffff;
+  --color-panel: #141414;
+  --color-panel-hi: #1c1c1c;
+  --color-rule: #262626;
+  --color-rule-soft: #1a1a1a;
+  --color-text: #ffffff;
+  --color-text-soft: #ffffff;
+  --color-muted: #999999;
+  --color-dim: #666666;
+  --color-inverse: #ffffff;
+  --color-inverse-text: #000000;
+  --color-accent: #ffffff;
+  --color-accent-soft: #999999;
+  --color-accent-deep: #ffffff;
   --color-promo: #ff3d8b;
   --color-success: #1ea64a;
   --color-mint: #c8e6cd;
@@ -252,16 +283,24 @@ html.dark .os-landing {
 .os-landing .logo-light {
   display: none;
 }
+.light .os-landing .logo-dark,
+[data-theme="light"] .os-landing .logo-dark,
 html.light .os-landing .logo-dark {
   display: none;
 }
+.light .os-landing .logo-light,
+[data-theme="light"] .os-landing .logo-light,
 html.light .os-landing .logo-light {
   display: inline-block;
 }
 
 .os-landing .agent-mono,
 html.light .os-landing .agent-mono,
-html.dark .os-landing .agent-mono {
+.light .os-landing .agent-mono,
+[data-theme="light"] .os-landing .agent-mono,
+html.dark .os-landing .agent-mono,
+.dark .os-landing .agent-mono,
+[data-theme="dark"] .os-landing .agent-mono {
   filter: brightness(0);
   opacity: 0.7;
 }
@@ -293,6 +332,31 @@ html.dark .os-landing .agent-mono {
   .os-landing .landing-color-block {
     border-radius: 18px;
   }
+}
+
+.os-landing .spotlight {
+  border-radius: 30px;
+  color: #fff;
+}
+
+.os-landing .spotlight.violet {
+  background: linear-gradient(135deg, #6a4cf5 0%, #9b59f7 100%);
+}
+
+.os-landing .spotlight.magenta {
+  background: linear-gradient(135deg, #d44df0 0%, #f06292 100%);
+}
+
+.os-landing .spotlight.orange {
+  background: linear-gradient(135deg, #ff7a3d 0%, #ffc043 100%);
+}
+
+.os-landing .spotlight .spotlight-title {
+  color: #fff;
+}
+
+.os-landing .spotlight .spotlight-body {
+  color: rgba(255, 255, 255, 0.78);
 }
 
 @media (prefers-reduced-motion: reduce) {
