@@ -12,6 +12,7 @@ import {
   OPEN_SLIDE_VIRTUAL_PREFIX,
 } from '../brand.ts';
 import type { AwesomeSlideConfig, OpenSlideConfig } from '../config.ts';
+import { readMetaFromFile } from '../editing/meta-source.ts';
 
 export type { AwesomeSlideConfig, OpenSlideConfig };
 
@@ -37,6 +38,8 @@ const SLIDE_CHANGED_EVENTS = [
 type FoldersManifest = {
   folders: unknown[];
   assignments: Record<string, string>;
+  decks: unknown[];
+  manualOrder: Record<string, string[]>;
 };
 
 async function readFoldersManifest(file: string): Promise<FoldersManifest> {
@@ -49,10 +52,15 @@ async function readFoldersManifest(file: string): Promise<FoldersManifest> {
         parsed.assignments && typeof parsed.assignments === 'object'
           ? (parsed.assignments as Record<string, string>)
           : {},
+      decks: Array.isArray(parsed.decks) ? parsed.decks : [],
+      manualOrder:
+        parsed.manualOrder && typeof parsed.manualOrder === 'object'
+          ? (parsed.manualOrder as Record<string, string[]>)
+          : {},
     };
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-      return { folders: [], assignments: {} };
+      return { folders: [], assignments: {}, decks: [], manualOrder: {} };
     }
     throw err;
   }
@@ -82,49 +90,39 @@ function toId(absFile: string, slidesRoot: string): string {
   return rel.split(path.sep)[0];
 }
 
-const META_THEME_RE = /(?:^|[\s,{])theme\s*:\s*['"]([^'"]+)['"]/;
-const META_CREATED_AT_RE = /(?:^|[\s,{])createdAt\s*:\s*['"]([^'"]+)['"]/;
-
-type ExtractedMeta = { theme: string | null; createdAt: string | null };
-
-function extractMeta(src: string): ExtractedMeta {
-  const empty: ExtractedMeta = { theme: null, createdAt: null };
-  const metaStart = src.search(/export\s+const\s+meta\b/);
-  if (metaStart === -1) return empty;
-  const eqIdx = src.indexOf('=', metaStart);
-  if (eqIdx === -1) return empty;
-  const openBrace = src.indexOf('{', eqIdx);
-  if (openBrace === -1) return empty;
-  let depth = 0;
-  let closeBrace = -1;
-  for (let i = openBrace; i < src.length; i++) {
-    const ch = src[i];
-    if (ch === '{') depth++;
-    else if (ch === '}') {
-      depth--;
-      if (depth === 0) {
-        closeBrace = i;
-        break;
-      }
-    }
-  }
-  if (closeBrace === -1) return empty;
-  const body = src.slice(openBrace + 1, closeBrace);
-  const themeMatch = body.match(META_THEME_RE);
-  const createdAtMatch = body.match(META_CREATED_AT_RE);
-  return {
-    theme: themeMatch ? themeMatch[1] : null,
-    createdAt: createdAtMatch ? createdAtMatch[1] : null,
-  };
-}
+type ExtractedMeta = {
+  title: string | null;
+  description: string | null;
+  tags: string[];
+  theme: string | null;
+  status: 'draft' | 'ready' | 'archived' | null;
+  createdAt: string | null;
+  updatedAt: number | null;
+  sourceState: 'supported' | 'readable-unsupported' | 'parse-error' | 'missing';
+};
 
 async function readSlideMeta(abs: string): Promise<ExtractedMeta> {
+  const metaResult = await readMetaFromFile(abs);
+  let updatedAt: number | null = null;
   try {
-    const src = await fs.readFile(abs, 'utf8');
-    return extractMeta(src);
+    updatedAt = (await fs.stat(abs)).mtimeMs;
   } catch {
-    return { theme: null, createdAt: null };
+    updatedAt = null;
   }
+  const meta = metaResult.meta;
+  return {
+    title: typeof meta.title === 'string' ? meta.title : null,
+    description: typeof meta.description === 'string' ? meta.description : null,
+    tags: Array.isArray(meta.tags) ? meta.tags : [],
+    theme: typeof meta.theme === 'string' ? meta.theme : null,
+    status:
+      meta.status === 'draft' || meta.status === 'ready' || meta.status === 'archived'
+        ? meta.status
+        : null,
+    createdAt: typeof meta.createdAt === 'string' ? meta.createdAt : null,
+    updatedAt,
+    sourceState: metaResult.state,
+  };
 }
 
 function parseCreatedAtMs(iso: string | null): number | null {
@@ -143,19 +141,37 @@ async function generateSlidesModule(
       const id = toId(abs, slidesRoot);
       const importPath = isDev ? `/@fs/${abs.replace(/^\/+/, '')}` : abs;
       const meta = await readSlideMeta(abs);
-      return { id, importPath, theme: meta.theme, createdAt: parseCreatedAtMs(meta.createdAt) };
+      return { id, importPath, meta, createdAt: parseCreatedAtMs(meta.createdAt) };
     }),
   );
 
   const ids = JSON.stringify(entries.map((e) => e.id).sort());
   const themesMap: Record<string, string> = {};
   const createdAtMap: Record<string, number> = {};
+  const titlesMap: Record<string, string> = {};
+  const descriptionsMap: Record<string, string> = {};
+  const tagsMap: Record<string, string[]> = {};
+  const statusMap: Record<string, 'draft' | 'ready' | 'archived'> = {};
+  const updatedAtMap: Record<string, number> = {};
+  const sourceStateMap: Record<string, ExtractedMeta['sourceState']> = {};
   for (const e of entries) {
-    if (e.theme) themesMap[e.id] = e.theme;
+    if (e.meta.title) titlesMap[e.id] = e.meta.title;
+    if (e.meta.description) descriptionsMap[e.id] = e.meta.description;
+    if (e.meta.tags.length > 0) tagsMap[e.id] = e.meta.tags;
+    if (e.meta.theme) themesMap[e.id] = e.meta.theme;
+    if (e.meta.status) statusMap[e.id] = e.meta.status;
     if (e.createdAt !== null) createdAtMap[e.id] = e.createdAt;
+    if (e.meta.updatedAt !== null) updatedAtMap[e.id] = e.meta.updatedAt;
+    sourceStateMap[e.id] = e.meta.sourceState;
   }
+  const titlesJson = JSON.stringify(titlesMap);
+  const descriptionsJson = JSON.stringify(descriptionsMap);
+  const tagsJson = JSON.stringify(tagsMap);
   const themesJson = JSON.stringify(themesMap);
+  const statusJson = JSON.stringify(statusMap);
   const createdAtJson = JSON.stringify(createdAtMap);
+  const updatedAtJson = JSON.stringify(updatedAtMap);
+  const sourceStateJson = JSON.stringify(sourceStateMap);
   const importTokens = JSON.stringify(Object.fromEntries(entries.map((e) => [e.id, 0])));
   const devRuntime = isDev
     ? `
@@ -184,8 +200,14 @@ if (import.meta.hot) {
 
   return `// ${SLIDES_VMOD} - generated
 export const slideIds = ${ids};
+export const slideTitles = ${titlesJson};
+export const slideDescriptions = ${descriptionsJson};
+export const slideTags = ${tagsJson};
 export const slideThemes = ${themesJson};
+export const slideStatus = ${statusJson};
 export const slideCreatedAt = ${createdAtJson};
+export const slideUpdatedAt = ${updatedAtJson};
+export const slideSourceState = ${sourceStateJson};
 ${devRuntime}
 
 export async function loadSlide(id) {

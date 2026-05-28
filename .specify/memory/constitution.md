@@ -1,50 +1,97 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+  Sync Impact Report
+  ==================
+  Version change: initial → 1.0.0
+  Modified principles: N/A (initial ratification)
+  Added sections:
+    - Core Principles (5 principles)
+    - Technology Stack
+    - Development Workflow
+    - Governance
+  Removed sections: N/A
+  Templates requiring updates:
+    - .specify/templates/plan-template.md: ✅ no changes needed (Constitution Check already generic)
+    - .specify/templates/spec-template.md: ✅ no changes needed (structure compatible)
+    - .specify/templates/tasks-template.md: ✅ no changes needed (structure compatible)
+  Follow-up TODOs: none
+-->
+
+# Awesome Slide Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Agent-Native by Design
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Every feature MUST consider the agent-authoring workflow first. Awesome
+Slide exists so agents can write slides — any new API, component, or
+workflow MUST be expressible through the agent skill system. If a feature
+cannot be driven by an agent, it does not belong in the framework.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Package Discipline
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+All changes to `@awesome-slide/core` or `@awesome-slide/cli` MUST include
+a changeset (`pnpm changeset`). Descriptions MUST be one line, present
+tense, user-facing. No manual version bumps or `CHANGELOG.md` edits.
+Dependencies MUST NOT be added casually — every dep in `core` inflates
+end-user install size.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Clean Code Baseline
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Biome MUST pass before every commit (`pnpm check` or `pnpm check:fix`).
+Comments are reserved for non-obvious WHY only — no WHAT-descriptions,
+no PR references, no section banners, no commented-out code. Shadcn UI
+components under `packages/core/src/app/components/ui` are biome-ignored
+and MUST NOT be hand-edited unless regenerating.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Monorepo Convention
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+pnpm + Turbo monorepo. Framework packages live in `packages/` and publish
+to npm. Dogfood apps live in `apps/`. Shared config via `biome.json`,
+`turbo.json`, `pnpm-workspace.yaml`, and per-package `tsconfig.json`.
+Filter with `pnpm <pkg> <script>` — never `cd` into packages to run
+commands.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Ship Small, YAGNI
+
+Start simple. Do not design for hypothetical future requirements. Three
+similar lines beat a premature abstraction. No half-finished
+implementations. Every addition MUST justify its existence against
+install-size impact and API surface.
+
+## Technology Stack
+
+- **Language**: TypeScript (strict)
+- **UI**: React, Tailwind CSS, shadcn/ui
+- **Build**: Vite (plugin in core), Turbo (monorepo orchestration)
+- **Package manager**: pnpm (workspaces)
+- **Linting/formatting**: Biome (format + lint + organize imports)
+- **Testing**: Vitest
+- **Versioning**: Changesets (`@changesets/cli`)
+- **Canvas**: Fixed 1920 × 1080 — not configurable
+
+## Development Workflow
+
+1. **Lint gate**: `pnpm check` MUST pass before commit. CI enforces this.
+2. **Changeset gate**: Any change to `packages/core` or `packages/cli`
+   MUST include a changeset. Apps and root tooling are exempt.
+3. **No manual versions**: `changeset version` owns `CHANGELOG.md` and
+   `package.json` bumps. Never edit these by hand.
+4. **Test before release**: `pnpm test` MUST pass. `pnpm build` MUST
+   succeed across the full graph.
+5. **Commit discipline**: Descriptive messages. One logical change per
+   commit when practical.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution is the authoritative source for non-negotiable project
+rules. All PRs and code reviews MUST verify compliance with the
+principles above.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+- **Amendments** require documentation of the change, maintainer approval,
+  and a migration plan if the change breaks existing patterns.
+- **Complexity exceptions** MUST be recorded in the plan's Complexity
+  Tracking table with justification and the simpler alternative rejected.
+- **Runtime guidance** lives in `AGENTS.md` and `CLAUDE.md`. When this
+  constitution and those files conflict, the constitution wins.
+
+**Version**: 1.0.0 | **Ratified**: 2026-05-28 | **Last Amended**: 2026-05-28

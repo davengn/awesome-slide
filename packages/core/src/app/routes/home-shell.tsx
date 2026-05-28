@@ -50,6 +50,7 @@ export function HomeShell() {
   const t = useLocale();
 
   const selectedId = pathToSelectedId(location.pathname, searchParams);
+  const isManagementHome = location.pathname === '/';
 
   const [titleMap, setTitleMap] = useState<Record<string, string>>({});
   const reportTitle = useCallback((slideId: string, slideTitle: string) => {
@@ -124,7 +125,7 @@ export function HomeShell() {
 
   return (
     <div className="flex h-dvh overflow-hidden bg-canvas text-foreground">
-      <div className="hidden md:block">
+      <div className={cn('hidden md:block', isManagementHome && 'md:hidden')}>
         <Sidebar
           folders={manifest.folders}
           countFor={countFor}
@@ -151,12 +152,22 @@ export function HomeShell() {
       </div>
 
       <div className="paper relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-canvas">
-        <div className="flex min-h-14 items-center justify-between border-b border-hairline bg-background px-4 md:hidden">
+        <div
+          className={cn(
+            'flex min-h-14 items-center justify-between border-b border-hairline bg-background px-4 md:hidden',
+            isManagementHome && 'hidden',
+          )}
+        >
           <h1 className="truncate font-heading text-lg font-semibold tracking-normal">
             {t.home.appTitle}
           </h1>
         </div>
-        <div className="border-b border-hairline bg-background px-4 py-2 md:hidden">
+        <div
+          className={cn(
+            'border-b border-hairline bg-background px-4 py-2 md:hidden',
+            isManagementHome && 'hidden',
+          )}
+        >
           <nav className="flex gap-2 overflow-x-auto pb-1" aria-label="Mobile workspace navigation">
             <MobileFolderPill
               icon={{ type: 'emoji', value: '📝' }}
@@ -194,7 +205,7 @@ export function HomeShell() {
 
         <div
           className={cn(
-            isAssetsRoute
+            isAssetsRoute || isManagementHome
               ? 'flex min-h-0 flex-1 flex-col'
               : 'mx-auto w-full max-w-[1180px] px-5 py-8 md:px-10 md:py-12',
           )}

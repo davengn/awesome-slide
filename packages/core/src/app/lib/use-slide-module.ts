@@ -30,7 +30,8 @@ export function useSlideModule(slideId: string) {
   }, [reload]);
 
   useEffect(() => {
-    if (!import.meta.hot) return;
+    const hot = import.meta.hot;
+    if (!hot) return;
     let cancelled = false;
     const handler = (data: unknown) => {
       if (slideChangeIncludes(data, slideId)) {
@@ -39,10 +40,10 @@ export function useSlideModule(slideId: string) {
         });
       }
     };
-    for (const event of SLIDE_CHANGED_EVENTS) import.meta.hot.on(event, handler);
+    for (const event of SLIDE_CHANGED_EVENTS) hot.on(event, handler);
     return () => {
       cancelled = true;
-      for (const event of SLIDE_CHANGED_EVENTS) import.meta.hot?.off(event, handler);
+      for (const event of SLIDE_CHANGED_EVENTS) hot.off(event, handler);
     };
   }, [slideId, reload]);
 

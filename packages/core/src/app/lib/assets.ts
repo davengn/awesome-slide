@@ -201,15 +201,16 @@ export function useAssets(slideId: string): UseAssetsResult {
   }, [slideId]);
 
   useEffect(() => {
-    if (!available || !import.meta.hot) return;
+    const hot = import.meta.hot;
+    if (!available || !hot) return;
     const handler = (data: { slideId?: string } | undefined) => {
       if (!data || data.slideId === slideId) {
         refresh().catch(() => {});
       }
     };
-    for (const event of ASSETS_CHANGED_EVENTS) import.meta.hot.on(event, handler);
+    for (const event of ASSETS_CHANGED_EVENTS) hot.on(event, handler);
     return () => {
-      for (const event of ASSETS_CHANGED_EVENTS) import.meta.hot?.off(event, handler);
+      for (const event of ASSETS_CHANGED_EVENTS) hot.off(event, handler);
     };
   }, [slideId, refresh]);
 

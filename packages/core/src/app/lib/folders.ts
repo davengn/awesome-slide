@@ -4,7 +4,7 @@ import type { Folder, FolderIcon, FoldersManifest } from './sdk';
 
 const FILES_CHANGED_EVENTS = ['awesome-slide:files-changed', 'open-slide:files-changed'] as const;
 
-const EMPTY: FoldersManifest = { folders: [], assignments: {} };
+const EMPTY: FoldersManifest = { folders: [], assignments: {}, decks: [], manualOrder: {} };
 
 async function getManifest(): Promise<FoldersManifest> {
   // In dev the manifest is mutable: read live from the plugin endpoint so
@@ -18,11 +18,15 @@ async function getManifest(): Promise<FoldersManifest> {
     return {
       folders: raw.folders ?? [],
       assignments: raw.assignments ?? {},
+      decks: raw.decks ?? [],
+      manualOrder: raw.manualOrder ?? {},
     };
   }
   return {
     folders: buildManifest.folders ?? [],
     assignments: buildManifest.assignments ?? {},
+    decks: buildManifest.decks ?? [],
+    manualOrder: buildManifest.manualOrder ?? {},
   };
 }
 
@@ -130,13 +134,14 @@ export function useFolders(): UseFoldersResult {
   }, []);
 
   useEffect(() => {
-    if (!import.meta.hot) return;
+    const hot = import.meta.hot;
+    if (!hot) return;
     const handler = () => {
       refresh().catch(() => {});
     };
-    for (const event of FILES_CHANGED_EVENTS) import.meta.hot.on(event, handler);
+    for (const event of FILES_CHANGED_EVENTS) hot.on(event, handler);
     return () => {
-      for (const event of FILES_CHANGED_EVENTS) import.meta.hot?.off(event, handler);
+      for (const event of FILES_CHANGED_EVENTS) hot.off(event, handler);
     };
   }, [refresh]);
 

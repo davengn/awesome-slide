@@ -7,6 +7,7 @@ export type ApiContext = {
   userCwd: string;
   slidesDir: string;
   slidesRoot: string;
+  themesRoot: string;
   globalAssetsRoot: string;
   manifestPath: string;
 };
@@ -14,17 +15,20 @@ export type ApiContext = {
 export type ApiPluginOptions = {
   userCwd: string;
   slidesDir?: string;
+  themesDir?: string;
   assetsDir?: string;
 };
 
 export function makeContext(opts: ApiPluginOptions): ApiContext {
   const userCwd = opts.userCwd;
   const slidesDir = opts.slidesDir ?? 'slides';
+  const themesDir = opts.themesDir ?? 'themes';
   const assetsDir = opts.assetsDir ?? 'assets';
   const slidesRoot = path.resolve(userCwd, slidesDir);
+  const themesRoot = path.resolve(userCwd, themesDir);
   const globalAssetsRoot = path.resolve(userCwd, assetsDir);
   const manifestPath = path.join(slidesRoot, '.folders.json');
-  return { userCwd, slidesDir, slidesRoot, globalAssetsRoot, manifestPath };
+  return { userCwd, slidesDir, slidesRoot, themesRoot, globalAssetsRoot, manifestPath };
 }
 
 export async function readBody(req: Connect.IncomingMessage): Promise<unknown> {

@@ -62,7 +62,20 @@ describe('openSlidePlugin compatibility', () => {
   it('generates slide modules that listen to canonical and legacy HMR events', async () => {
     const root = await tempWorkspace();
     await mkdir(path.join(root, 'slides', 'intro'), { recursive: true });
-    await writeFile(path.join(root, 'slides', 'intro', 'index.tsx'), 'export default [];\n');
+    await writeFile(
+      path.join(root, 'slides', 'intro', 'index.tsx'),
+      `export const meta = {
+  title: 'Intro',
+  description: 'Opening slide',
+  tags: ['launch'],
+  theme: 'clean',
+  status: 'ready',
+  createdAt: '2026-05-28T00:00:00.000Z',
+};
+
+export default [];
+`,
+    );
 
     const plugin = openSlidePlugin({ userCwd: root, config: {} });
     const configure = plugin.config as (config: unknown, env: { command: 'serve' }) => void;
@@ -73,5 +86,11 @@ describe('openSlidePlugin compatibility', () => {
 
     expect(source).toContain('awesome-slide:slide-changed');
     expect(source).toContain('open-slide:slide-changed');
+    expect(source).toContain('export const slideTitles = {"intro":"Intro"};');
+    expect(source).toContain('export const slideDescriptions = {"intro":"Opening slide"};');
+    expect(source).toContain('export const slideTags = {"intro":["launch"]};');
+    expect(source).toContain('export const slideThemes = {"intro":"clean"};');
+    expect(source).toContain('export const slideStatus = {"intro":"ready"};');
+    expect(source).toContain('export const slideSourceState = {"intro":"supported"};');
   });
 });

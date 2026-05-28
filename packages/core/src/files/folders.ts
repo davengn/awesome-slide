@@ -1,38 +1,56 @@
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import type { Folder, FolderIcon, SlideCollectionManifest } from '../app/lib/sdk.ts';
 
 export const FOLDER_ID_RE = /^f-[a-f0-9]{8}$/;
 const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
-export type FolderIcon = { type: 'emoji'; value: string } | { type: 'color'; value: string };
-
-export type Folder = {
-  id: string;
-  name: string;
-  icon: FolderIcon;
-};
-
-export type FoldersManifest = {
-  folders: Folder[];
-  assignments: Record<string, string>;
-};
+export type { Folder, FolderIcon };
+export type FoldersManifest = SlideCollectionManifest;
 
 function emptyManifest(): FoldersManifest {
-  return { folders: [], assignments: {} };
+  return { folders: [], assignments: {}, decks: [], manualOrder: {} };
+}
+
+function stringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string' || seen.has(item)) continue;
+    seen.add(item);
+    result.push(item);
+  }
+  return result;
+}
+
+function normalizeManifest(parsed: Partial<FoldersManifest>): FoldersManifest {
+  const folders = Array.isArray(parsed.folders) ? parsed.folders : [];
+  const folderIds = new Set(folders.map((folder) => folder.id));
+  const assignments: Record<string, string> = {};
+  if (parsed.assignments && typeof parsed.assignments === 'object') {
+    for (const [slideId, folderId] of Object.entries(parsed.assignments)) {
+      if (typeof folderId === 'string' && folderIds.has(folderId)) assignments[slideId] = folderId;
+    }
+  }
+  const decks = Array.isArray(parsed.decks)
+    ? parsed.decks.map((deck) => ({ ...deck, slideOrder: stringArray(deck.slideOrder) }))
+    : [];
+  const manualOrder: Record<string, string[]> = {};
+  if (parsed.manualOrder && typeof parsed.manualOrder === 'object') {
+    for (const [key, slideIds] of Object.entries(parsed.manualOrder)) {
+      manualOrder[key] = stringArray(slideIds);
+    }
+  }
+  return { folders, assignments, decks, manualOrder };
 }
 
 export async function readManifest(file: string): Promise<FoldersManifest> {
   try {
     const raw = await fs.readFile(file, 'utf8');
     const parsed = JSON.parse(raw) as Partial<FoldersManifest>;
-    return {
-      folders: Array.isArray(parsed.folders) ? parsed.folders : [],
-      assignments:
-        parsed.assignments && typeof parsed.assignments === 'object'
-          ? (parsed.assignments as Record<string, string>)
-          : {},
-    };
+    return normalizeManifest(parsed);
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return emptyManifest();
     throw err;
@@ -40,8 +58,9 @@ export async function readManifest(file: string): Promise<FoldersManifest> {
 }
 
 export async function writeManifest(file: string, manifest: FoldersManifest): Promise<void> {
+  const normalized = normalizeManifest(manifest);
   await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  await fs.writeFile(file, `${JSON.stringify(normalized, null, 2)}\n`, 'utf8');
 }
 
 export function newFolderId(): string {

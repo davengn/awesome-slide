@@ -1,8 +1,14 @@
 declare module 'virtual:awesome-slide/slides' {
-  import type { SlideModule } from './lib/sdk';
+  import type { SlideModule, SourceState } from './lib/sdk';
   export const slideIds: string[];
+  export const slideTitles: Record<string, string>;
+  export const slideDescriptions: Record<string, string>;
+  export const slideTags: Record<string, string[]>;
   export const slideThemes: Record<string, string>;
+  export const slideStatus: Record<string, 'draft' | 'ready' | 'archived'>;
   export const slideCreatedAt: Record<string, number>;
+  export const slideUpdatedAt: Record<string, number>;
+  export const slideSourceState: Record<string, SourceState>;
   export function loadSlide(id: string): Promise<SlideModule>;
 }
 

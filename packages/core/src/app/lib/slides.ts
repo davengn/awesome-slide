@@ -1,14 +1,26 @@
 import {
   slideCreatedAt as createdAt,
+  slideDescriptions as descriptions,
   slideIds as ids,
   loadSlide as load,
+  slideSourceState as sourceState,
+  slideStatus as status,
+  slideTags as tags,
   slideThemes as themes,
+  slideTitles as titles,
+  slideUpdatedAt as updatedAt,
 } from 'virtual:awesome-slide/slides';
-import type { SlideModule } from './sdk';
+import type { SlideModule, SourceState } from './sdk';
 
 export const slideIds: string[] = ids;
+export const slideTitles: Record<string, string> = titles;
+export const slideDescriptions: Record<string, string> = descriptions;
+export const slideTags: Record<string, string[]> = tags;
 export const slideThemes: Record<string, string> = themes;
+export const slideStatus: Record<string, 'draft' | 'ready' | 'archived'> = status;
 export const slideCreatedAt: Record<string, number> = createdAt;
+export const slideUpdatedAt: Record<string, number> = updatedAt;
+export const slideSourceState: Record<string, SourceState> = sourceState;
 
 export function slidesByTheme(themeId: string): string[] {
   return slideIds.filter((id) => slideThemes[id] === themeId);
