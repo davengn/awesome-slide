@@ -45,6 +45,16 @@
 - Reuse Vite HMR WebSocket: rejected because agent run semantics and cancellation should not depend on dev-server implementation details.
 - Single blocking POST response: rejected because it cannot show streaming and progress states cleanly.
 
+## Decision: Guard prompt creation, SSE setup, and terminal cleanup against stuck runs
+
+**Rationale**: User testing showed that a submitted prompt can appear pending forever. The UI should create a visible queued turn immediately, preserve the prompt if `POST /runs` fails, clear stream subscriptions on terminal events, and convert startup, replay, disconnect, or adapter timeout failures into categorized failed turns with retry/edit-prompt recovery actions.
+
+**Alternatives considered**:
+
+- Waiting for the server run ID before rendering the user turn: rejected because failed or slow run creation leaves users without visible feedback.
+- Trusting the EventSource `error` event alone: rejected because normal terminal stream closure and abnormal disconnects must be distinguished.
+- Leaving watchdog behavior to provider adapters: rejected because the Awesome Slide UI owns the local run contract and must guarantee that active runs release controls.
+
 ## Decision: Represent file changes as structured proposals first, patch fallback second
 
 **Rationale**: Existing edit and management helpers can validate targeted operations such as metadata patches, source edits, page changes, slide creation, speaker notes updates, and theme application. Structured operations support selective apply, risk labeling, preview rendering, and audit summaries. Raw patches remain a fallback for edits that cannot be expressed structurally.
@@ -80,6 +90,15 @@
 
 - Full-screen chat route: rejected because it hides the slide/deck context users are editing.
 - Modal-only chat: rejected because long-running streamed work and preview review need persistent space.
+
+## Decision: Use the supplied Open Design screenshot as the desktop rail anatomy reference
+
+**Rationale**: The current implementation is a generic white sidebar. The target experience should feel like an app-native agent workspace: a persistent rail beside the slide canvas, Chat/Comments tabs, compact assistant turns, inline running/done/error cards, a files-from-this-turn tray for generated artifacts, and a pinned composer. The visual language should still use Awesome Slide tokens, lucide icons, accessible labels, and responsive drawer behavior.
+
+**Alternatives considered**:
+
+- Keep the current plain sidebar and only fix behavior: rejected because the user explicitly called out that the UI is not friendly and supplied a reference.
+- Copy the Open Design brand exactly: rejected because this is an Awesome Slide framework feature and should remain visually consistent with the host app.
 
 ## Decision: Test domain logic with Vitest and validate UI in the demo app
 

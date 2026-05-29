@@ -13,7 +13,7 @@ Fields:
 - `activeDeckId?: DeckId`: current deck when launched from management.
 - `messages: AgentChatMessage[]`: short retained message list.
 - `contextPreferences: ContextPreference[]`: user-selected context chips and exclusions.
-- `currentRunId?: string`: run currently queued, loading, or streaming.
+- `currentRunId?: string`: run currently queued, loading, streaming, or needs-review.
 - `createdAt: string`: ISO 8601 timestamp.
 - `updatedAt: string`: ISO 8601 timestamp.
 
@@ -22,7 +22,8 @@ Validation and retention:
 - Session summaries are stored locally and capped to the most recent 50 visible messages or 256KB serialized size, whichever limit is reached first.
 - Generated artifacts and raw model diagnostics are not retained in the session by default.
 - Session records must not include API keys, environment values, or hidden-file contents.
-- A session has at most one queued, loading, streaming, or needs-review run; additional prompt text remains draft content until the active run is cancelled or reaches a terminal state.
+- A session has at most one queued, loading, streaming, or needs-review run; additional prompt text remains draft content until the active run is cancelled, fails, completes, or enters review.
+- If run creation fails before a server run ID is available, the submitted prompt remains visible and the assistant/status turn becomes failed without setting `currentRunId`.
 
 ## AgentChatMessage
 
@@ -36,7 +37,7 @@ Fields:
 - `content: MessagePart[]`
 - `runId?: string`
 - `proposalId?: string`
-- `state: 'draft' | 'queued' | 'streaming' | 'completed' | 'cancelled' | 'failed' | 'needs-review'`
+- `state: 'draft' | 'queued' | 'loading' | 'streaming' | 'completed' | 'cancelled' | 'failed' | 'needs-review'`
 - `error?: AgentChatError`
 - `createdAt: string`
 - `completedAt?: string`
@@ -53,7 +54,7 @@ Atomic renderable chunk within a message.
 
 Fields:
 
-- `type: 'text' | 'progress' | 'proposal-summary' | 'diagnostic'`
+- `type: 'text' | 'progress' | 'proposal-summary' | 'diagnostic' | 'run-status' | 'file-list'`
 - `text?: string`
 - `data?: unknown`
 
@@ -61,6 +62,8 @@ Rules:
 
 - `text` is rendered as plain text or safe markdown subset only.
 - Diagnostics must be redacted before persistence or copy-to-clipboard.
+- `run-status` parts render compact queued/running/done/error cards for the current turn.
+- `file-list` parts render generated or modified files from the current turn without embedding bulky artifact contents in session history.
 
 ## ContextPreference
 
@@ -137,7 +140,7 @@ Fields:
 
 Rules:
 
-- Broad deck-wide actions default to stronger confirmation before apply.
+- Broad deck-wide actions default to the high-risk double-confirmation flow before apply.
 - Actions with missing prerequisites, such as no selected element, are disabled or adapted to slide scope.
 
 ## AgentConnectionRef
@@ -172,6 +175,9 @@ Fields:
 - `state: 'queued' | 'loading' | 'streaming' | 'needs-review' | 'completed' | 'cancelled' | 'failed'`
 - `events: AgentChatEvent[]`
 - `proposalId?: string`
+- `clientRequestId?: string`
+- `lastEventAt?: string`
+- `timeoutAt?: string`
 - `startedAt: string`
 - `finishedAt?: string`
 
@@ -182,6 +188,8 @@ State transitions:
 - `queued|loading|streaming -> cancelled` when cancellation succeeds.
 - `queued|loading|streaming|needs-review -> failed` when adapter, parsing, validation, or persistence fails.
 - `needs-review -> completed` after reject, or after an apply transaction finishes.
+- Any accepted run that has no startup event, heartbeat, terminal event, or review event before `timeoutAt` transitions to `failed` with `category: 'timeout'`.
+- Terminal and review transitions clear the active stream subscription and release the composer.
 
 ## AgentChatEvent
 
@@ -199,6 +207,7 @@ Rules:
 
 - Sequence numbers are strictly increasing within a run.
 - Failed events include a categorized `AgentChatError`.
+- Accepted runs must emit at least one `queued`, `progress`, or `token` event within the startup budget, then either continue heartbeats/progress or reach `needs-review`, `completed`, `cancelled`, or `failed`.
 
 ## AgentEditProposal
 
@@ -211,6 +220,8 @@ Fields:
 - `summary: string`
 - `scope: 'selection' | 'slide' | 'deck' | 'project'`
 - `riskLevel: 'low' | 'medium' | 'high'`
+- `sourceFingerprints: Record<string, string>`
+- `contextFingerprint?: string`
 - `operations: AgentOperation[]`
 - `previewArtifacts: PreviewArtifact[]`
 - `validation: ProposalValidation`
@@ -220,8 +231,10 @@ Fields:
 Rules:
 
 - Every file-changing response must produce a proposal before write.
-- High-risk proposals include destructive, deck-wide, delete, or theme replacement operations and require stronger confirmation.
+- High-risk proposals include destructive, deck-wide, delete, or theme replacement operations and require the high-risk double-confirmation flow.
 - `partially-applied` is allowed only when the user explicitly selected a subset; failed partial writes are not reported as success.
+- The runtime validates the proposal before emitting it to the UI and validates it again immediately before apply.
+- Source, deck, theme, and metadata fingerprints captured at proposal generation are compared before apply; mismatches set `state: 'expired' | 'conflict'`.
 
 ## AgentOperation
 
@@ -327,11 +340,13 @@ Fields:
 - `operationKinds: AgentOperation['kind'][]`
 - `connection: AgentConnectionRef`
 - `validationSummary: string`
+- `visibleSummary: string`
 
 Rules:
 
 - Audit entries omit secrets, raw API keys, full generated artifacts, and hidden-file contents.
 - Entries are append-only JSONL by default.
+- A redacted summary is readable through the chat audit/history UI without exposing raw prompt payloads or hidden-file contents.
 
 ## AgentChatError
 

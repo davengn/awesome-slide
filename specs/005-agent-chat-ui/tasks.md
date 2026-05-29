@@ -62,9 +62,9 @@
 
 ## Phase 3: User Story 1 - Current Slide Chat (Priority: P1, MVP)
 
-**Goal**: A creator can open chat from the slide workspace, see the active agent/model connection or no-connection recovery route, send a prompt for the current slide, see loading and streaming messages, cancel a run, and use a desktop panel or narrow-screen drawer before any file write occurs.
+**Goal**: A creator can open chat from the slide workspace, see the active agent/model connection or no-connection recovery route, send a prompt for the current slide, see loading and streaming messages, cancel a run, and use an Open Design-style desktop rail or narrow-screen drawer before any file write occurs.
 
-**Independent Test**: Start `pnpm dev:demo`, open a slide, open the agent panel or drawer, confirm active connection display or setup route, send a non-file-changing prompt, confirm queued, streaming, completed, retry, and cancel states preserve prior messages and do not write files.
+**Independent Test**: Start `pnpm dev:demo`, open a slide, open the agent rail or drawer, confirm active connection display or setup route, send a non-file-changing prompt, confirm queued, streaming, completed, retry, and cancel states preserve prior messages and do not write files.
 
 ### Implementation for User Story 1
 
@@ -144,7 +144,7 @@
 
 **Goal**: A designer can request layout or theme changes, preview structured operations and rendered before/after artifacts, and confirm broad or destructive changes before applying.
 
-**Independent Test**: Request a layout redesign and a theme change, confirm operation list plus rendered before/after preview appears, and confirm broad theme replacement requires stronger confirmation.
+**Independent Test**: Request a layout redesign and a theme change, confirm operation list plus rendered before/after preview appears, and confirm broad theme replacement requires the double-confirmation modal.
 
 ### Tests for User Story 3
 
@@ -213,18 +213,51 @@
 
 ---
 
-## Phase 9: Polish & Cross-Cutting Concerns
+## Phase 9: Remediation - Run Lifecycle, Proposal Safety, and Open Design UI
+
+**Purpose**: Correct the current implementation gaps before completion: prompt submission must never stay pending forever, proposal validation must run in the runtime flow, stale proposals must be blocked, audit history must be visible, and the chat rail must match the supplied Open Design-style reference.
+
+### Remediation Tests
+
+- [ ] T082 [P] [US1] Add reducer regression tests for optimistic queued turns, failed run creation, terminal cleanup, and `currentRunId` release in `packages/core/src/app/lib/agent-chat-state.test.ts`
+- [ ] T083 [P] [US1] Add EventSource client tests for terminal close, disconnect before terminal state, startup failure, and retry stream setup in `packages/core/src/app/lib/agent-chat-client.test.ts`
+- [ ] T084 [P] [US1] Add route tests for `POST /__agent-chat/runs` startup feedback, adapter startup failure, watchdog timeout, event replay, and terminal event guarantees in `packages/core/src/http/agent-chat-api.test.ts`
+- [ ] T085 [P] [US5] Add runtime proposal tests proving `validateProposal` runs before proposal emission and before apply in `packages/core/src/http/agent-chat-api.test.ts`
+- [ ] T086 [P] [US5] Add stale proposal tests for source, deck, theme, and metadata fingerprint mismatch in `packages/core/src/editing/agent-proposals.test.ts`
+- [ ] T087 [P] [US5] Add audit history route tests for redacted newest-first applied-change summaries in `packages/core/src/http/agent-chat-api.test.ts`
+
+### Remediation Implementation
+
+- [ ] T088 [US1] Replace timer-only run simulation with an adapter-backed run worker or explicit demo fixture boundary, emitting categorized failed events on adapter startup and timeout failures in `packages/core/src/http/agent-chat-api.ts`
+- [ ] T089 [US1] Add run watchdog metadata, heartbeat/last-event tracking, replay-safe terminal cleanup, and abort cleanup in `packages/core/src/http/agent-chat-runs.ts`
+- [ ] T090 [US1] Render a visible queued user/assistant turn immediately on local submit, preserve the prompt on failed `startRun`, clear `streamAbortRef` on terminal/review events, and keep the composer usable after failure in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
+- [ ] T091 [US1] Update stream client helpers to distinguish normal terminal stream closure from pre-terminal disconnect and expose typed stream errors in `packages/core/src/app/lib/agent-chat-client.ts`
+- [ ] T092 [US1] Update `ChatComposer` with a persistent bottom layout, accessible label, inline submit/start errors, preserved drafts, and Open Design-style send/cancel affordances in `packages/core/src/app/components/agent-chat/ChatComposer.tsx`
+- [ ] T093 [US5] Invoke `normalizeProposal`, risk classification, fingerprint capture, and `validateProposal` before emitting proposal events and immediately before apply in `packages/core/src/http/agent-chat-api.ts`
+- [ ] T094 [US5] Add source/deck/theme/metadata fingerprint helpers and stale/conflict status updates for pending proposals in `packages/core/src/editing/agent-proposals.ts`
+- [ ] T095 [US5] Replace false partial-apply success with failed transaction reporting and rollback/refresh recovery when any selected operation fails in `packages/core/src/http/agent-chat-api.ts`
+- [ ] T096 [US5] Expose recent audit records through `GET /__agent-chat/audit` and a visible history control in `packages/core/src/http/agent-chat-api.ts` and `packages/core/src/app/components/agent-chat/AuditHistory.tsx`
+- [ ] T097 [US3] Implement the high-risk double-confirmation modal with affected file and operation summary before apply in `packages/core/src/app/components/agent-chat/ProposalControls.tsx`
+- [ ] T098 [US1] Build the Open Design-style desktop rail anatomy with Chat/Comments tabs, compact turn cards, inline run status cards, generated-files tray, and pinned composer in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`, `packages/core/src/app/components/agent-chat/AgentTurnCard.tsx`, `packages/core/src/app/components/agent-chat/RunStatusCard.tsx`, and `packages/core/src/app/components/agent-chat/FilesFromTurn.tsx`
+- [ ] T099 [US1] Restyle message list, context chips, suggested actions, and proposal preview to match the rail anatomy while preserving Awesome Slide tokens and accessibility in `packages/core/src/app/components/agent-chat/ChatMessageList.tsx`, `packages/core/src/app/components/agent-chat/ContextChips.tsx`, `packages/core/src/app/components/agent-chat/SuggestedActions.tsx`, and `packages/core/src/app/components/agent-chat/ProposalPreview.tsx`
+- [ ] T100 [US1] Replace full page reload after apply with scoped slide/management refresh recovery and visible transaction feedback in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
+
+**Checkpoint**: The agent chat no longer sticks in pending state, unsafe proposals are validated in runtime, audit history is visible, and the desktop UI matches the supplied Open Design-style reference anatomy.
+
+---
+
+## Phase 10: Polish & Cross-Cutting Concerns
 
 **Purpose**: Accessibility, responsive behavior, documentation, package discipline, and final verification across all delivered stories.
 
-- [ ] T082 [P] Verify keyboard navigation, focus return, live region behavior, and screen-reader labels in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
-- [ ] T083 [P] Verify 375px drawer, 768px drawer/panel content, 1024px panel, and 1440px panel layouts against `specs/005-agent-chat-ui/quickstart.md`
-- [ ] T084 [P] Update implementation notes if paths or validation behavior differ from the plan in `specs/005-agent-chat-ui/quickstart.md`
-- [ ] T085 Run `pnpm check` from `/Users/ducduy/Projects/awesome-slide`
-- [ ] T086 Run `pnpm typecheck` from `/Users/ducduy/Projects/awesome-slide`
-- [ ] T087 Run `pnpm test` from `/Users/ducduy/Projects/awesome-slide`
-- [ ] T088 Run `pnpm build` from `/Users/ducduy/Projects/awesome-slide`
-- [ ] T089 Add a patch changeset for `@awesome-slide/core` in `.changeset/`
+- [ ] T101 [P] Verify keyboard navigation, focus return, live region behavior, error announcements, and screen-reader labels in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
+- [ ] T102 [P] Verify 375px drawer, 768px drawer/panel content, 1024px rail, and 1440px rail layouts against `specs/005-agent-chat-ui/quickstart.md`
+- [ ] T103 [P] Update implementation notes if paths, validation behavior, or visual rail decisions differ from the plan in `specs/005-agent-chat-ui/quickstart.md`
+- [ ] T104 Run `pnpm check` from `D:\Projects\awesome-slide`
+- [ ] T105 Run `pnpm typecheck` from `D:\Projects\awesome-slide`
+- [ ] T106 Run `pnpm test` from `D:\Projects\awesome-slide`
+- [ ] T107 Run `pnpm build` from `D:\Projects\awesome-slide`
+- [ ] T108 Add a patch changeset for `@awesome-slide/core` in `.changeset/`
 
 ---
 
@@ -235,11 +268,12 @@
 - Setup (Phase 1): no dependencies
 - Foundational (Phase 2): depends on Setup completion and blocks all user stories
 - User Stories (Phases 3-8): depend on Foundational completion
-- Polish (Phase 9): depends on all desired user stories being complete
+- Remediation (Phase 9): depends on existing US1, US3, and US5 surfaces and blocks completion.
+- Polish (Phase 10): depends on all desired user stories and remediation being complete.
 
 ### User Story Dependencies
 
-- US1 Current Slide Chat (P1): starts after Foundational and is the MVP because it includes the slide workspace panel/drawer, active connection display, no-connection route, streaming, retry, and cancel behavior
+- US1 Current Slide Chat (P1): starts after Foundational and is the MVP because it includes the slide workspace rail/drawer, active connection display, no-connection route, streaming, retry, cancel behavior, and stuck-run recovery
 - US2 Context-Aware Prompting (P1): starts after Foundational; can run after the US1 shell contract is stable
 - US5 Selective Review and Apply (P1): starts after Foundational; requires proposal state from Foundational but not US3 rendered previews
 - US3 Layout and Theme Preview (P2): starts after US5 proposal preview controls exist
@@ -268,7 +302,8 @@
 - US3 tests T057 and T058 can run in parallel
 - US4 tests T065 and T066 can run in parallel
 - US6 error tests T073 can run in parallel with static read-only route tests T074, but T075 must follow T074 because both update `agent-chat-api.test.ts`
-- Polish checks T085, T086, T087, and T088 should run after implementation, with T085 before commit
+- Remediation tests T082, T083, T084, T085, T086, and T087 can run in parallel before implementation tasks T088 through T100
+- Polish checks T104, T105, T106, and T107 should run after implementation, with T104 before commit
 
 ---
 
@@ -299,6 +334,14 @@ Task: "Create proposal preview rendering for operation list, source diff, diagno
 Task: "Create visually distinct apply all, apply selected, reject, retry, and refine controls in packages/core/src/app/components/agent-chat/ProposalControls.tsx"
 ```
 
+## Parallel Example: Remediation
+
+```bash
+Task: "Add EventSource client tests for terminal close, disconnect before terminal state, startup failure, and retry stream setup in packages/core/src/app/lib/agent-chat-client.test.ts"
+Task: "Add runtime proposal tests proving validateProposal runs before proposal emission and before apply in packages/core/src/http/agent-chat-api.test.ts"
+Task: "Build the Open Design-style desktop rail anatomy with Chat/Comments tabs, compact turn cards, inline run status cards, generated-files tray, and pinned composer in packages/core/src/app/components/agent-chat/AgentChatPanel.tsx, packages/core/src/app/components/agent-chat/AgentTurnCard.tsx, packages/core/src/app/components/agent-chat/RunStatusCard.tsx, and packages/core/src/app/components/agent-chat/FilesFromTurn.tsx"
+```
+
 ---
 
 ## Implementation Strategy
@@ -306,18 +349,20 @@ Task: "Create visually distinct apply all, apply selected, reject, retry, and re
 ### MVP First
 
 1. Complete Phase 1 and Phase 2.
-2. Complete Phase 3 for US1, including active connection display, no-connection route, static read-only copy, and responsive drawer behavior.
+2. Complete Phase 3 for US1, including active connection display, no-connection route, static read-only copy, responsive drawer behavior, and visible queued/start failure handling.
 3. Validate US1 independently in the slide workspace.
 4. Complete Phase 4 and Phase 5 so contextual prompting and safe review/apply behavior are available before broader design tasks.
+5. Complete Phase 9 remediation before declaring the feature done, regardless of earlier checked-off task status.
 
 ### Incremental Delivery
 
-1. US1 delivers the in-slide chat shell, connection-aware bootstrap, responsive drawer, and streaming interaction.
+1. US1 delivers the in-slide chat rail, connection-aware bootstrap, responsive drawer, streaming interaction, and stuck-run recovery.
 2. US2 adds visible, adjustable context from slide and management surfaces.
-3. US5 adds the required preview-before-write and audit path.
+3. US5 adds the required preview-before-write, runtime proposal validation, conflict blocking, and visible audit path.
 4. US3 adds layout/theme preview depth.
 5. US4 adds deck-level and speaker-notes workflows.
 6. US6 hardens failed connection, diagnostics, retry, static read-only blocking, and cancellation behavior.
+7. Phase 9 remediates current implementation gaps and aligns the UI with the supplied Open Design reference.
 
 ### Validation Gates
 

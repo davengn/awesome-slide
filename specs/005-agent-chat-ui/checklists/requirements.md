@@ -14,6 +14,9 @@
 - [x] CHK004 Are file-changing response requirements complete for preview, apply all, selected apply, reject, retry, and refine behavior? [Completeness, Spec §FR-007, Spec §FR-008]
 - [x] CHK005 Are persistence requirements complete for short session history and deterministic applied-change audit entries? [Completeness, Spec §FR-010, Spec §FR-015]
 
+- [x] CHK038 Are stuck-run prevention requirements complete for run creation failure, SSE startup failure, disconnects, timeouts, terminal cleanup, and composer recovery? [Completeness, Spec §FR-006, Spec §FR-025, Spec §AC-015]
+- [x] CHK039 Are Open Design-style rail anatomy requirements explicit enough to implement without copying unrelated brand styling? [Completeness, Spec §UX-001, Spec §UX-011, Spec §AC-016]
+
 ## Requirement Clarity
 
 - [x] CHK006 Is "short local session history" bounded by retention count, size, or lifetime in the plan/data model? [Clarity, Spec §FR-010]
@@ -22,12 +25,14 @@
 - [x] CHK009 Are preview artifact kinds clearly defined enough for implementation to choose between diff, rendered preview, operation list, or combinations? [Clarity, Spec §FR-007]
 - [x] CHK010 Are error categories mapped to concrete recovery actions without overlap or contradictory labels? [Clarity, Spec §FR-011, Spec §UX-009]
 
+- [x] CHK040 Is high-risk confirmation defined as a double-confirmation modal with affected files and operations? [Clarity, Spec §FR-018]
+
 ## Requirement Consistency
 
 - [x] CHK011 Do chat connection requirements align with the boundary that provider protocols are owned by `specs/006-agent-model-connections`? [Consistency, Spec §FR-005, Spec §Non-Goals]
 - [x] CHK012 Do cancellation requirements consistently prevent writes before and during preview/apply flows? [Consistency, Spec §FR-012]
 - [x] CHK013 Do theme-related requirements align between agent chat and default/user-added theme discovery? [Consistency, Spec §FR-014]
-- [x] CHK014 Do desktop panel and narrow-screen drawer requirements avoid conflicting with the requirement not to cover slide preview by default? [Consistency, Spec §UX-001, Spec §UX-002]
+- [x] CHK014 Do desktop rail and narrow-screen drawer requirements avoid conflicting with the requirement not to cover slide preview by default? [Consistency, Spec §UX-001, Spec §UX-002]
 
 ## Acceptance Criteria Quality
 
@@ -51,12 +56,14 @@
 - [x] CHK026 Are requirements defined for multiple simultaneous chat runs or attempts to start a second run while one is active? [Gap, Spec §FR-006]
 - [x] CHK027 Are requirements defined for partial selected-apply success versus write failure so the UI never reports false success? [Edge Case, Spec §FR-008]
 
+- [x] CHK041 Are runtime proposal validation and stale fingerprint checks covered before apply is enabled? [Edge Case, Spec §FR-024, Plan §Current Gap Correction]
+
 ## Non-Functional Requirements
 
 - [x] CHK028 Are performance expectations specified for context collection, streaming responsiveness, proposal validation, and preview rendering? [Non-Functional, Plan §Technical Context]
 - [x] CHK029 Are privacy and security requirements complete for hidden files, `.env*`, credential redaction, diagnostics copy, and audit persistence? [Non-Functional, Spec §FR-013, Spec §FR-015]
 - [x] CHK030 Are accessibility requirements complete for drawer/panel focus management, live streamed content, and preview controls? [Non-Functional, Spec §UX-010]
-- [x] CHK031 Are responsive layout requirements specified for mobile drawer and desktop side-panel behavior? [Non-Functional, Spec §UX-001, Spec §UX-002]
+- [x] CHK031 Are responsive layout requirements specified for mobile drawer and desktop rail behavior? [Non-Functional, Spec §UX-001, Spec §UX-002]
 
 ## Dependencies & Assumptions
 

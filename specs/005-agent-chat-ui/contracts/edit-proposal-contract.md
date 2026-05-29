@@ -13,6 +13,9 @@ Defines the reviewable file-changing artifact emitted by agent chat before any w
   "summary": "Tighten copy and improve visual hierarchy on the intro slide.",
   "scope": "slide",
   "riskLevel": "medium",
+  "sourceFingerprints": {
+    "slides/intro/index.tsx": "sha256:..."
+  },
   "operations": [],
   "previewArtifacts": [],
   "validation": {
@@ -28,6 +31,8 @@ Rules:
 - A proposal is required for every file-changing response.
 - `summary` must be user-readable and avoid implementation jargon.
 - `riskLevel` is `high` for deck-wide rewrites, deletes, broad theme replacement, or operations touching more than one slide unless explicitly narrowed.
+- Source, deck, theme, and metadata fingerprints are captured when the proposal is generated and compared before apply.
+- The shared proposal validator runs before the proposal is emitted to the UI and again immediately before apply.
 
 ## Operation Types
 
@@ -54,6 +59,7 @@ Validation:
 - Slide ID must resolve inside the slides root.
 - Source must parse after transformation.
 - Conflicts are reported when source lines no longer match proposal expectations.
+- Source fingerprint mismatch before apply sets the proposal to `conflict` and disables apply controls.
 
 ### `patch-slide-metadata`
 
@@ -169,6 +175,7 @@ Validation:
 
 - Deck must exist.
 - The patch must match deck validation rules.
+- Deck metadata fingerprint mismatch before apply sets the proposal to `expired` unless the operation can be safely refreshed.
 
 ### `raw-patch`
 
@@ -203,6 +210,7 @@ Rules:
 - Preview controls must distinguish apply, selected apply, reject, retry, and refine.
 - Large previews are truncated with clear status.
 - Preview data is not persisted in long-term session history by default.
+- Generated or modified files from the current turn may also be summarized in a `file-list` message part so the user can open or inspect them without loading bulky artifacts into session history.
 
 ## Apply Semantics
 
@@ -211,3 +219,5 @@ Rules:
 - Reject performs no writes.
 - Failed apply refreshes UI from persisted state and reports `write-failure`, `validation-failure`, or `patch-conflict`.
 - Successful apply writes an audit entry containing prompt, context summary, proposal summary, files touched, timestamp, and agent/model used.
+- High-risk apply requires a double-confirmation modal listing affected files and operations before the apply request is sent.
+- Any write failure during selected apply reports a failed transaction; success is reported only when every selected operation succeeds.

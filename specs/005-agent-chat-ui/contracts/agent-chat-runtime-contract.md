@@ -75,6 +75,8 @@ Validation:
 - The active connection must be ready or degraded-but-usable.
 - Context collection must complete without including hidden files, env files, stored credentials, or unrelated project files.
 - Empty decks, missing slides, parse-error slides, unsupported metadata formats, or read-only sources return categorized failures before any write-capable run starts.
+- The route must return a run ID, event URL, or categorized failure quickly enough for the UI to keep the submitted prompt visible and actionable.
+- If the adapter cannot start or does not emit an initial event inside the startup timeout, the runtime emits a `failed` event with `category: "timeout"` or `category: "model-failed"`.
 
 ### `GET /__agent-chat/runs/:runId/events`
 
@@ -96,6 +98,9 @@ Rules:
 - Events include monotonically increasing `sequence`.
 - The stream closes after terminal events.
 - Clients reconnect by requesting the same run ID; the server may replay retained events for an active run.
+- A normal terminal stream close after `completed`, `cancelled`, or `failed` must not be treated as a new client error.
+- A disconnect before any terminal or review event is converted by the client into a failed assistant turn with retry and edit-prompt actions.
+- The runtime must not leave an accepted run active without a terminal or needs-review event; watchdog timeout is part of the route contract.
 
 ### `POST /__agent-chat/runs/:runId/cancel`
 
@@ -158,6 +163,7 @@ Validation:
 
 - Proposal must be in `pending-review`.
 - Selected operations must be valid and conflict-free.
+- The shared proposal validator must run immediately before apply, even if validation already ran during proposal ingestion.
 - Proposal source, deck, theme, and metadata version checks must still match current project state.
 - High-risk operations require explicit confirmation.
 - Writes must pass existing mutation guards.
@@ -178,6 +184,35 @@ Rules:
 - Rejecting a proposal performs no file writes.
 - Rejected proposal summaries may remain visible in the current session.
 
+### `GET /__agent-chat/audit`
+
+Returns redacted audit summaries for applied agent changes in the current project.
+
+Response:
+
+```json
+{
+  "entries": [
+    {
+      "id": "audit_123",
+      "timestamp": "2026-05-29T09:00:00.000Z",
+      "visibleSummary": "Applied 2 operations to slides/intro/index.tsx",
+      "appliedFiles": ["slides/intro/index.tsx"],
+      "operationKinds": ["patch-slide-source"],
+      "connection": {
+        "displayName": "Codex",
+        "modelOrAgent": "codex"
+      }
+    }
+  ]
+}
+```
+
+Rules:
+
+- The response must not include raw provider secrets, hidden-file contents, raw diagnostics, or bulky generated artifacts.
+- Entries are sorted newest first and bounded by request limit or runtime default.
+
 ## Adapter Boundary
 
 The runtime calls the active connection through a provider-neutral interface:
@@ -197,6 +232,7 @@ Rules:
 - The connection layer owns credential lookup and provider-specific request shaping.
 - The chat runtime owns context redaction, proposal parsing, validation, preview, apply, and audit.
 - Invalid adapter output is categorized as `invalid-agent-output`.
+- Adapter output containing file-changing operations must be normalized, risk-classified, fingerprinted, and validated before a `proposal` event is emitted.
 
 ## Error Shape
 
