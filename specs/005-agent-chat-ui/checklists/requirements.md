@@ -16,6 +16,7 @@
 
 - [x] CHK038 Are stuck-run prevention requirements complete for run creation failure, SSE startup failure, disconnects, timeouts, terminal cleanup, and composer recovery? [Completeness, Spec §FR-006, Spec §FR-025, Spec §AC-015]
 - [x] CHK039 Are Open Design-style rail anatomy requirements explicit enough to implement without copying unrelated brand styling? [Completeness, Spec §UX-001, Spec §UX-011, Spec §AC-016]
+- [x] CHK042 Are bundled `packages/core/skills` workflows explicitly covered so create/update/comment/theme requests do not require a separate external agent chat? [Completeness, Spec §FR-027, Spec §AC-017]
 
 ## Requirement Clarity
 
@@ -26,6 +27,7 @@
 - [x] CHK010 Are error categories mapped to concrete recovery actions without overlap or contradictory labels? [Clarity, Spec §FR-011, Spec §UX-009]
 
 - [x] CHK040 Is high-risk confirmation defined as a double-confirmation modal with affected files and operations? [Clarity, Spec §FR-018]
+- [x] CHK043 Is the plan clear that full skill bodies are loaded from versioned `packages/core/skills/*/SKILL.md` files and are not duplicated into this spec? [Clarity, Spec §Non-Goals, Plan §Resolved Planning Assumptions]
 
 ## Requirement Consistency
 
@@ -33,6 +35,7 @@
 - [x] CHK012 Do cancellation requirements consistently prevent writes before and during preview/apply flows? [Consistency, Spec §FR-012]
 - [x] CHK013 Do theme-related requirements align between agent chat and default/user-added theme discovery? [Consistency, Spec §FR-014]
 - [x] CHK014 Do desktop rail and narrow-screen drawer requirements avoid conflicting with the requirement not to cover slide preview by default? [Consistency, Spec §UX-001, Spec §UX-002]
+- [x] CHK044 Do connection-adapter requirements stay bounded while workflow selection and skill instruction assembly remain owned by the 005 runtime? [Consistency, Spec §Technical Considerations, Runtime Contract §Adapter Boundary]
 
 ## Acceptance Criteria Quality
 
@@ -46,6 +49,7 @@
 - [x] CHK019 Are primary prompt flows covered for content improvement, layout redesign, theme application, and selected-element edits? [Coverage, Spec §Goals, Spec §AC-003]
 - [x] CHK020 Are alternate flows covered for no active connection, invalid connection, retry, edit prompt, and connection settings recovery? [Coverage, Spec §FR-005, Spec §FR-011]
 - [x] CHK021 Are exception flows covered for invalid agent output, patch conflict, validation failure, write failure, timeout, and cancellation? [Coverage, Spec §FR-011, Spec §FR-012]
+- [x] CHK045 Are exception flows covered for missing or unreadable bundled skill workflows? [Coverage, Spec §FR-028, Quickstart §Errors and recovery]
 - [x] CHK022 Are recovery flows covered when a proposal becomes stale after source files change independently? [Gap, Spec §FR-007, Spec §FR-008]
 - [x] CHK023 Are static/read-only build behaviors intentionally included or excluded for the chat panel? [Gap]
 

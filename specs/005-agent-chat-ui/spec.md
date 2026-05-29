@@ -6,17 +6,18 @@ Planning
 
 ## Product Vision Alignment
 
-Awesome Slide should let users collaborate with agents inside the slide workflow rather than leaving the app to run commands. The agent chat must feel contextual, inspectable, reversible, and respectful of local project files.
+Awesome Slide should let users collaborate with agents inside the slide workflow rather than leaving the app to run commands or manually invoke bundled skills. The agent chat must feel contextual, inspectable, reversible, and respectful of local project files.
 
 ## Problem Statement
 
-Agent-assisted slide editing is currently conceptually tied to external skills or backend commands. Users need an in-app chat panel where they can ask for content improvements, layout redesigns, theme changes, and edits to selected slide elements while seeing what will change before applying it. Without preview/apply behavior, agent edits can feel risky and opaque. The current implementation also allows prompt submission to appear stuck in a pending state, which blocks further work and makes the chat feel unreliable.
+Agent-assisted slide editing is currently conceptually tied to external agent skills such as `packages/core/skills/create-slide`, `slide-authoring`, `current-slide`, `apply-comments`, and `create-theme`. Users should not have to open a separate agent chat, remember which skill to invoke, or copy context between tools. They need an in-app chat panel where they can ask for content improvements, layout redesigns, new slides, theme changes, inspector-comment application, and selected-element edits while seeing what will change before applying it. Without preview/apply behavior, agent edits can feel risky and opaque. The current implementation also allows prompt submission to appear stuck in a pending state, which blocks further work and makes the chat feel unreliable.
 
 ## Goals
 
 - Provide an agent chat panel inside the Awesome Slide UI.
 - Allow users to prompt the agent using current deck, slide, selection, metadata, and theme context.
 - Support common slide tasks: edit copy, improve structure, redesign layouts, apply themes, fix visual hierarchy, and modify selected slide elements.
+- Bring the existing `packages/core/skills` slide-authoring workflows into the app so users can create slides, update slides, apply inspector comments, and create or reuse themes without leaving Awesome Slide.
 - Require preview/apply behavior for file-changing actions.
 - Define loading, streaming, error, retry, cancellation, and undo expectations.
 - Make agent behavior depend on the active connection selected in the agent/model connection spec.
@@ -28,6 +29,7 @@ Agent-assisted slide editing is currently conceptually tied to external skills o
 - Do not build the local agent discovery or API key management UI in this spec.
 - Do not allow silent autonomous file writes without user review.
 - Do not define every model provider protocol; connection adapters are covered by `specs/006-agent-model-connections`.
+- Do not duplicate the full bundled skill content into this spec; the implementation must load or reference the versioned skill files shipped in `packages/core/skills`.
 - Do not require collaborative multi-user chat history or cloud sync.
 - Do not replace manual slide editing.
 
@@ -62,14 +64,14 @@ As a user with a failing agent connection, I want clear errors and recovery acti
 - FR-001: The app must include an agent chat panel that can be opened from the main slide workspace and slide management UI.
 - FR-002: The chat panel must identify the active context: current slide, selected slide elements where supported, current deck/folder, current theme, and relevant metadata.
 - FR-003: Users must be able to send freeform prompts and choose suggested contextual actions.
-- FR-004: Suggested actions must include at least improve copy, shorten content, redesign layout, apply theme, generate speaker notes, fix alignment, and create related slide.
+- FR-004: Suggested actions must include at least improve copy, shorten content, redesign layout, apply theme, generate speaker notes, fix alignment, apply inspector comments, create related slide, and create theme.
 - FR-005: The chat must show the active agent/model connection and provide a route to connection settings when no valid connection is available.
 - FR-006: The chat must support visible request-starting, queued, loading, streaming, completed, cancelled, failed, and needs-review states, and must release the composer when a run reaches failed, cancelled, completed, or needs-review.
 - FR-007: File-changing responses must produce a preview artifact before application. The preview may be a code diff, rendered slide preview, structured operation list, or a combination.
 - FR-008: Users must be able to apply all changes, apply selected changes when the selected operations are valid and conflict-free, reject changes, retry the prompt, or refine the result.
 - FR-009: Applied changes must update the slide source and refresh the viewer or slide management UI.
 - FR-010: The app must maintain a short local session history for the current project without retaining bulky generated artifacts unnecessarily.
-- FR-011: Errors must be categorized as connection unavailable, authentication failed, model refused or failed, timeout, invalid agent output, patch conflict, validation failure, and write failure.
+- FR-011: Errors must be categorized as connection unavailable, authentication failed, model refused or failed, timeout, skill unavailable, invalid agent output, patch conflict, validation failure, and write failure.
 - FR-012: The chat must support cancellation for long-running requests and must not apply partial edits after cancellation.
 - FR-013: The agent must not receive hidden files, secret values, or unrelated project files unless the user explicitly expands context.
 - FR-014: The agent must be able to reference default and user-added themes when the user requests theme application or redesign.
@@ -85,6 +87,8 @@ As a user with a failing agent connection, I want clear errors and recovery acti
 - FR-024: Proposals must become expired or conflict when the relevant source, deck, theme, or metadata changes after proposal generation and before apply.
 - FR-025: Run creation, adapter startup, stream connection, stream replay, and terminal-event handling must be guarded so a prompt cannot leave the UI in an indefinite pending or disabled state.
 - FR-026: Agent turns must support status/tool cards and file-artifact summaries so users can inspect running work, completed outputs, and files generated or modified from the current turn.
+- FR-027: The chat runtime must route slide-authoring requests through workflow instructions derived from `packages/core/skills`: `current-slide` for deictic references, `slide-authoring` for every slide source edit, `create-slide` for new slide/deck generation, `apply-comments` for inspector comment processing, and `create-theme` for theme creation or extraction.
+- FR-028: The runtime must expose the active workflow name and version/hash in run metadata, visible status cards, proposals, and audit records, and must enter a categorized non-writing recovery state if required bundled skill instructions are missing or unreadable.
 
 ## UX Requirements
 
@@ -100,10 +104,12 @@ As a user with a failing agent connection, I want clear errors and recovery acti
 - UX-010: The panel must support keyboard navigation, visible focus states, and screen-reader labels for messages, controls, and preview actions.
 - UX-011: The desktop rail must include Chat and Comments tabs, compact message turns, clear running/done/error status cards, a generated-files tray when files are produced, and a composer pinned to the bottom.
 - UX-012: Loading and error states must appear inline in the related turn or composer area rather than only logging to the console.
+- UX-013: Status cards should show the selected agent workflow, such as `Create slide`, `Slide authoring`, `Apply comments`, or `Create theme`, so users understand what the in-app agent is doing without knowing skill command names.
 
 ## Technical Considerations
 
-- The chat UI should be connection-agnostic and call a local agent/model adapter interface defined by `specs/006-agent-model-connections`.
+- The chat UI should be connection-agnostic and call a local agent/model adapter interface defined by `specs/006-agent-model-connections`; workflow selection and bundled skill instruction assembly remain owned by the 005 runtime.
+- The runtime should not hard-code a stale copy of the slide-authoring rules. It should load or derive workflow prompts from the versioned `packages/core/skills/*/SKILL.md` files shipped with `@awesome-slide/core`, with small structured summaries cached only for display and audit.
 - Context collection should be explicit and bounded. A likely model is a `ChatContext` object containing slide ID, metadata, selected element descriptors, deck/folder IDs, theme IDs, and a limited source excerpt or rendered snapshot.
 - Proposed edits should be represented as structured operations when possible, with raw patch fallback only when necessary.
 - TSX slide edits should be validated before apply through TypeScript parsing, project typecheck where feasible, or a lighter syntax validation path for fast feedback.
@@ -130,6 +136,8 @@ As a user with a failing agent connection, I want clear errors and recovery acti
 - AC-014: Edge states for empty decks, missing slides, parse errors, unsupported metadata, and read-only files are visible and non-destructive.
 - AC-015: If run creation, SSE connection, adapter startup, or replay fails, the prompt remains visible, the assistant turn moves to failed with recovery actions, and the composer is usable again.
 - AC-016: The desktop chat rail visually matches the supplied Open Design reference anatomy while using Awesome Slide colors, typography, icons, and accessibility conventions.
+- AC-017: A user can ask the in-app chat to create a new slide, update the current slide, apply inspector comments, or create/extract a theme, and the run metadata shows the corresponding bundled workflow without requiring a separate external agent chat.
+- AC-018: If a required bundled skill file is missing or cannot be read, the chat shows a recoverable non-writing error instead of sending a generic prompt that could produce invalid slide source.
 
 ## Non-Functional Requirements
 
@@ -143,6 +151,7 @@ As a user with a failing agent connection, I want clear errors and recovery acti
 ## Dependencies and Assumptions
 
 - The active connection adapter, connection settings route, credential lookup, and provider-specific protocols are owned by `specs/006-agent-model-connections`.
+- Bundled authoring workflow instructions are owned by `packages/core/skills`; this feature consumes them as the authoritative source for how the in-app agent creates or updates Awesome Slide content.
 - The implementation reuses existing Awesome Slide slide canvas, slide management, theme discovery, guarded mutation, and Vite middleware patterns in `packages/core`.
 - Implementing this feature changes `@awesome-slide/core`, so the implementation phase must include a patch changeset before completion.
 - The run lifecycle is adapter-backed with watchdog timeouts, replay-safe SSE, and terminal-event cleanup; simulated timers are acceptable only in tests or explicit demo fixtures.

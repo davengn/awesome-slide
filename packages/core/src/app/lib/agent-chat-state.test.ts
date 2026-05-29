@@ -286,4 +286,46 @@ describe('Agent Chat State Reducer', () => {
     const summaryPart = nextSession.messages[0].content[0];
     expect((summaryPart.data as AgentEditProposal).state).toBe('rejected');
   });
+
+  it('should handle optimistic queued turns on START_RUN (T082)', () => {
+    const session = createInitialSession();
+    const nextSession = agentChatReducer(session, {
+      type: 'START_RUN',
+      payload: { runId: 'run_opt', prompt: 'Hello agent' },
+    });
+    expect(nextSession.messages).toHaveLength(2);
+    expect(nextSession.messages[0].role).toBe('user');
+    expect(nextSession.messages[0].state).toBe('completed');
+    expect(nextSession.messages[1].role).toBe('assistant');
+    expect(nextSession.messages[1].state).toBe('queued');
+    expect(nextSession.currentRunId).toBe('run_opt');
+  });
+
+  it('should handle failed run creation by updating assistant turn to failed and clearing currentRunId (T082)', () => {
+    let session = createInitialSession();
+    session = agentChatReducer(session, {
+      type: 'START_RUN',
+      payload: { runId: 'run_fail', prompt: 'Will fail' },
+    });
+    expect(session.currentRunId).toBe('run_fail');
+
+    const nextSession = agentChatReducer(session, {
+      type: 'RECEIVE_EVENT',
+      payload: {
+        sequence: 1,
+        runId: 'run_fail',
+        type: 'failed',
+        payload: {
+          category: 'connection-unavailable',
+          message: 'Connection unavailable',
+          recoveryActions: ['retry'],
+        },
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    expect(nextSession.currentRunId).toBeUndefined();
+    expect(nextSession.messages[1].state).toBe('failed');
+    expect(nextSession.messages[1].error?.category).toBe('connection-unavailable');
+  });
 });

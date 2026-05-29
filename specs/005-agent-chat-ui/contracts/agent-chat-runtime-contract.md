@@ -2,7 +2,7 @@
 
 ## Scope
 
-Defines the local runtime boundary between the Awesome Slide app UI, Vite dev-server middleware, and the active connection adapter owned by `specs/006-agent-model-connections`.
+Defines the local runtime boundary between the Awesome Slide app UI, Vite dev-server middleware, bundled `packages/core/skills` authoring workflows, and the active connection adapter owned by `specs/006-agent-model-connections`.
 
 ## Routes
 
@@ -30,6 +30,13 @@ Response:
     "mode": "interactive",
     "settingsRoute": "/settings/connections"
   },
+  "availableSkillWorkflows": [
+    {
+      "id": "slide-authoring",
+      "displayName": "Slide authoring",
+      "contentHash": "sha256:..."
+    }
+  ],
   "suggestedActions": []
 }
 ```
@@ -39,6 +46,28 @@ Rules:
 - Does not return secrets or raw credential state.
 - Returns a no-connection state with setup route metadata when no valid connection exists.
 - Returns `mode: "read-only"` for static or read-only builds; file-changing run creation and proposal apply actions are blocked in that mode.
+- Returns safe workflow metadata only. Full skill bodies from `packages/core/skills/*/SKILL.md` are not sent to the browser during bootstrap.
+- If required bundled workflows are missing, returns a degraded non-writing mode with a `skill-unavailable` recovery error.
+
+## Bundled Workflow Selection
+
+The runtime maps user intent and suggested actions to workflow instructions shipped in `packages/core/skills`:
+
+| Intent | Required workflows |
+|--------|--------------------|
+| Deictic current slide/page/element prompt | `current-slide`, `slide-authoring` |
+| Edit copy, layout, alignment, selected element, source, or notes | `slide-authoring` |
+| Create related slide or new deck content | `create-slide`, `slide-authoring` |
+| Apply inspector comments | `apply-comments`, `slide-authoring` |
+| Create or extract a theme | `create-theme`, `slide-authoring` |
+| Apply an existing theme to a slide/deck | `slide-authoring` plus available theme summaries |
+
+Rules:
+
+- The runtime reads the versioned `SKILL.md` files from the package skills directory resolved by `@awesome-slide/core`, not from a duplicated copy in the spec.
+- A run stores workflow IDs and hashes for UI/audit traceability.
+- Full skill body text is included only in the server-to-adapter request and is not stored in local browser history or audit JSONL.
+- A write-capable run is rejected with `skill-unavailable` if any required workflow cannot be loaded.
 
 ### `POST /__agent-chat/runs`
 
@@ -51,6 +80,7 @@ Request:
   "sessionId": "session_abc",
   "prompt": "Tighten this slide and improve hierarchy.",
   "actionId": "improve-copy",
+  "requestedWorkflowIds": ["slide-authoring"],
   "contextPreferences": [
     { "kind": "current-slide", "enabled": true },
     { "kind": "selected-elements", "enabled": true }
@@ -71,9 +101,11 @@ Response:
 Validation:
 
 - `prompt` must be non-empty after trimming.
+- `requestedWorkflowIds` is optional. The server may override or add required workflows based on prompt, suggested action, and context.
 - The session must not already have a queued, loading, streaming, or needs-review run.
 - The active connection must be ready or degraded-but-usable.
 - Context collection must complete without including hidden files, env files, stored credentials, or unrelated project files.
+- Required bundled workflows must be loaded and hashed before the adapter is called.
 - Empty decks, missing slides, parse-error slides, unsupported metadata formats, or read-only sources return categorized failures before any write-capable run starts.
 - The route must return a run ID, event URL, or categorized failure quickly enough for the UI to keep the submitted prompt visible and actionable.
 - If the adapter cannot start or does not emit an initial event inside the startup timeout, the runtime emits a `failed` event with `category: "timeout"` or `category: "model-failed"`.
@@ -222,6 +254,11 @@ type StartAgentChatRun = (request: {
   runId: string;
   prompt: string;
   context: AgentChatContext;
+  workflows: Array<{
+    id: string;
+    contentHash: string;
+    instructions: string;
+  }>;
   connectionId: string;
   signal: AbortSignal;
 }) => AsyncIterable<AgentChatEvent>;
@@ -230,9 +267,10 @@ type StartAgentChatRun = (request: {
 Rules:
 
 - The connection layer owns credential lookup and provider-specific request shaping.
-- The chat runtime owns context redaction, proposal parsing, validation, preview, apply, and audit.
+- The chat runtime owns workflow selection, bundled skill loading, context redaction, proposal parsing, validation, preview, apply, and audit.
 - Invalid adapter output is categorized as `invalid-agent-output`.
 - Adapter output containing file-changing operations must be normalized, risk-classified, fingerprinted, and validated before a `proposal` event is emitted.
+- Adapter output for slide source generation or edits must be validated against the `slide-authoring` workflow constraints before proposal emission.
 
 ## Error Shape
 
@@ -251,6 +289,7 @@ Supported categories:
 - `authentication-failed`
 - `model-failed`
 - `timeout`
+- `skill-unavailable`
 - `invalid-agent-output`
 - `patch-conflict`
 - `validation-failure`

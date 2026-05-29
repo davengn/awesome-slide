@@ -1,4 +1,14 @@
-import { Bot, Clipboard, Settings, Wifi, WifiOff, X } from 'lucide-react';
+import {
+  Bot,
+  CheckCircle,
+  ChevronLeft,
+  Clipboard,
+  History,
+  Settings,
+  Trash2,
+  Wifi,
+  WifiOff,
+} from 'lucide-react';
 import type React from 'react';
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { SUGGESTED_ACTIONS } from '../../lib/agent-chat-actions.ts';
@@ -22,10 +32,12 @@ import type {
   SelectedElementDescriptor,
   SuggestedAction,
 } from '../../lib/agent-chat-types.ts';
+import { cn } from '../../lib/utils.ts';
+import { useInspectorOptional } from '../inspector/inspector-provider.tsx';
 import { Button } from '../ui/button.tsx';
+import { AuditHistory } from './AuditHistory.tsx';
 import { ChatComposer } from './ChatComposer.tsx';
 import { ChatMessageList } from './ChatMessageList.tsx';
-import { ContextChips } from './ContextChips.tsx';
 import { SuggestedActions } from './SuggestedActions.tsx';
 
 interface AgentChatPanelProps {
@@ -52,6 +64,20 @@ function createRunFailureEvent(
   };
 }
 
+const findCommentAnchor = (line: number): HTMLElement | null => {
+  const root = document.querySelector<HTMLElement>('[data-inspector-root]');
+  if (!root) return null;
+  const elements = Array.from(root.querySelectorAll<HTMLElement>('[data-slide-loc]'));
+  return (
+    elements.find((el) => {
+      const loc = el.dataset.slideLoc;
+      if (!loc) return false;
+      const [l] = loc.split(':');
+      return Number(l) === line;
+    }) || null
+  );
+};
+
 export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
   onClose,
   slideId: _slideId,
@@ -62,11 +88,16 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
   collection,
 }) => {
   const [activeConnection, setActiveConnection] = useState<AgentConnectionRef | null>(null);
+  const inspector = useInspectorOptional();
   const [runtimeMode, setRuntimeMode] = useState<'interactive' | 'read-only'>('interactive');
   const [selectedOperationIds, setSelectedOperationIds] = useState<Record<string, string[]>>({});
   const [applyingProps, setApplyingProps] = useState<Record<string, boolean>>({});
   const [settingsRoute, setSettingsRoute] = useState('/settings/connections');
   const [composerPrompt, setComposerPrompt] = useState('');
+  const [inlineError, setInlineError] = useState<string | undefined>(undefined);
+  const [showAudit, setShowAudit] = useState(false);
+  const [activeTab, setActiveTab] = useState<'chat' | 'comments'>('chat');
+  const [appliedFeedback, setAppliedFeedback] = useState<string | null>(null);
 
   const [session, dispatch] = useReducer(agentChatReducer, null as unknown as AgentChatSession);
   const streamAbortRef = useRef<(() => void) | null>(null);
@@ -217,8 +248,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
     });
   };
 
-  const handleSendPrompt = async (prompt: string) => {
+  const handleSendPrompt = async (promptText: string) => {
     if (!session) return;
+    setInlineError(undefined);
     try {
       const activePreferences = session.contextPreferences;
 
@@ -240,15 +272,30 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
         collection: getsCollection ? collection : undefined,
       });
 
-      const res = await startRun(session.id, prompt, undefined, activePreferences, builtContext);
+      // Clear composer prompt optimistically
+      setComposerPrompt('');
+
+      let runId: string;
+      try {
+        const res = await startRun(
+          session.id,
+          promptText,
+          undefined,
+          activePreferences,
+          builtContext,
+        );
+        runId = res.runId;
+      } catch (err) {
+        // Restore prompt on failure (T090)
+        setComposerPrompt(promptText);
+        setInlineError(err instanceof Error ? err.message : String(err));
+        return;
+      }
 
       dispatch({
         type: 'START_RUN',
-        payload: { runId: res.runId, prompt },
+        payload: { runId, prompt: promptText },
       });
-
-      // Clear composer
-      setComposerPrompt('');
 
       // Abort any existing stream subscription
       if (streamAbortRef.current) {
@@ -257,20 +304,24 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
 
       // Subscribe to SSE events
       const { abort } = streamRunEvents(
-        res.runId,
+        runId,
         (event) => {
           dispatch({ type: 'RECEIVE_EVENT', payload: event });
+          if (['completed', 'failed', 'cancelled', 'proposal'].includes(event.type)) {
+            streamAbortRef.current = null;
+          }
         },
         (err) => {
           console.error('SSE Stream Error:', err);
           dispatch({
             type: 'RECEIVE_EVENT',
             payload: createRunFailureEvent(
-              res.runId,
+              runId,
               'The agent response stream disconnected before it completed.',
               err.message,
             ),
           });
+          streamAbortRef.current = null;
         },
       );
       streamAbortRef.current = abort;
@@ -308,6 +359,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
     const lastUserMsg = [...session.messages].reverse().find((m) => m.role === 'user');
 
     if (!lastUserMsg) return;
+    setInlineError(undefined);
 
     try {
       const activePreferences = session.contextPreferences;
@@ -328,18 +380,25 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
         collection: getsCollection ? collection : undefined,
       });
 
-      const res = await startRun(
-        session.id,
-        lastUserMsg.content[0].text || '',
-        undefined,
-        activePreferences,
-        freshContext,
-      );
+      let runId: string;
+      try {
+        const res = await startRun(
+          session.id,
+          lastUserMsg.content[0].text || '',
+          undefined,
+          activePreferences,
+          freshContext,
+        );
+        runId = res.runId;
+      } catch (err) {
+        setInlineError(err instanceof Error ? err.message : String(err));
+        return;
+      }
 
       dispatch({
         type: 'START_RUN',
         payload: {
-          runId: res.runId,
+          runId,
           prompt: lastUserMsg.content[0].text || '',
         },
       });
@@ -349,20 +408,24 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
       }
 
       const { abort } = streamRunEvents(
-        res.runId,
+        runId,
         (event) => {
           dispatch({ type: 'RECEIVE_EVENT', payload: event });
+          if (['completed', 'failed', 'cancelled', 'proposal'].includes(event.type)) {
+            streamAbortRef.current = null;
+          }
         },
         (err) => {
           console.error('SSE Retry Stream Error:', err);
           dispatch({
             type: 'RECEIVE_EVENT',
             payload: createRunFailureEvent(
-              res.runId,
+              runId,
               'The agent response stream disconnected before it completed.',
               err.message,
             ),
           });
+          streamAbortRef.current = null;
         },
       );
       streamAbortRef.current = abort;
@@ -419,8 +482,11 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
           },
         });
 
-        // T055: Refresh slide/deck views after applied source/metadata edits
-        window.location.reload();
+        // T100: Replace full page reload after apply with scoped slide/management refresh recovery and visible transaction feedback
+        setAppliedFeedback('Changes applied successfully!');
+        setTimeout(() => {
+          setAppliedFeedback(null);
+        }, 3000);
       }
     } catch (err) {
       console.error('Failed to apply proposal:', err);
@@ -468,20 +534,20 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
 
   return (
     <aside
-      className="w-[380px] h-full border-l border-neutral-200 bg-white flex flex-col shadow-lg z-50 select-none"
+      className="relative w-[440px] h-full border-l border-neutral-200 bg-white flex flex-col shadow-lg z-50 select-none"
       aria-label="Agent Chat Panel"
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 bg-neutral-50">
+      <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 bg-neutral-50 shrink-0">
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-neutral-800" />
-          <h2 className="text-sm font-semibold text-neutral-800">Agent Chat</h2>
+          <h2 className="text-sm font-semibold text-neutral-800 font-sans">Agent Chat</h2>
         </div>
 
         <div className="flex items-center gap-1">
           {activeConnection && (
             <div
-              className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 border border-neutral-200"
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 border border-neutral-200 select-none"
               title={`Connection status: ${activeConnection.status}`}
             >
               {activeConnection.status === 'ready' ? (
@@ -497,7 +563,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
               variant="ghost"
               size="icon"
               onClick={handleCopyDiagnostics}
-              className="h-8 w-8 hover:bg-neutral-200 text-neutral-500"
+              className="h-8 w-8 hover:bg-neutral-200 text-neutral-500 rounded-lg cursor-pointer"
               aria-label="Copy diagnostics to clipboard"
               title="Copy error diagnostics"
             >
@@ -507,131 +573,312 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={onClose}
-            className="h-8 w-8 hover:bg-neutral-200 text-neutral-500"
-            aria-label="Close Chat Panel"
+            onClick={() => setShowAudit(true)}
+            className="h-8 w-8 hover:bg-neutral-200 text-neutral-500 rounded-lg cursor-pointer"
+            aria-label="View Audit History"
+            title="View Audit History"
           >
-            <X className="h-4 w-4" />
+            <History className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8 hover:bg-neutral-200 text-neutral-500 rounded-lg cursor-pointer"
+            aria-label="Collapse Sidebar"
+            title="Collapse Sidebar"
+          >
+            <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Connection Degradation / Warning banner */}
-      {activeConnection &&
-        activeConnection.status !== 'ready' &&
-        activeConnection.status !== 'failed' &&
-        activeConnection.status !== 'offline' && (
-          <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between gap-2">
-            <span className="text-[11px] text-amber-800 leading-tight">
-              Connection state is degraded ({activeConnection.status}). Edits may fail.
-            </span>
-            <a
-              href={settingsRoute}
-              className="text-[11px] text-neutral-900 font-semibold underline flex items-center gap-0.5"
-            >
-              <Settings className="h-3 w-3" />
-              Configure
-            </a>
-          </div>
-        )}
-
-      {/* Failed / Offline connection banner */}
-      {activeConnection &&
-        (activeConnection.status === 'failed' || activeConnection.status === 'offline') && (
-          <div className="bg-red-50 border-b border-red-200 px-4 py-3 flex flex-col gap-2">
-            <div className="flex items-center gap-1.5">
-              <WifiOff className="h-4 w-4 text-red-500 shrink-0" />
-              <span className="text-[12px] text-red-800 font-medium leading-tight">
-                Agent connection {activeConnection.status === 'offline' ? 'offline' : 'failed'}
-              </span>
-            </div>
-            <p className="text-[11px] text-red-700 leading-snug">
-              No AI edits can be made until the connection is restored.
-            </p>
-            <a
-              href={settingsRoute}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-900 underline"
-            >
-              <Settings className="h-3 w-3" />
-              Set up connection
-            </a>
-          </div>
-        )}
-
-      {/* Needs-setup banner */}
-      {activeConnection && activeConnection.status === 'needs-setup' && (
-        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 flex items-center justify-between gap-2">
-          <span className="text-[11px] text-blue-800 leading-tight">
-            Agent connection not yet configured.
-          </span>
-          <a
-            href={settingsRoute}
-            className="text-[11px] text-blue-900 font-semibold underline flex items-center gap-0.5"
+      {/* Tabs Selector */}
+      {inspector && (
+        <div className="flex border-b border-neutral-200 bg-neutral-50/50 select-none shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveTab('chat')}
+            className={cn(
+              'flex-1 py-2.5 text-xs font-semibold border-b-2 text-center transition-all duration-150 cursor-pointer',
+              activeTab === 'chat'
+                ? 'border-neutral-900 text-neutral-900 bg-white/50'
+                : 'border-transparent text-neutral-400 hover:text-neutral-600',
+            )}
           >
-            <Settings className="h-3 w-3" />
-            Set up
-          </a>
+            Chat
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('comments')}
+            className={cn(
+              'flex-1 py-2.5 text-xs font-semibold border-b-2 text-center transition-all duration-150 cursor-pointer',
+              activeTab === 'comments'
+                ? 'border-neutral-900 text-neutral-900 bg-white/50'
+                : 'border-transparent text-neutral-400 hover:text-neutral-600',
+            )}
+          >
+            Comments
+          </button>
         </div>
       )}
 
-      {/* Context Chips */}
-      {session && (
-        <ContextChips
-          preferences={session.contextPreferences}
-          onToggle={handleToggleContext}
-          disabled={isRunActive}
-        />
-      )}
-
-      {/* Message List */}
-      {session ? (
-        <ChatMessageList
-          messages={session.messages}
-          selectedOperationIds={selectedOperationIds}
-          applyingProps={applyingProps}
-          onToggleOperation={handleToggleOperation}
-          onApplyProposal={handleApplyProposal}
-          onRejectProposal={handleRejectProposal}
-        />
+      {/* Tab Contents */}
+      {activeTab === 'comments' ? (
+        inspector && inspector.comments.length > 0 ? (
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 font-sans bg-neutral-50/30">
+            <div className="flex items-center justify-between text-[11px] text-neutral-500 font-semibold mb-1">
+              <span>
+                {inspector.comments.length}{' '}
+                {inspector.comments.length === 1 ? 'Comment' : 'Comments'}
+              </span>
+              {inspector.pendingCount > 0 && (
+                <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5 font-medium animate-pulse">
+                  Unsaved edits: {inspector.pendingCount}
+                </span>
+              )}
+            </div>
+            <div className="space-y-2.5">
+              {inspector.comments.map((c) => {
+                const isSelected = inspector.selected?.line === c.line;
+                return (
+                  <div key={c.id} className="relative group">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const anchor = findCommentAnchor(c.line);
+                        if (anchor) {
+                          const loc = anchor.dataset.slideLoc || '';
+                          const [_, colStr] = loc.split(':');
+                          const column = Number(colStr) || 0;
+                          if (!inspector.active) {
+                            inspector.toggle();
+                          }
+                          inspector.setSelected({ line: c.line, column, anchor });
+                        }
+                      }}
+                      className={cn(
+                        'w-full text-left flex flex-col p-3.5 rounded-xl border text-xs transition-all duration-200 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50',
+                        isSelected
+                          ? 'bg-blue-50/50 border-blue-200 shadow-xs'
+                          : 'bg-white border-neutral-200/70 hover:border-neutral-300 hover:shadow-xs',
+                      )}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <div
+                          className={cn(
+                            'w-1.5 h-1.5 rounded-full transition-colors duration-200',
+                            isSelected
+                              ? 'bg-blue-500'
+                              : 'bg-neutral-300 group-hover:bg-neutral-400',
+                          )}
+                        />
+                        <span className="font-mono text-[9px] font-bold text-neutral-500 bg-neutral-100/80 px-1.5 py-0.5 rounded-sm">
+                          Line {c.line}
+                        </span>
+                      </div>
+                      <div className="text-neutral-700 leading-relaxed font-sans select-text break-words">
+                        {c.note}
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        inspector.remove(c.id);
+                      }}
+                      className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-500 p-1 hover:bg-neutral-50 rounded transition-all duration-150 cursor-pointer animate-in fade-in duration-100"
+                      title="Delete comment"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-xs text-neutral-400 gap-2 p-6 text-center select-none font-sans">
+            <Bot className="h-8 w-8 stroke-[1.5] text-neutral-300" />
+            <span className="font-semibold">No comments on this slide.</span>
+            <p className="text-[10px] text-neutral-400 leading-normal max-w-[200px]">
+              Inspector comments and notes will show up here.
+            </p>
+          </div>
+        )
       ) : (
-        <div className="flex-1 flex items-center justify-center text-sm text-neutral-500">
-          Loading session...
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+          {/* Connection Degradation / Warning banner */}
+          {activeConnection &&
+            activeConnection.status !== 'ready' &&
+            activeConnection.status !== 'failed' &&
+            activeConnection.status !== 'offline' && (
+              <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between gap-2 shrink-0">
+                <span className="text-[11px] text-amber-800 leading-tight flex-1">
+                  Connection state is degraded ({activeConnection.status}). Edits may fail.
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const data = await getSession();
+                        setActiveConnection(data.activeConnection);
+                      } catch (err) {
+                        console.error('Failed to retry connection check:', err);
+                      }
+                    }}
+                    className="text-[11px] text-neutral-900 font-semibold underline cursor-pointer bg-transparent border-0"
+                  >
+                    Retry
+                  </button>
+                  <a
+                    href={settingsRoute}
+                    className="text-[11px] text-neutral-900 font-semibold underline flex items-center gap-0.5"
+                  >
+                    <Settings className="h-3 w-3" />
+                    Configure
+                  </a>
+                </div>
+              </div>
+            )}
+
+          {/* Failed / Offline connection banner */}
+          {activeConnection &&
+            (activeConnection.status === 'failed' || activeConnection.status === 'offline') && (
+              <div className="bg-red-50 border-b border-red-200 px-4 py-3 flex flex-col gap-2 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <WifiOff className="h-4 w-4 text-red-500 shrink-0" />
+                  <span className="text-[12px] text-red-800 font-medium leading-tight">
+                    Agent connection {activeConnection.status === 'offline' ? 'offline' : 'failed'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-red-700 leading-snug">
+                  No AI edits can be made until the connection is restored.
+                </p>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={settingsRoute}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-900 underline"
+                  >
+                    <Settings className="h-3 w-3" />
+                    Set up connection
+                  </a>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const data = await getSession();
+                        setActiveConnection(data.activeConnection);
+                      } catch (err) {
+                        console.error('Failed to retry connection check:', err);
+                      }
+                    }}
+                    className="text-[11px] text-red-900 font-semibold underline cursor-pointer bg-transparent border-0"
+                  >
+                    Retry check
+                  </button>
+                </div>
+              </div>
+            )}
+
+          {/* Needs-setup banner */}
+          {activeConnection && activeConnection.status === 'needs-setup' && (
+            <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 flex items-center justify-between gap-2 shrink-0">
+              <span className="text-[11px] text-blue-800 leading-tight flex-1">
+                Agent connection not yet configured.
+              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const data = await getSession();
+                      setActiveConnection(data.activeConnection);
+                    } catch (err) {
+                      console.error('Failed to retry connection check:', err);
+                    }
+                  }}
+                  className="text-[11px] text-blue-900 font-semibold underline cursor-pointer bg-transparent border-0"
+                >
+                  Retry
+                </button>
+                <a
+                  href={settingsRoute}
+                  className="text-[11px] text-blue-900 font-semibold underline flex items-center gap-0.5"
+                >
+                  <Settings className="h-3 w-3" />
+                  Set up
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Applied Feedback toast */}
+          {appliedFeedback && (
+            <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-2 text-xs text-emerald-800 font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top duration-200 shrink-0">
+              <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+              <span>{appliedFeedback}</span>
+            </div>
+          )}
+
+          {/* Message List */}
+          {session ? (
+            <ChatMessageList
+              messages={session.messages}
+              selectedOperationIds={selectedOperationIds}
+              applyingProps={applyingProps}
+              onToggleOperation={handleToggleOperation}
+              onApplyProposal={handleApplyProposal}
+              onRejectProposal={handleRejectProposal}
+            />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-xs text-neutral-500 select-none font-sans">
+              Loading session...
+            </div>
+          )}
+
+          {/* Suggested Actions */}
+          {session && runtimeMode === 'interactive' && !isRunActive && (
+            <SuggestedActions
+              actions={SUGGESTED_ACTIONS.filter((action) => {
+                if (action.scope === 'selection') {
+                  return !!selectedElements && selectedElements.length > 0;
+                }
+                if (action.scope === 'deck') {
+                  return !!collection?.deckId;
+                }
+                return true;
+              })}
+              onSelect={handleSelectSuggestedAction}
+              disabled={isRunActive}
+            />
+          )}
+
+          {/* Composer */}
+          {runtimeMode === 'interactive' ? (
+            <ChatComposer
+              onSend={handleSendPrompt}
+              onCancel={handleCancelRun}
+              onRetry={handleRetryRun}
+              isRunActive={isRunActive}
+              canRetry={canRetry}
+              value={composerPrompt}
+              onChange={setComposerPrompt}
+              inlineError={inlineError}
+              preferences={session?.contextPreferences || []}
+              onTogglePreference={handleToggleContext}
+            />
+          ) : (
+            <div className="p-4 border-t border-neutral-200 bg-neutral-100 text-center text-xs text-neutral-500 font-medium shrink-0">
+              Chat is in read-only mode for static builds.
+            </div>
+          )}
         </div>
       )}
 
-      {/* Suggested Actions */}
-      {session && runtimeMode === 'interactive' && !isRunActive && (
-        <SuggestedActions
-          actions={SUGGESTED_ACTIONS.filter((action) => {
-            if (action.scope === 'selection') {
-              return !!selectedElements && selectedElements.length > 0;
-            }
-            if (action.scope === 'deck') {
-              return !!collection?.deckId;
-            }
-            return true;
-          })}
-          onSelect={handleSelectSuggestedAction}
-          disabled={isRunActive}
-        />
-      )}
-
-      {/* Composer */}
-      {runtimeMode === 'interactive' ? (
-        <ChatComposer
-          onSend={handleSendPrompt}
-          onCancel={handleCancelRun}
-          onRetry={handleRetryRun}
-          isRunActive={isRunActive}
-          canRetry={canRetry}
-          value={composerPrompt}
-          onChange={setComposerPrompt}
-        />
-      ) : (
-        <div className="p-4 border-t border-neutral-200 bg-neutral-100 text-center text-xs text-neutral-500 font-medium">
-          Chat is in read-only mode for static builds.
-        </div>
-      )}
+      {/* Audit History Panel overlay */}
+      {showAudit && <AuditHistory onClose={() => setShowAudit(false)} />}
     </aside>
   );
 };

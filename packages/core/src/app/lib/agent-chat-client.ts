@@ -53,9 +53,14 @@ export async function cancelRun(runId: string): Promise<CancelRunResponse> {
   return res.json();
 }
 
-export async function retryRun(runId: string): Promise<RetryRunResponse> {
+export async function retryRun(
+  runId: string,
+  context?: AgentChatContext,
+): Promise<RetryRunResponse> {
   const res = await fetch(`/__agent-chat/runs/${runId}/retry`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ context }),
   });
   if (!res.ok) {
     throw new Error(`Failed to retry run: ${res.statusText}`);

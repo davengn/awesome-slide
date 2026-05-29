@@ -1,7 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { appendAuditEntry } from './agent-audit.ts';
+import { appendAuditEntry, readAuditEntries } from './agent-audit.ts';
 
 const TEMP_PROJECT_ROOT = path.join(__dirname, '../../../../.awesome-slide/agent-chat/test-temp');
 
@@ -39,5 +39,40 @@ describe('Agent Audit Logger', () => {
     const parsed = JSON.parse(lines[0]);
     expect(parsed.id).toBe(entry.id);
     expect(parsed.prompt).toBe('Make slide prettier with apiKey=<redacted>');
+  });
+
+  it('reads audit entries in reverse chronological order', async () => {
+    const defaultConnection = {
+      connectionId: 'local-codex',
+      displayName: 'Codex',
+      type: 'local-agent' as const,
+      modelOrAgent: 'codex',
+      status: 'ready' as const,
+    };
+
+    await appendAuditEntry(TEMP_PROJECT_ROOT, {
+      prompt: 'First edit',
+      contextSummary: 'Slide intro',
+      proposalSummary: 'Redesign',
+      appliedFiles: [],
+      operationKinds: [],
+      connection: defaultConnection,
+      validationSummary: 'Pass',
+    });
+
+    await appendAuditEntry(TEMP_PROJECT_ROOT, {
+      prompt: 'Second edit',
+      contextSummary: 'Slide intro',
+      proposalSummary: 'Redesign 2',
+      appliedFiles: [],
+      operationKinds: [],
+      connection: defaultConnection,
+      validationSummary: 'Pass',
+    });
+
+    const entries = await readAuditEntries(TEMP_PROJECT_ROOT);
+    expect(entries).toHaveLength(2);
+    expect(entries[0].prompt).toBe('Second edit');
+    expect(entries[1].prompt).toBe('First edit');
   });
 });

@@ -16,6 +16,13 @@ Defines the reviewable file-changing artifact emitted by agent chat before any w
   "sourceFingerprints": {
     "slides/intro/index.tsx": "sha256:..."
   },
+  "workflowRefs": [
+    {
+      "id": "slide-authoring",
+      "displayName": "Slide authoring",
+      "contentHash": "sha256:..."
+    }
+  ],
   "operations": [],
   "previewArtifacts": [],
   "validation": {
@@ -33,6 +40,8 @@ Rules:
 - `riskLevel` is `high` for deck-wide rewrites, deletes, broad theme replacement, or operations touching more than one slide unless explicitly narrowed.
 - Source, deck, theme, and metadata fingerprints are captured when the proposal is generated and compared before apply.
 - The shared proposal validator runs before the proposal is emitted to the UI and again immediately before apply.
+- Any proposal that writes `slides/<id>/index.tsx` must reference `slide-authoring`; creation proposals also reference `create-slide`; inspector-comment proposals reference `apply-comments`; theme creation/extraction proposals reference `create-theme`.
+- Workflow references are safe metadata only. Full skill instruction bodies are not persisted in proposals.
 
 ## Operation Types
 
@@ -57,6 +66,7 @@ Payload:
 Validation:
 
 - Slide ID must resolve inside the slides root.
+- Resulting source must follow the `slide-authoring` file contract for `Page[]`, `SlideMeta`, 1920x1080 canvas assumptions, and per-slide `DesignSystem` expectations where applicable.
 - Source must parse after transformation.
 - Conflicts are reported when source lines no longer match proposal expectations.
 - Source fingerprint mismatch before apply sets the proposal to `conflict` and disables apply controls.
@@ -119,6 +129,7 @@ Payload:
 Validation:
 
 - ID must match slide ID rules and must not already exist.
+- The proposed source must comply with the `create-slide` workflow and `slide-authoring` technical reference, including slide folder layout and single `slides/<id>/index.tsx` source file.
 - Generated source must parse before write.
 - Deck and folder references must exist.
 
@@ -155,6 +166,7 @@ Validation:
 
 - Theme metadata must exist in bundled or user-added theme sources.
 - Existing-content rewrites require preview and confirmation.
+- Creating or extracting a new theme uses the `create-theme` workflow and must write only the expected paired theme files under `themes/`.
 
 ### `update-deck`
 

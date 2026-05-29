@@ -16,7 +16,12 @@ vi.mock('virtual:awesome-slide/themes', () => {
 });
 
 import type { AgentOperation } from '../app/lib/agent-chat-types.ts';
-import { classifyRiskLevel, normalizeProposal, validateProposal } from './agent-proposals.ts';
+import {
+  classifyRiskLevel,
+  getSourceFingerprint,
+  normalizeProposal,
+  validateProposal,
+} from './agent-proposals.ts';
 
 describe('Agent Edit Proposals', () => {
   it('normalizes partial proposals with sensible defaults', () => {
@@ -168,6 +173,43 @@ describe('Agent Edit Proposals', () => {
     const val = await validateProposal(themeProposal);
     expect(val.status).toBe('pending'); // warnings result in pending validation status
     expect(val.checks.some((c) => c.kind === 'theme-exists' && c.status === 'warn')).toBe(true);
+  });
+
+  it('detects source conflicts based on fingerprint mismatch (T086)', async () => {
+    const originalContent = 'export function Slide() { return <div>Hello</div>; }';
+    const originalFingerprint = getSourceFingerprint(originalContent);
+
+    const proposal = normalizeProposal({
+      id: 'prop_fingerprint_test',
+      operations: [
+        {
+          id: 'op_fingerprint',
+          kind: 'patch-slide-source',
+          target: 'slide_1',
+          description: 'Edit code',
+          payload: { code: 'export function Slide() { return <div>Hello Edited</div>; }' },
+          requiresConfirmation: false,
+          validationState: 'pending',
+          reversible: true,
+        },
+      ],
+    });
+    proposal.fingerprints = {
+      slide_1: originalFingerprint,
+    };
+
+    // Case A: content matches original fingerprint -> pass
+    const currentContentsA = { slide_1: originalContent };
+    const valA = await validateProposal(proposal, currentContentsA);
+    expect(valA.status).toBe('valid');
+
+    // Case B: content is modified, fingerprint mismatch -> conflict / fail
+    const currentContentsB = {
+      slide_1: 'export const Slide = () => <div>Modified Independently</div>;',
+    };
+    const valB = await validateProposal(proposal, currentContentsB);
+    expect(valB.status).toBe('conflict');
+    expect(valB.checks.some((c) => c.kind === 'source-conflict' && c.status === 'fail')).toBe(true);
   });
 });
 

@@ -21,6 +21,7 @@ export const ProposalControls: React.FC<ProposalControlsProps> = ({
   onReject,
 }) => {
   const [confirmedRisk, setConfirmedRisk] = useState(false);
+  const [showDoubleConfirm, setShowDoubleConfirm] = useState(false);
 
   const hasHighRisk =
     proposal.riskLevel === 'high' || proposal.operations.some((op) => op.requiresConfirmation);
@@ -28,11 +29,6 @@ export const ProposalControls: React.FC<ProposalControlsProps> = ({
   const isCappedOrConflict = validationStatus === 'conflict' || validationStatus === 'invalid';
   const isAppliedOrRejected = proposal.state === 'applied' || proposal.state === 'rejected';
 
-  // Apply button is disabled if:
-  // - Validation fails or is a conflict
-  // - Already applied or rejected
-  // - No operations selected
-  // - High risk is not confirmed
   const canApply =
     !isCappedOrConflict &&
     !isAppliedOrRejected &&
@@ -54,8 +50,65 @@ export const ProposalControls: React.FC<ProposalControlsProps> = ({
       ? 'Apply All'
       : `Apply Selected (${selectedOperationIds.length})`;
 
+  const handleApplyClick = () => {
+    if (hasHighRisk) {
+      setShowDoubleConfirm(true);
+    } else {
+      onApply();
+    }
+  };
+
+  const handleConfirmDouble = () => {
+    setShowDoubleConfirm(false);
+    onApply();
+  };
+
   return (
-    <div className="flex flex-col gap-3 p-4 border-t border-neutral-200 bg-neutral-50/50">
+    <div className="relative flex flex-col gap-3 p-4 border-t border-neutral-200 bg-neutral-50/50">
+      {/* High-Risk Double Confirmation Modal Overlay */}
+      {showDoubleConfirm && (
+        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-40 flex flex-col p-4 animate-in fade-in duration-200">
+          <div className="flex items-start gap-2.5 text-xs flex-1">
+            <ShieldAlert className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+            <div className="flex flex-col gap-2 w-full overflow-hidden">
+              <span className="font-bold text-red-900 text-sm">Confirm High-Risk Changes</span>
+              <p className="text-neutral-600 leading-normal">
+                You are about to apply high-risk changes across multiple slides or layouts. This
+                cannot be undone.
+              </p>
+
+              <div className="border border-neutral-200 rounded-lg p-2 bg-neutral-50 max-h-24 overflow-y-auto space-y-1.5 w-full">
+                <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider block">
+                  Affected Targets
+                </span>
+                {Array.from(new Set(proposal.operations.map((op) => op.target))).map((target) => (
+                  <div key={target} className="text-[11px] font-mono text-neutral-700 truncate">
+                    • {target}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2 mt-3 shrink-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowDoubleConfirm(false)}
+              className="flex-1 text-xs h-8 cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={handleConfirmDouble}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs h-8 cursor-pointer border border-red-600"
+            >
+              Confirm & Apply
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* High Risk Confirmation */}
       {hasHighRisk && !isCappedOrConflict && (
         <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-200 bg-amber-50 text-xs">
@@ -96,7 +149,7 @@ export const ProposalControls: React.FC<ProposalControlsProps> = ({
         </Button>
         <Button
           variant="default"
-          onClick={onApply}
+          onClick={handleApplyClick}
           disabled={!canApply}
           className={cn(
             'flex-[2] h-9 text-xs transition-all duration-200',

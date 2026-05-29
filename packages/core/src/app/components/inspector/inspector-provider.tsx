@@ -275,6 +275,10 @@ export function useInspector(): InspectorCtx {
   return v;
 }
 
+export function useInspectorOptional(): InspectorCtx | null {
+  return useContext(Ctx);
+}
+
 export function InspectorProvider({
   slideId,
   pageIndex,

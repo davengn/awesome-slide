@@ -172,17 +172,17 @@
 
 ### Tests for User Story 4
 
-- [ ] T065 [P] [US4] Add deck context tests for folder, deck, ordered slide IDs, speaker notes inclusion, and context budget limits in `packages/core/src/app/lib/agent-chat-context.test.ts`
-- [ ] T066 [P] [US4] Add operation validation tests for `create-slide`, `update-speaker-notes`, `reorder-pages`, and `update-deck` in `packages/core/src/editing/agent-proposals.test.ts`
+- [x] T065 [P] [US4] Add deck context tests for folder, deck, ordered slide IDs, speaker notes inclusion, and context budget limits in `packages/core/src/app/lib/agent-chat-context.test.ts`
+- [x] T066 [P] [US4] Add operation validation tests for `create-slide`, `update-speaker-notes`, `reorder-pages`, and `update-deck` in `packages/core/src/editing/agent-proposals.test.ts`
 
 ### Implementation for User Story 4
 
-- [ ] T067 [US4] Add deck and folder scoped context preferences to management-launched sessions in `packages/core/src/app/routes/home.tsx`
-- [ ] T068 [US4] Validate `create-slide`, `update-speaker-notes`, `reorder-pages`, and `update-deck` operations in `packages/core/src/editing/agent-proposals.ts`
-- [ ] T069 [US4] Apply deck metadata and membership operations through existing management helpers in `packages/core/src/http/agent-chat-api.ts`
-- [ ] T070 [US4] Apply speaker notes updates through slide metadata paths in `packages/core/src/http/agent-chat-api.ts`
-- [ ] T071 [US4] Add deck narrative suggested actions for shorten content, generate speaker notes, and create related slide in `packages/core/src/app/lib/agent-chat-actions.ts`
-- [ ] T072 [US4] Refresh management lists and selected inspector state after applied deck operations in `packages/core/src/app/routes/home.tsx`
+- [x] T067 [US4] Add deck and folder scoped context preferences to management-launched sessions in `packages/core/src/app/routes/home.tsx`
+- [x] T068 [US4] Validate `create-slide`, `update-speaker-notes`, `reorder-pages`, and `update-deck` operations in `packages/core/src/editing/agent-proposals.ts`
+- [x] T069 [US4] Apply deck metadata and membership operations through existing management helpers in `packages/core/src/http/agent-chat-api.ts`
+- [x] T070 [US4] Apply speaker notes updates through slide metadata paths in `packages/core/src/http/agent-chat-api.ts`
+- [x] T071 [US4] Add deck narrative suggested actions for shorten content, generate speaker notes, and create related slide in `packages/core/src/app/lib/agent-chat-actions.ts`
+- [x] T072 [US4] Refresh management lists and selected inspector state after applied deck operations in `packages/core/src/app/routes/home.tsx`
 
 **Checkpoint**: User Story 4 is fully functional and testable independently.
 
@@ -196,18 +196,18 @@
 
 ### Tests for User Story 6
 
-- [ ] T073 [P] [US6] Add error category and recovery action tests in `packages/core/src/app/lib/agent-chat-errors.test.ts`
-- [ ] T074 [US6] Add runtime tests for static read-only bootstrap, blocked run creation, blocked proposal apply, and no-connection recovery metadata in `packages/core/src/http/agent-chat-api.test.ts`
-- [ ] T075 [US6] Add runtime tests for unavailable connection, authentication failure, model failure, timeout, invalid output, cancellation, and redacted diagnostics in `packages/core/src/http/agent-chat-api.test.ts`
+- [x] T073 [P] [US6] Add error category and recovery action tests in `packages/core/src/app/lib/agent-chat-errors.test.ts`
+- [x] T074 [US6] Add runtime tests for static read-only bootstrap, blocked run creation, blocked proposal apply, and no-connection recovery metadata in `packages/core/src/http/agent-chat-api.test.ts`
+- [x] T075 [US6] Add runtime tests for unavailable connection, authentication failure, model failure, timeout, invalid output, cancellation, and redacted diagnostics in `packages/core/src/http/agent-chat-api.test.ts`
 
 ### Implementation for User Story 6
 
-- [ ] T076 [US6] Return failed-connection and degraded-connection bootstrap metadata from `GET /__agent-chat/session` in `packages/core/src/http/agent-chat-api.ts`
-- [ ] T077 [US6] Render failed-connection, degraded-connection, and static read-only states with settings route, retry, and diagnostics controls in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
-- [ ] T078 [US6] Map adapter, timeout, validation, patch conflict, cancellation, and write errors through `agent-chat-errors.ts` in `packages/core/src/http/agent-chat-api.ts`
-- [ ] T079 [US6] Implement diagnostics copy with secret and hidden-path redaction in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
-- [ ] T080 [US6] Ensure cancellation aborts active adapter work and prevents partial proposal application in `packages/core/src/http/agent-chat-runs.ts`
-- [ ] T081 [US6] Add retry and edit-prompt flows that recollect current context in `packages/core/src/app/lib/agent-chat-client.ts`
+- [x] T076 [US6] Return failed-connection and degraded-connection bootstrap metadata from `GET /__agent-chat/session` in `packages/core/src/http/agent-chat-api.ts`
+- [x] T077 [US6] Render failed-connection, degraded-connection, and static read-only states with settings route, retry, and diagnostics controls in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
+- [x] T078 [US6] Map adapter, timeout, validation, patch conflict, cancellation, and write errors through `agent-chat-errors.ts` in `packages/core/src/http/agent-chat-api.ts`
+- [x] T079 [US6] Implement diagnostics copy with secret and hidden-path redaction in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
+- [x] T080 [US6] Ensure cancellation aborts active adapter work and prevents partial proposal application in `packages/core/src/http/agent-chat-runs.ts`
+- [x] T081 [US6] Add retry and edit-prompt flows that recollect current context in `packages/core/src/app/lib/agent-chat-client.ts`
 
 **Checkpoint**: User Story 6 is fully functional and testable independently.
 
@@ -219,28 +219,28 @@
 
 ### Remediation Tests
 
-- [ ] T082 [P] [US1] Add reducer regression tests for optimistic queued turns, failed run creation, terminal cleanup, and `currentRunId` release in `packages/core/src/app/lib/agent-chat-state.test.ts`
-- [ ] T083 [P] [US1] Add EventSource client tests for terminal close, disconnect before terminal state, startup failure, and retry stream setup in `packages/core/src/app/lib/agent-chat-client.test.ts`
-- [ ] T084 [P] [US1] Add route tests for `POST /__agent-chat/runs` startup feedback, adapter startup failure, watchdog timeout, event replay, and terminal event guarantees in `packages/core/src/http/agent-chat-api.test.ts`
-- [ ] T085 [P] [US5] Add runtime proposal tests proving `validateProposal` runs before proposal emission and before apply in `packages/core/src/http/agent-chat-api.test.ts`
-- [ ] T086 [P] [US5] Add stale proposal tests for source, deck, theme, and metadata fingerprint mismatch in `packages/core/src/editing/agent-proposals.test.ts`
-- [ ] T087 [P] [US5] Add audit history route tests for redacted newest-first applied-change summaries in `packages/core/src/http/agent-chat-api.test.ts`
+- [x] T082 [P] [US1] Add reducer regression tests for optimistic queued turns, failed run creation, terminal cleanup, and `currentRunId` release in `packages/core/src/app/lib/agent-chat-state.test.ts`
+- [x] T083 [P] [US1] Add EventSource client tests for terminal close, disconnect before terminal state, startup failure, and retry stream setup in `packages/core/src/app/lib/agent-chat-client.test.ts`
+- [x] T084 [P] [US1] Add route tests for `POST /__agent-chat/runs` startup feedback, adapter startup failure, watchdog timeout, event replay, and terminal event guarantees in `packages/core/src/http/agent-chat-api.test.ts`
+- [x] T085 [P] [US5] Add runtime proposal tests proving `validateProposal` runs before proposal emission and before apply in `packages/core/src/http/agent-chat-api.test.ts`
+- [x] T086 [P] [US5] Add stale proposal tests for source, deck, theme, and metadata fingerprint mismatch in `packages/core/src/editing/agent-proposals.test.ts`
+- [x] T087 [P] [US5] Add audit history route tests for redacted newest-first applied-change summaries in `packages/core/src/http/agent-chat-api.test.ts`
 
 ### Remediation Implementation
 
-- [ ] T088 [US1] Replace timer-only run simulation with an adapter-backed run worker or explicit demo fixture boundary, emitting categorized failed events on adapter startup and timeout failures in `packages/core/src/http/agent-chat-api.ts`
-- [ ] T089 [US1] Add run watchdog metadata, heartbeat/last-event tracking, replay-safe terminal cleanup, and abort cleanup in `packages/core/src/http/agent-chat-runs.ts`
-- [ ] T090 [US1] Render a visible queued user/assistant turn immediately on local submit, preserve the prompt on failed `startRun`, clear `streamAbortRef` on terminal/review events, and keep the composer usable after failure in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
-- [ ] T091 [US1] Update stream client helpers to distinguish normal terminal stream closure from pre-terminal disconnect and expose typed stream errors in `packages/core/src/app/lib/agent-chat-client.ts`
-- [ ] T092 [US1] Update `ChatComposer` with a persistent bottom layout, accessible label, inline submit/start errors, preserved drafts, and Open Design-style send/cancel affordances in `packages/core/src/app/components/agent-chat/ChatComposer.tsx`
-- [ ] T093 [US5] Invoke `normalizeProposal`, risk classification, fingerprint capture, and `validateProposal` before emitting proposal events and immediately before apply in `packages/core/src/http/agent-chat-api.ts`
-- [ ] T094 [US5] Add source/deck/theme/metadata fingerprint helpers and stale/conflict status updates for pending proposals in `packages/core/src/editing/agent-proposals.ts`
-- [ ] T095 [US5] Replace false partial-apply success with failed transaction reporting and rollback/refresh recovery when any selected operation fails in `packages/core/src/http/agent-chat-api.ts`
-- [ ] T096 [US5] Expose recent audit records through `GET /__agent-chat/audit` and a visible history control in `packages/core/src/http/agent-chat-api.ts` and `packages/core/src/app/components/agent-chat/AuditHistory.tsx`
-- [ ] T097 [US3] Implement the high-risk double-confirmation modal with affected file and operation summary before apply in `packages/core/src/app/components/agent-chat/ProposalControls.tsx`
-- [ ] T098 [US1] Build the Open Design-style desktop rail anatomy with Chat/Comments tabs, compact turn cards, inline run status cards, generated-files tray, and pinned composer in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`, `packages/core/src/app/components/agent-chat/AgentTurnCard.tsx`, `packages/core/src/app/components/agent-chat/RunStatusCard.tsx`, and `packages/core/src/app/components/agent-chat/FilesFromTurn.tsx`
-- [ ] T099 [US1] Restyle message list, context chips, suggested actions, and proposal preview to match the rail anatomy while preserving Awesome Slide tokens and accessibility in `packages/core/src/app/components/agent-chat/ChatMessageList.tsx`, `packages/core/src/app/components/agent-chat/ContextChips.tsx`, `packages/core/src/app/components/agent-chat/SuggestedActions.tsx`, and `packages/core/src/app/components/agent-chat/ProposalPreview.tsx`
-- [ ] T100 [US1] Replace full page reload after apply with scoped slide/management refresh recovery and visible transaction feedback in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
+- [x] T088 [US1] Replace timer-only run simulation with an adapter-backed run worker or explicit demo fixture boundary, emitting categorized failed events on adapter startup and timeout failures in `packages/core/src/http/agent-chat-api.ts`
+- [x] T089 [US1] Add run watchdog metadata, heartbeat/last-event tracking, replay-safe terminal cleanup, and abort cleanup in `packages/core/src/http/agent-chat-runs.ts`
+- [x] T090 [US1] Render a visible queued user/assistant turn immediately on local submit, preserve the prompt on failed `startRun`, clear `streamAbortRef` on terminal/review events, and keep the composer usable after failure in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
+- [x] T091 [US1] Update stream client helpers to distinguish normal terminal stream closure from pre-terminal disconnect and expose typed stream errors in `packages/core/src/app/lib/agent-chat-client.ts`
+- [x] T092 [US1] Update `ChatComposer` with a persistent bottom layout, accessible label, inline submit/start errors, preserved drafts, and Open Design-style send/cancel affordances in `packages/core/src/app/components/agent-chat/ChatComposer.tsx`
+- [x] T093 [US5] Invoke `normalizeProposal`, risk classification, fingerprint capture, and `validateProposal` before emitting proposal events and immediately before apply in `packages/core/src/http/agent-chat-api.ts`
+- [x] T094 [US5] Add source/deck/theme/metadata fingerprint helpers and stale/conflict status updates for pending proposals in `packages/core/src/editing/agent-proposals.ts`
+- [x] T095 [US5] Replace false partial-apply success with failed transaction reporting and rollback/refresh recovery when any selected operation fails in `packages/core/src/http/agent-chat-api.ts`
+- [x] T096 [US5] Expose recent audit records through `GET /__agent-chat/audit` and a visible history control in `packages/core/src/http/agent-chat-api.ts` and `packages/core/src/app/components/agent-chat/AuditHistory.tsx`
+- [x] T097 [US3] Implement the high-risk double-confirmation modal with affected file and operation summary before apply in `packages/core/src/app/components/agent-chat/ProposalControls.tsx`
+- [x] T098 [US1] Build the Open Design-style desktop rail anatomy with Chat/Comments tabs, compact turn cards, inline run status cards, generated-files tray, and pinned composer in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`, `packages/core/src/app/components/agent-chat/AgentTurnCard.tsx`, `packages/core/src/app/components/agent-chat/RunStatusCard.tsx`, and `packages/core/src/app/components/agent-chat/FilesFromTurn.tsx`
+- [x] T099 [US1] Restyle message list, context chips, suggested actions, and proposal preview to match the rail anatomy while preserving Awesome Slide tokens and accessibility in `packages/core/src/app/components/agent-chat/ChatMessageList.tsx`, `packages/core/src/app/components/agent-chat/ContextChips.tsx`, `packages/core/src/app/components/agent-chat/SuggestedActions.tsx`, and `packages/core/src/app/components/agent-chat/ProposalPreview.tsx`
+- [x] T100 [US1] Replace full page reload after apply with scoped slide/management refresh recovery and visible transaction feedback in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
 
 **Checkpoint**: The agent chat no longer sticks in pending state, unsafe proposals are validated in runtime, audit history is visible, and the desktop UI matches the supplied Open Design-style reference anatomy.
 

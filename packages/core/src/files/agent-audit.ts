@@ -36,3 +36,14 @@ export async function appendAuditEntry(
 
   return entry;
 }
+
+export async function readAuditEntries(projectRoot: string): Promise<AgentAuditEntry[]> {
+  const auditFilePath = path.join(projectRoot, '.awesome-slide/agent-chat/audit.jsonl');
+  try {
+    const content = await fs.readFile(auditFilePath, 'utf-8');
+    const lines = content.trim().split('\n').filter(Boolean);
+    return lines.map((line) => JSON.parse(line)).reverse();
+  } catch {
+    return [];
+  }
+}

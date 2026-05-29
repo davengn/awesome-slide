@@ -65,6 +65,26 @@ Rules:
 - `run-status` parts render compact queued/running/done/error cards for the current turn.
 - `file-list` parts render generated or modified files from the current turn without embedding bulky artifact contents in session history.
 
+## SkillWorkflowRef
+
+Safe reference to the bundled authoring workflow instructions used for a run.
+
+Fields:
+
+- `id: 'current-slide' | 'slide-authoring' | 'create-slide' | 'apply-comments' | 'create-theme'`
+- `displayName: string`
+- `skillPath: string`: repository-relative path under `packages/core/skills/<id>/SKILL.md`
+- `contentHash: string`: deterministic hash of the skill file content used for this run
+- `role: 'context-resolution' | 'authoring-reference' | 'creation-workflow' | 'comment-workflow' | 'theme-workflow'`
+
+Rules:
+
+- The runtime reads workflow instructions from the bundled skill files shipped with `@awesome-slide/core`; it must not maintain a stale hard-coded copy of the skill body.
+- `slide-authoring` is attached to every operation that writes `slides/<id>/index.tsx`.
+- `current-slide` is attached when a prompt depends on the current slide, current page, or selected element.
+- Missing or unreadable required workflows produce `category: 'skill-unavailable'` and block write-capable execution.
+- Full skill body text is sent only to the active adapter request and is not persisted in browser session history or audit entries.
+
 ## ContextPreference
 
 User-visible context chip selection.
@@ -97,6 +117,7 @@ Fields:
 - `theme?: { activeThemeId?: string; availableThemeIds: string[]; summaries: ThemeSummary[] }`
 - `notes?: { included: boolean; currentPage?: string; deckSummary?: string }`
 - `source?: { excerpts: SourceExcerpt[]; totalBytes: number; truncated: boolean }`
+- `workflows: SkillWorkflowRef[]`
 - `limits: { maxBytes: number; generatedAt: string }`
 
 Validation:
@@ -131,10 +152,11 @@ Contextual prompt starter shown in the panel.
 
 Fields:
 
-- `id: 'improve-copy' | 'shorten-content' | 'redesign-layout' | 'apply-theme' | 'generate-speaker-notes' | 'fix-alignment' | 'create-related-slide'`
+- `id: 'improve-copy' | 'shorten-content' | 'redesign-layout' | 'apply-theme' | 'generate-speaker-notes' | 'fix-alignment' | 'apply-comments' | 'create-related-slide' | 'create-theme'`
 - `label: string`
 - `promptTemplate: string`
 - `defaultContextKinds: ContextPreference['kind'][]`
+- `workflowIds: SkillWorkflowRef['id'][]`
 - `scope: 'selection' | 'slide' | 'deck'`
 - `riskLevel: 'low' | 'medium' | 'high'`
 
@@ -142,6 +164,7 @@ Rules:
 
 - Broad deck-wide actions default to the high-risk double-confirmation flow before apply.
 - Actions with missing prerequisites, such as no selected element, are disabled or adapted to slide scope.
+- Actions that create or modify slide source include `slide-authoring`; creation includes `create-slide`; inspector comment processing includes `apply-comments`; theme creation includes `create-theme`.
 
 ## AgentConnectionRef
 
@@ -172,6 +195,7 @@ Fields:
 - `actionId?: SuggestedAction['id']`
 - `context: AgentChatContext`
 - `connection: AgentConnectionRef`
+- `workflows: SkillWorkflowRef[]`
 - `state: 'queued' | 'loading' | 'streaming' | 'needs-review' | 'completed' | 'cancelled' | 'failed'`
 - `events: AgentChatEvent[]`
 - `proposalId?: string`
@@ -224,6 +248,7 @@ Fields:
 - `contextFingerprint?: string`
 - `operations: AgentOperation[]`
 - `previewArtifacts: PreviewArtifact[]`
+- `workflowRefs: SkillWorkflowRef[]`
 - `validation: ProposalValidation`
 - `state: 'pending-review' | 'applied' | 'partially-applied' | 'rejected' | 'expired' | 'conflict'`
 - `createdAt: string`
@@ -235,6 +260,7 @@ Rules:
 - `partially-applied` is allowed only when the user explicitly selected a subset; failed partial writes are not reported as success.
 - The runtime validates the proposal before emitting it to the UI and validates it again immediately before apply.
 - Source, deck, theme, and metadata fingerprints captured at proposal generation are compared before apply; mismatches set `state: 'expired' | 'conflict'`.
+- Proposals that create or update Awesome Slide source must reference the workflow instructions used to generate the operations so review, apply, and audit can explain which bundled workflow guided the output.
 
 ## AgentOperation
 
@@ -299,7 +325,7 @@ Individual validation result.
 Fields:
 
 - `id: string`
-- `kind: 'tsx-parse' | 'metadata-schema' | 'theme-exists' | 'deck-exists' | 'source-conflict' | 'mutation-guard' | 'typecheck'`
+- `kind: 'skill-workflow' | 'tsx-parse' | 'metadata-schema' | 'theme-exists' | 'deck-exists' | 'source-conflict' | 'mutation-guard' | 'typecheck'`
 - `status: 'pass' | 'warn' | 'fail' | 'skipped'`
 - `message: string`
 
@@ -339,6 +365,7 @@ Fields:
 - `appliedFiles: string[]`
 - `operationKinds: AgentOperation['kind'][]`
 - `connection: AgentConnectionRef`
+- `workflowRefs: SkillWorkflowRef[]`
 - `validationSummary: string`
 - `visibleSummary: string`
 
@@ -354,7 +381,7 @@ Categorized failure shape used by messages, runs, proposals, and transactions.
 
 Fields:
 
-- `category: 'connection-unavailable' | 'authentication-failed' | 'model-failed' | 'timeout' | 'invalid-agent-output' | 'patch-conflict' | 'validation-failure' | 'write-failure' | 'cancelled'`
+- `category: 'connection-unavailable' | 'authentication-failed' | 'model-failed' | 'timeout' | 'skill-unavailable' | 'invalid-agent-output' | 'patch-conflict' | 'validation-failure' | 'write-failure' | 'cancelled'`
 - `message: string`
 - `recoveryActions: Array<'retry' | 'edit-prompt' | 'change-connection' | 'copy-diagnostics' | 'reject' | 'refresh'>`
 - `diagnostics?: string`

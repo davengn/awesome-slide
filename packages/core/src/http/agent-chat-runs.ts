@@ -1,3 +1,4 @@
+import { createAgentChatError } from '../app/lib/agent-chat-errors.ts';
 import type {
   AgentChatEvent,
   AgentChatRun,
@@ -10,6 +11,8 @@ interface RunEntry {
   events: AgentChatEvent[];
   abortController: AbortController;
   listeners: Set<(event: AgentChatEvent) => void>;
+  lastHeartbeatAt?: string;
+  watchdogTimer?: NodeJS.Timeout;
 }
 
 const activeRuns = new Map<string, RunEntry>();
@@ -31,6 +34,25 @@ export function getRunEvents(runId: string): AgentChatEvent[] {
   return activeRuns.get(runId)?.events || [];
 }
 
+export function startRunWatchdog(runId: string, timeoutMs = 30000): void {
+  const entry = activeRuns.get(runId);
+  if (!entry) return;
+
+  if (entry.watchdogTimer) {
+    clearTimeout(entry.watchdogTimer);
+  }
+
+  entry.watchdogTimer = setTimeout(() => {
+    const currentEntry = activeRuns.get(runId);
+    if (!currentEntry) return;
+    if (['completed', 'cancelled', 'failed'].includes(currentEntry.run.state)) return;
+
+    const errorPayload = createAgentChatError('timeout', 'Run timed out (watchdog).');
+    addRunEvent(runId, 'failed', errorPayload);
+    currentEntry.abortController.abort();
+  }, timeoutMs);
+}
+
 export function registerRun(run: AgentChatRun, abortController: AbortController): void {
   activeRuns.set(run.id, {
     run,
@@ -38,6 +60,7 @@ export function registerRun(run: AgentChatRun, abortController: AbortController)
     abortController,
     listeners: new Set(),
   });
+  startRunWatchdog(run.id);
 }
 
 export function addRunEvent(runId: string, type: AgentChatEvent['type'], payload: unknown): void {
@@ -45,6 +68,8 @@ export function addRunEvent(runId: string, type: AgentChatEvent['type'], payload
   if (!entry) {
     return;
   }
+
+  entry.lastHeartbeatAt = new Date().toISOString();
 
   const event: AgentChatEvent = {
     sequence: entry.events.length + 1,
@@ -66,9 +91,21 @@ export function addRunEvent(runId: string, type: AgentChatEvent['type'], payload
     listener(event);
   }
 
+  const isTerminal = ['completed', 'cancelled', 'failed'].includes(type);
+
   // Set finished time on terminal events
-  if (['completed', 'cancelled', 'failed'].includes(type)) {
+  if (isTerminal) {
     entry.run.finishedAt = event.createdAt;
+    if (entry.watchdogTimer) {
+      clearTimeout(entry.watchdogTimer);
+      entry.watchdogTimer = undefined;
+    }
+    // Clean up listeners after a short delay to allow delivery
+    setTimeout(() => {
+      entry.listeners.clear();
+    }, 100);
+  } else {
+    startRunWatchdog(runId);
   }
 }
 
@@ -101,6 +138,11 @@ export function abortRun(runId: string): boolean {
 
   if (['completed', 'cancelled', 'failed'].includes(entry.run.state)) {
     return false;
+  }
+
+  if (entry.watchdogTimer) {
+    clearTimeout(entry.watchdogTimer);
+    entry.watchdogTimer = undefined;
   }
 
   entry.abortController.abort();

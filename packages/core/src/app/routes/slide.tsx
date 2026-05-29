@@ -289,11 +289,7 @@ function SlideWorkspace({
   const [linkCopied, setLinkCopied] = useState(false);
   const linkCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [designOpen, setDesignOpen] = useState(false);
-  const [agentChatOpen, setAgentChatOpen] = useState(() => {
-    return (
-      typeof window !== 'undefined' && !!new URLSearchParams(window.location.search).get('prompt')
-    );
-  });
+  const [agentChatOpen, setAgentChatOpen] = useState(true);
 
   useEffect(() => {
     return () => {
@@ -632,18 +628,7 @@ function SlideWorkspace({
               <DesignToggleButton active={designOpen} onToggle={() => setDesignOpen((v) => !v)} />
             )}
             {view === 'slides' && <InspectToggleButton />}
-            {view === 'slides' && (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                title="Agent Chat"
-                aria-label="Toggle Agent Chat"
-                onClick={() => setAgentChatOpen((v) => !v)}
-                className={cn(agentChatOpen && 'bg-muted text-foreground')}
-              >
-                <Bot className="size-4" />
-              </Button>
-            )}
+
             <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-hairline md:block" />
             {view === 'slides' && (
               <div className="inline-flex items-stretch">
@@ -703,7 +688,34 @@ function SlideWorkspace({
         ) : (
           <DesignProvider slideId={slideId}>
             <div className="flex min-h-0 flex-1 flex-col">
-              <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+              <div className="relative flex min-h-0 flex-1 flex-col md:flex-row">
+                {/* Expand Agent Chat Sidebar Handle */}
+                {!agentChatOpen && (
+                  <button
+                    type="button"
+                    onClick={() => setAgentChatOpen(true)}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-30 bg-white hover:bg-neutral-50 text-neutral-600 hover:text-neutral-900 border-r border-y border-neutral-200 rounded-r-xl py-3 px-1.5 shadow-md flex flex-col items-center gap-1.5 cursor-pointer transition-all duration-200 group hover:pl-2.5 border-l-0"
+                    title="Expand Agent Chat"
+                    aria-label="Expand Agent Chat"
+                  >
+                    <Bot className="h-4 w-4 text-neutral-500 group-hover:scale-110 transition-transform duration-200" />
+                    <span className="text-[9px] font-bold tracking-wider text-neutral-400 uppercase [writing-mode:vertical-lr] select-none">
+                      Agent
+                    </span>
+                  </button>
+                )}
+                {agentChatOpen && (
+                  <div className="hidden md:block shrink-0 h-full">
+                    <AgentChatPanel
+                      onClose={() => setAgentChatOpen(false)}
+                      slideId={slideId}
+                      slideContext={currentSlideContext}
+                      selectedElements={selectedElements}
+                      notes={slide.notes?.[index]}
+                      seedPrompt={seedPrompt ?? undefined}
+                    />
+                  </div>
+                )}
                 <ResizableRail
                   pages={pages}
                   design={slide.design}
@@ -761,18 +773,7 @@ function SlideWorkspace({
                 </div>
                 <InspectorPanel />
                 <DesignPanel open={designOpen} onClose={() => setDesignOpen(false)} />
-                {agentChatOpen && (
-                  <div className="hidden md:block shrink-0 h-full">
-                    <AgentChatPanel
-                      onClose={() => setAgentChatOpen(false)}
-                      slideId={slideId}
-                      slideContext={currentSlideContext}
-                      selectedElements={selectedElements}
-                      notes={slide.notes?.[index]}
-                      seedPrompt={seedPrompt ?? undefined}
-                    />
-                  </div>
-                )}
+
                 <div className="md:hidden">
                   <AgentChatDrawer
                     isOpen={agentChatOpen}

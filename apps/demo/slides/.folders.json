@@ -17,9 +17,7 @@
     {
       "id": "d-0050ae2b",
       "name": "First",
-      "slideOrder": [
-        "slide-101"
-      ]
+      "slideOrder": ["slide-101"]
     }
   ],
   "manualOrder": {}

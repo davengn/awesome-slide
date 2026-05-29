@@ -1,3 +1,20 @@
+import { vi } from 'vitest';
+
+vi.mock('virtual:awesome-slide/themes', () => {
+  return {
+    themes: [
+      {
+        id: 'theme_default',
+        name: 'Default',
+        description: 'Default Theme',
+        body: '',
+        hasDemo: false,
+      },
+    ],
+    loadThemeDemo: async () => ({ default: [] }),
+  };
+});
+
 import fs from 'node:fs/promises';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -5,7 +22,11 @@ import os from 'node:os';
 import path from 'node:path';
 import type { ViteDevServer } from 'vite';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { AgentChatRun } from '../app/lib/agent-chat-types.ts';
+import type {
+  AgentChatRun,
+  AgentConnectionRef,
+  AgentEditProposal,
+} from '../app/lib/agent-chat-types.ts';
 import type { ApiContext } from '../vite/routes/context.ts';
 import { registerAgentChatRoutes } from './agent-chat-api.ts';
 import { addRunEvent, registerRun } from './agent-chat-runs.ts';
@@ -257,6 +278,608 @@ describe('Agent Chat API Routes', () => {
         body: JSON.stringify({ operationIds: [] }),
       });
       expect(res.status).toBe(422);
+    });
+  });
+
+  it('POST /__agent-chat/proposals/:proposalId/apply handles update-deck, create-slide, and reorder-pages', async () => {
+    const runId = 'run_deck_test';
+    const proposalId = 'prop_deck_test_1';
+    const mockRun = {
+      id: runId,
+      sessionId: 'session_deck',
+      prompt: 'Refine deck narrative',
+      context: { project: {} },
+      connection: {
+        connectionId: 'local-codex',
+        displayName: 'Codex',
+        type: 'local-agent',
+        modelOrAgent: 'codex',
+        status: 'ready',
+      },
+      state: 'queued',
+      events: [],
+      startedAt: new Date().toISOString(),
+    } as unknown as AgentChatRun;
+
+    const mockProposal = {
+      id: proposalId,
+      runId,
+      summary: 'Deck level changes',
+      scope: 'deck',
+      riskLevel: 'medium',
+      operations: [
+        {
+          id: 'op_update_deck',
+          kind: 'update-deck',
+          target: 'deck_id',
+          description: 'Rename deck',
+          payload: { name: 'New Deck Name' },
+          requiresConfirmation: false,
+          validationState: 'pending',
+          reversible: true,
+        },
+        {
+          id: 'op_create_slide',
+          kind: 'create-slide',
+          target: 'deck_id',
+          description: 'Create slide',
+          payload: { title: 'New Slide Title', deckId: 'deck_id' },
+          requiresConfirmation: false,
+          validationState: 'pending',
+          reversible: true,
+        },
+        {
+          id: 'op_reorder',
+          kind: 'reorder-pages',
+          target: 'deck_id',
+          description: 'Reorder pages',
+          payload: { slideOrder: ['slide1', 'slide2'] },
+          requiresConfirmation: false,
+          validationState: 'pending',
+          reversible: true,
+        },
+      ],
+      previewArtifacts: [],
+      validation: { status: 'valid', checks: [] },
+      state: 'pending-review',
+      createdAt: new Date().toISOString(),
+    };
+
+    registerRun(mockRun, new AbortController());
+    addRunEvent(runId, 'proposal', mockProposal);
+
+    const originalFetch = global.fetch;
+    const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
+      let urlStr = '';
+      if (typeof url === 'string') {
+        urlStr = url;
+      } else if (url instanceof URL) {
+        urlStr = url.toString();
+      } else if (url && typeof url === 'object' && 'url' in url) {
+        urlStr = String((url as { url: string }).url);
+      }
+      if (urlStr.includes('/__management/')) {
+        return {
+          ok: true,
+          text: async () => '{"ok":true}',
+          json: async () => ({ ok: true }),
+        } as Response;
+      }
+      return originalFetch(url, init);
+    });
+
+    try {
+      await withAgentChatServer(async (baseUrl) => {
+        const applyRes = await fetch(`${baseUrl}/__agent-chat/proposals/${proposalId}/apply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            operationIds: ['op_update_deck', 'op_create_slide', 'op_reorder'],
+          }),
+        });
+        if (applyRes.status !== 200) {
+          console.error('DECK APPLY FAILED:', await applyRes.json());
+        }
+        expect(applyRes.status).toBe(200);
+        const applyBody = await applyRes.json();
+        expect(applyBody.ok).toBe(true);
+        expect(applyBody.writtenFiles).toContain('decks/deck_id');
+        expect(applyBody.writtenFiles.some((f: string) => f.startsWith('slides/slide_'))).toBe(
+          true,
+        );
+        expect(applyBody.writtenFiles).toContain('decks/deck_id/order');
+      });
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it('POST /__agent-chat/proposals/:proposalId/apply handles patch-slide-metadata via management API', async () => {
+    const runId = 'run_meta_test';
+    const proposalId = 'prop_meta_test_1';
+    const mockRun = {
+      id: runId,
+      sessionId: 'session_meta',
+      prompt: 'Update metadata',
+      context: { project: {} },
+      connection: {
+        connectionId: 'local-codex',
+        displayName: 'Codex',
+        type: 'local-agent',
+        modelOrAgent: 'codex',
+        status: 'ready',
+      },
+      state: 'queued',
+      events: [],
+      startedAt: new Date().toISOString(),
+    } as unknown as AgentChatRun;
+
+    const mockProposal = {
+      id: proposalId,
+      runId,
+      summary: 'Metadata change',
+      scope: 'slide',
+      riskLevel: 'low',
+      operations: [
+        {
+          id: 'op_meta',
+          kind: 'patch-slide-metadata',
+          target: 'intro',
+          description: 'Patch metadata',
+          payload: { patch: { title: 'New Title' } },
+          requiresConfirmation: false,
+          validationState: 'pending',
+          reversible: true,
+        },
+      ],
+      previewArtifacts: [],
+      validation: { status: 'valid', checks: [] },
+      state: 'pending-review',
+      createdAt: new Date().toISOString(),
+    };
+
+    registerRun(mockRun, new AbortController());
+    addRunEvent(runId, 'proposal', mockProposal);
+
+    const originalFetch = global.fetch;
+    const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
+      let urlStr = '';
+      if (typeof url === 'string') {
+        urlStr = url;
+      } else if (url instanceof URL) {
+        urlStr = url.toString();
+      } else if (url && typeof url === 'object' && 'url' in url) {
+        urlStr = String((url as { url: string }).url);
+      }
+      if (urlStr.includes('/__management/')) {
+        return {
+          ok: true,
+          text: async () => '{"ok":true}',
+          json: async () => ({ ok: true }),
+        } as Response;
+      }
+      return originalFetch(url, init);
+    });
+
+    try {
+      await withAgentChatServer(async (baseUrl) => {
+        const applyRes = await fetch(`${baseUrl}/__agent-chat/proposals/${proposalId}/apply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operationIds: ['op_meta'] }),
+        });
+        if (applyRes.status !== 200) {
+          console.error('META APPLY FAILED:', await applyRes.json());
+        }
+        expect(applyRes.status).toBe(200);
+        const applyBody = await applyRes.json();
+        expect(applyBody.ok).toBe(true);
+        expect(
+          applyBody.writtenFiles.some(
+            (f: string) => f.includes('slides/intro') || f.includes('intro'),
+          ),
+        ).toBe(true);
+      });
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it('handles static read-only bootstrap and blocks runs and apply (T074)', async () => {
+    await withAgentChatServer(async (baseUrl) => {
+      // 1. GET /session with runtimeMode=read-only returns mode='read-only'
+      const sessionRes = await fetch(`${baseUrl}/__agent-chat/session?runtimeMode=read-only`);
+      expect(sessionRes.status).toBe(200);
+      const sessionBody = await sessionRes.json();
+      expect(sessionBody.runtime.mode).toBe('read-only');
+
+      // 2. Blocked run creation: POST /runs returns 403 when x-runtime-mode header is read-only
+      const runRes = await fetch(`${baseUrl}/__agent-chat/runs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-runtime-mode': 'read-only',
+        },
+        body: JSON.stringify({
+          sessionId: 'session_1',
+          prompt: 'Make slide look better',
+          contextPreferences: [],
+        }),
+      });
+      expect(runRes.status).toBe(403);
+      const runBody = await runRes.json();
+      expect(runBody.error).toContain('read-only');
+
+      // 3. Blocked proposal apply: POST /proposals/:id/apply returns 403 in read-only mode
+      const applyRes = await fetch(`${baseUrl}/__agent-chat/proposals/prop_test_1/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-runtime-mode': 'read-only',
+        },
+        body: JSON.stringify({ operationIds: [] }),
+      });
+      expect(applyRes.status).toBe(403);
+      const applyBody = await applyRes.json();
+      expect(applyBody.error).toContain('read-only');
+    });
+  });
+
+  it('handles no-connection recovery metadata and blocks run creation (T074/T076)', async () => {
+    await withAgentChatServer(async (baseUrl) => {
+      // 1. GET /session with connectionStatus=failed
+      const sessionRes = await fetch(`${baseUrl}/__agent-chat/session?connectionStatus=failed`);
+      expect(sessionRes.status).toBe(200);
+      const sessionBody = await sessionRes.json();
+      expect(sessionBody.connectionStatus).toBe('failed');
+      expect(sessionBody.recoveryRoute).toBe('/settings/connections');
+
+      // 2. POST /runs with connection status failed returns 503
+      const runRes = await fetch(`${baseUrl}/__agent-chat/runs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-connection-status': 'failed',
+        },
+        body: JSON.stringify({
+          sessionId: 'session_1',
+          prompt: 'Make slide look better',
+          contextPreferences: [],
+        }),
+      });
+      expect(runRes.status).toBe(503);
+      const runBody = await runRes.json();
+      expect(runBody.category).toBe('connection-unavailable');
+    });
+  });
+
+  it('simulates run errors and redacts diagnostics (T075/T078)', async () => {
+    await withAgentChatServer(async (baseUrl) => {
+      // Test different simulated categories
+      const categories = [
+        'authentication-failed',
+        'model-failed',
+        'timeout',
+        'invalid-agent-output',
+      ];
+
+      for (const category of categories) {
+        const runRes = await fetch(`${baseUrl}/__agent-chat/runs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: 'session_error_test',
+            prompt: `simulate-error:${category}`,
+            contextPreferences: [],
+          }),
+        });
+        expect(runRes.status).toBe(200);
+        const { runId } = await runRes.json();
+
+        // Wait briefly for simulation to run
+        await new Promise((resolve) => setTimeout(resolve, 150));
+
+        // Read event history
+        const eventRes = await fetch(`${baseUrl}/__agent-chat/runs/${runId}/events`);
+        expect(eventRes.status).toBe(200);
+        const text = await eventRes.text();
+        expect(text).toContain(category);
+        expect(text).toContain('Mock error diagnostics');
+        expect(text).not.toContain('supersecret123');
+        expect(text).not.toContain('bobsmith');
+        expect(text).toContain('<redacted>');
+        expect(text).toContain('<user>');
+      }
+    });
+  });
+
+  it('handles run cancellation (T075/T080)', async () => {
+    await withAgentChatServer(async (baseUrl) => {
+      const runRes = await fetch(`${baseUrl}/__agent-chat/runs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: 'session_cancel_test',
+          prompt: 'slow prompt',
+          contextPreferences: [],
+        }),
+      });
+      const { runId } = await runRes.json();
+
+      const cancelRes = await fetch(`${baseUrl}/__agent-chat/runs/${runId}/cancel`, {
+        method: 'POST',
+      });
+      expect(cancelRes.status).toBe(200);
+      const cancelBody = await cancelRes.json();
+      expect(cancelBody.ok).toBe(true);
+      expect(cancelBody.state).toBe('cancelled');
+
+      // The stream should show cancelled event
+      const eventRes = await fetch(`${baseUrl}/__agent-chat/runs/${runId}/events`);
+      const text = await eventRes.text();
+      expect(text).toContain('cancelled');
+    });
+  });
+
+  it('maps proposal validation-failure and patch-conflict in apply (T078)', async () => {
+    const defaultConnection: AgentConnectionRef = {
+      connectionId: 'local-codex',
+      displayName: 'Codex',
+      type: 'local-agent',
+      modelOrAgent: 'codex',
+      status: 'ready',
+    };
+
+    const runId = 'run_err_apply';
+    const proposalId = 'prop_err_apply_1';
+    const mockRun = {
+      id: runId,
+      sessionId: 'session_apply_err',
+      prompt: 'Test apply errors',
+      context: { project: {} },
+      connection: defaultConnection,
+      state: 'queued',
+      events: [],
+      startedAt: new Date().toISOString(),
+    } as unknown as AgentChatRun;
+
+    const conflictProposal = {
+      id: proposalId,
+      runId,
+      summary: 'Conflict proposal',
+      scope: 'slide',
+      riskLevel: 'low',
+      operations: [
+        {
+          id: 'op_conflict',
+          kind: 'patch-slide-source',
+          target: 'intro',
+          description: 'Conflict',
+          payload: { code: 'conflict' },
+          requiresConfirmation: false,
+          validationState: 'conflict',
+          reversible: true,
+        },
+      ],
+      previewArtifacts: [],
+      validation: { status: 'conflict', checks: [] },
+      state: 'pending-review',
+      createdAt: new Date().toISOString(),
+    };
+
+    registerRun(mockRun, new AbortController());
+    addRunEvent(runId, 'proposal', conflictProposal);
+
+    await withAgentChatServer(async (baseUrl) => {
+      const applyRes = await fetch(`${baseUrl}/__agent-chat/proposals/${proposalId}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operationIds: ['op_conflict'] }),
+      });
+      expect(applyRes.status).toBe(409);
+      const applyBody = await applyRes.json();
+      expect(applyBody.category).toBe('patch-conflict');
+    });
+  });
+
+  it('T084: POST /__agent-chat/runs startup feedback, timeout, and terminal event guarantees', async () => {
+    await withAgentChatServer(async (baseUrl) => {
+      // 1. Startup feedback
+      const res = await fetch(`${baseUrl}/__agent-chat/runs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: 's1', prompt: 'Hello proposal' }),
+      });
+      expect(res.status).toBe(200);
+      const startBody = await res.json();
+      expect(startBody.state).toBe('queued');
+
+      // 2. Watchdog timeout simulation
+      const timeoutRes = await fetch(`${baseUrl}/__agent-chat/runs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: 's2', prompt: 'simulate-proposal:timeout' }),
+      });
+      expect(timeoutRes.status).toBe(200);
+      const timeoutBody = await timeoutRes.json();
+      const runId = timeoutBody.runId;
+
+      // Wait for initial queued event to fire first (10ms)
+      await new Promise((resolve) => setTimeout(resolve, 35));
+
+      // Trigger watchdog timeout manually to check failure event
+      const { startRunWatchdog, getRunEvents } = await import('./agent-chat-runs.ts');
+      startRunWatchdog(runId, 50);
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const events = getRunEvents(runId);
+      const eventTypes = events.map((e) => e.type);
+      expect(eventTypes).toContain('failed');
+    });
+  });
+
+  it('T085: validateProposal runs before proposal emission and before apply', async () => {
+    // 1. Proving validation runs before proposal emission
+    await withAgentChatServer(async (baseUrl) => {
+      const startRes = await fetch(`${baseUrl}/__agent-chat/runs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: 's3', prompt: 'simulate-proposal:invalid' }),
+      });
+      const { runId } = await startRes.json();
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const { getRunEvents } = await import('./agent-chat-runs.ts');
+      const events = getRunEvents(runId);
+      const proposalEvent = events.find((e) => e.type === 'proposal');
+      expect(proposalEvent).toBeDefined();
+      const proposal = proposalEvent?.payload as AgentEditProposal;
+      expect(proposal.validation.status).toBe('invalid'); // has tsx mismatch failure
+
+      // 2. Proving validation runs immediately before apply
+      const slidePath = path.join(tempDir, 'slides', 'intro');
+      await fs.mkdir(slidePath, { recursive: true });
+      const indexPath = path.join(slidePath, 'index.tsx');
+      await fs.writeFile(indexPath, 'function Slide() {\n  return <div>Welcome</div>;\n}', 'utf8');
+
+      const proposalId = 'prop_stale_apply_test';
+      const mockRun = {
+        id: 'run_stale_apply_test',
+        sessionId: 's4',
+        prompt: 'Make slide prettier',
+        context: { project: {} },
+        connection: {
+          connectionId: 'local-codex',
+          displayName: 'Codex',
+          type: 'local-agent',
+          modelOrAgent: 'codex',
+          status: 'ready',
+        },
+        state: 'queued',
+        events: [],
+        startedAt: new Date().toISOString(),
+      } as unknown as AgentChatRun;
+
+      const { getSourceFingerprint } = await import('../editing/agent-proposals.ts');
+      const fp = getSourceFingerprint('function Slide() {\n  return <div>Welcome</div>;\n}');
+
+      const staleProposal = {
+        id: proposalId,
+        runId: 'run_stale_apply_test',
+        summary: 'Edits',
+        scope: 'slide',
+        riskLevel: 'low',
+        operations: [
+          {
+            id: 'op_stale_apply',
+            kind: 'patch-slide-source',
+            target: 'intro',
+            description: 'Patch intro slide',
+            payload: { code: 'function Slide() {\n  return <div>New Patched</div>;\n}' },
+            requiresConfirmation: false,
+            validationState: 'pending',
+            reversible: true,
+          },
+        ],
+        previewArtifacts: [],
+        validation: { status: 'valid', checks: [] },
+        fingerprints: { intro: fp },
+        state: 'pending-review',
+        createdAt: new Date().toISOString(),
+      };
+
+      registerRun(mockRun, new AbortController());
+      addRunEvent('run_stale_apply_test', 'proposal', staleProposal);
+
+      // Mismatch fingerprint
+      await fs.writeFile(
+        indexPath,
+        'function Slide() {\n  return <div>Modified Independently</div>;\n}',
+        'utf8',
+      );
+
+      const applyRes = await fetch(`${baseUrl}/__agent-chat/proposals/${proposalId}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operationIds: ['op_stale_apply'] }),
+      });
+      expect(applyRes.status).toBe(409);
+      const applyBody = await applyRes.json();
+      expect(applyBody.category).toBe('patch-conflict');
+    });
+  });
+
+  it('T087: GET /__agent-chat/audit returns redacted newest-first audit summaries', async () => {
+    const slidePath = path.join(tempDir, 'slides', 'intro');
+    await fs.mkdir(slidePath, { recursive: true });
+    const indexPath = path.join(slidePath, 'index.tsx');
+    await fs.writeFile(indexPath, 'original content', 'utf8');
+
+    const runId = 'run_audit_test';
+    const proposalId = 'prop_audit_1';
+    const mockRun = {
+      id: runId,
+      sessionId: 'session_audit',
+      prompt: 'Make slide look better with secret key=abcde12345',
+      context: { project: {} },
+      connection: {
+        connectionId: 'local-codex',
+        displayName: 'Codex',
+        type: 'local-agent',
+        modelOrAgent: 'codex',
+        status: 'ready',
+      },
+      state: 'queued',
+      events: [],
+      startedAt: new Date().toISOString(),
+    } as unknown as AgentChatRun;
+
+    const mockProposal = {
+      id: proposalId,
+      runId,
+      summary: 'Audited edits key=abcde12345',
+      scope: 'slide',
+      riskLevel: 'low',
+      operations: [
+        {
+          id: 'op_audit_patch',
+          kind: 'patch-slide-source',
+          target: 'intro',
+          description: 'Patch intro slide',
+          payload: { code: 'new audited content' },
+          requiresConfirmation: false,
+          validationState: 'pending',
+          reversible: true,
+        },
+      ],
+      previewArtifacts: [],
+      validation: { status: 'valid', checks: [] },
+      state: 'pending-review',
+      createdAt: new Date().toISOString(),
+    };
+
+    registerRun(mockRun, new AbortController());
+    addRunEvent(runId, 'proposal', mockProposal);
+
+    await withAgentChatServer(async (baseUrl) => {
+      const applyRes = await fetch(`${baseUrl}/__agent-chat/proposals/${proposalId}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operationIds: ['op_audit_patch'] }),
+      });
+      expect(applyRes.status).toBe(200);
+
+      const auditRes = await fetch(`${baseUrl}/__agent-chat/audit`);
+      expect(auditRes.status).toBe(200);
+      const auditBody = await auditRes.json();
+      expect(auditBody.entries).toHaveLength(1);
+      const entry = auditBody.entries[0];
+      expect(entry.prompt).not.toContain('abcde12345');
+      expect(entry.prompt).toContain('<redacted>');
+      expect(entry.proposalSummary).not.toContain('abcde12345');
+      expect(entry.proposalSummary).toContain('<redacted>');
     });
   });
 });

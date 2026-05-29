@@ -18,6 +18,16 @@
 - Implement provider calls directly in chat: rejected because it violates the connection spec boundary.
 - Require a single bundled provider: rejected because Awesome Slide should support local-first and hosted-model workflows.
 
+## Decision: Use `packages/core/skills` as the authoritative in-app workflow source
+
+**Rationale**: The current Awesome Slide agent experience already ships `create-slide`, `slide-authoring`, `current-slide`, `apply-comments`, and `create-theme` skills under `packages/core/skills`. The 005 feature is an upgrade to bring those workflows into the product UI, not a replacement generic chat. The runtime should select the relevant workflow, include the associated skill instructions in the adapter request, and show the workflow in status, proposal, and audit metadata so users can create and update slides without opening a separate agent chat or manually invoking skills.
+
+**Alternatives considered**:
+
+- Re-encode the skill instructions directly in the 005 spec and implementation: rejected because it creates a stale second source of truth.
+- Ignore the bundled skills and rely on generic model prompting: rejected because generated slides may drift from Awesome Slide's 1920x1080 canvas contract, `DesignSystem` expectations, theme rules, and inspector comment semantics.
+- Keep the old external-skill-only flow: rejected because the user goal is to make create/update/theme/comment workflows available in-app.
+
 ## Decision: Use explicit bounded `AgentChatContext`
 
 **Rationale**: The draft spec requires contextual prompts without leaking hidden files, secrets, or unrelated project files. A bounded context object can include current slide ID, page index, selected element descriptors, deck/folder metadata, theme IDs, notes inclusion, and limited source excerpts while making every included context visible as removable chips.

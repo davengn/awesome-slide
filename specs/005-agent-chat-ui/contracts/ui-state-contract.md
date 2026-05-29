@@ -18,6 +18,7 @@
 - Top area includes `Chat` and `Comments` tabs, with Chat active for this feature.
 - Message turns are compact, readable, and separated by role without oversized cards.
 - Running work appears as inline status/tool cards with queued, running, done, output, and error states.
+- Status cards include the active workflow label, for example `Slide authoring`, `Create slide`, `Apply comments`, or `Create theme`.
 - Generated or modified files from the current turn appear in a files tray with open/download-style actions where applicable.
 - Composer is pinned to the bottom, preserves drafts, supports paste/drop affordances when implemented, and keeps send/cancel controls reachable.
 
@@ -39,6 +40,7 @@ Rules:
 - Run creation failure moves the local assistant/status turn to `failed` and keeps the composer usable.
 - SSE disconnect before terminal or review state moves the active turn to `failed`; terminal stream close does not.
 - Terminal and needs-review states clear active-run UI locks.
+- If a required bundled workflow cannot be loaded, the state moves to `failed` with `skill-unavailable` before any model request or write-capable proposal.
 
 ## Context Controls
 
@@ -68,11 +70,14 @@ Required action set:
 - Apply theme
 - Generate speaker notes
 - Fix alignment
+- Apply comments
 - Create related slide
+- Create theme
 
 Rules:
 
 - Actions adapt to current context and disabled prerequisites.
+- Actions show the workflow they will use before sending when the workflow is more specific than generic slide authoring.
 - Broad or destructive actions require the high-risk double-confirmation flow before apply.
 - Suggested actions populate the composer but do not send automatically unless the user confirms.
 
@@ -93,6 +98,7 @@ Rules:
 | `authentication-failed` | Change connection, copy diagnostics. |
 | `model-failed` | Retry, edit prompt, copy diagnostics. |
 | `timeout` | Retry, cancel, edit prompt. |
+| `skill-unavailable` | Refresh, copy diagnostics, retry after reinstall or skill sync. |
 | `invalid-agent-output` | Retry, refine prompt, copy diagnostics. |
 | `patch-conflict` | Refresh, retry, reject proposal. |
 | `validation-failure` | Inspect diagnostics, refine prompt, reject proposal. |

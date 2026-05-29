@@ -59,6 +59,12 @@ export function Home() {
     }
   }, [searchParams, setSearchParams]);
 
+  useEffect(() => {
+    if (selectedSlideId && !management.slides.some((s) => s.id === selectedSlideId)) {
+      setSelectedSlideId(null);
+    }
+  }, [selectedSlideId, management.slides]);
+
   const selection = useMemo(
     () => selectionFromParams(searchParams, management.folders, management.decks),
     [searchParams, management.folders, management.decks],
@@ -435,6 +441,11 @@ export function Home() {
         onClose={() => setAgentOpen(false)}
         collection={collectionContext}
         seedPrompt={seedPrompt}
+        slideId={selectedSlideId ?? undefined}
+        slideContext={
+          selectedSlide ? { id: selectedSlide.id, title: selectedSlide.title } : undefined
+        }
+        notes={selectedSlide?.notes}
       />
     </section>
   );

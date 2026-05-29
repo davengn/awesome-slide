@@ -52,7 +52,10 @@ export function classifyRiskLevel(operations: AgentOperation[]): 'low' | 'medium
   return highest;
 }
 
-export async function validateProposal(proposal: AgentEditProposal): Promise<ProposalValidation> {
+export async function validateProposal(
+  proposal: AgentEditProposal,
+  currentContents?: Record<string, string>,
+): Promise<ProposalValidation> {
   const checks: ValidationCheck[] = [];
 
   for (const op of proposal.operations) {
@@ -105,6 +108,22 @@ export async function validateProposal(proposal: AgentEditProposal): Promise<Pro
           status: 'pass',
           message: 'Syntax check passed.',
         });
+      }
+
+      const storedFingerprint = proposal.fingerprints?.[op.target];
+      if (storedFingerprint && currentContents) {
+        const currentContent = currentContents[op.target];
+        if (currentContent !== undefined) {
+          const currentFingerprint = getSourceFingerprint(currentContent);
+          if (currentFingerprint !== storedFingerprint) {
+            checks.push({
+              id: `conflict_${op.id}`,
+              kind: 'source-conflict',
+              status: 'fail',
+              message: 'Source file has been modified since the proposal was generated.',
+            });
+          }
+        }
       }
 
       if (payload?.originalCode === 'CONFLICT') {
@@ -170,6 +189,43 @@ export async function validateProposal(proposal: AgentEditProposal): Promise<Pro
           message: 'update-speaker-notes operation is missing the notes field.',
         });
       }
+    } else if (op.kind === 'reorder-pages') {
+      const payload = op.payload as { slideOrder?: string[] } | undefined;
+      if (Array.isArray(payload?.slideOrder)) {
+        checks.push({
+          id: checkId,
+          kind: 'mutation-guard',
+          status: 'pass',
+          message: 'reorder-pages has a valid slideOrder payload.',
+        });
+      } else {
+        checks.push({
+          id: checkId,
+          kind: 'mutation-guard',
+          status: 'fail',
+          message: 'reorder-pages operation is missing the slideOrder array.',
+        });
+      }
+    } else if (op.kind === 'update-deck') {
+      const payload = op.payload as { name?: string; description?: string } | undefined;
+      if (
+        payload &&
+        (typeof payload.name === 'string' || typeof payload.description === 'string')
+      ) {
+        checks.push({
+          id: checkId,
+          kind: 'mutation-guard',
+          status: 'pass',
+          message: 'update-deck has a valid name/description payload.',
+        });
+      } else {
+        checks.push({
+          id: checkId,
+          kind: 'mutation-guard',
+          status: 'fail',
+          message: 'update-deck operation is missing name or description payload.',
+        });
+      }
     } else {
       checks.push({
         id: checkId,
@@ -209,4 +265,29 @@ export async function validateProposal(proposal: AgentEditProposal): Promise<Pro
     checks,
     validatedAt: new Date().toISOString(),
   };
+}
+
+export function getSourceFingerprint(content: string): string {
+  let hash = 0;
+  for (let i = 0; i < content.length; i++) {
+    hash = (hash << 5) - hash + content.charCodeAt(i);
+    hash |= 0;
+  }
+  return `fp_${content.length}_${hash}`;
+}
+
+export function captureFingerprints(
+  operations: AgentOperation[],
+  currentContents: Record<string, string>,
+): Record<string, string> {
+  const fingerprints: Record<string, string> = {};
+  for (const op of operations) {
+    if (op.kind === 'patch-slide-source' || op.kind === 'raw-patch') {
+      const content = currentContents[op.target];
+      if (content !== undefined) {
+        fingerprints[op.target] = getSourceFingerprint(content);
+      }
+    }
+  }
+  return fingerprints;
 }

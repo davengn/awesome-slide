@@ -213,6 +213,7 @@ export interface AgentEditProposal {
   validation: ProposalValidation;
   state: ProposalState;
   createdAt: string;
+  fingerprints?: Record<string, string>;
 }
 
 export type OperationKind =

@@ -11,6 +11,8 @@ describe('Suggested Actions Registry', () => {
     expect(ids).toContain('generate-speaker-notes');
     expect(ids).toContain('fix-alignment');
     expect(ids).toContain('create-related-slide');
+    expect(ids).toContain('shorten-deck-content');
+    expect(ids).toContain('generate-deck-notes');
   });
 
   it('sets appropriate risk levels for suggested actions', () => {
@@ -22,5 +24,11 @@ describe('Suggested Actions Registry', () => {
 
     const applyTheme = SUGGESTED_ACTIONS.find((a) => a.id === 'apply-theme');
     expect(applyTheme?.riskLevel).toBe('medium');
+
+    const shortenDeckContent = SUGGESTED_ACTIONS.find((a) => a.id === 'shorten-deck-content');
+    expect(shortenDeckContent?.riskLevel).toBe('medium');
+
+    const generateDeckNotes = SUGGESTED_ACTIONS.find((a) => a.id === 'generate-deck-notes');
+    expect(generateDeckNotes?.riskLevel).toBe('low');
   });
 });
