@@ -46,7 +46,7 @@ describe('agent connection routes', () => {
     });
   });
 
-  it('GET /settings returns provider registry and safe persisted connections', async () => {
+  it('GET /settings returns provider registry and redacted persisted connections', async () => {
     await withAgentConnectionServer(
       async (baseUrl, ctx) => {
         const settings = {
@@ -77,7 +77,12 @@ describe('agent connection routes', () => {
         expect(body.providers.some((provider: { id: string }) => provider.id === 'codex')).toBe(
           true,
         );
-        expect(body.connections[0].credentialRef).toBe('cred_ref');
+        expect(body.connections[0].credentialRef).toBeUndefined();
+        expect(body.connections[0].credential).toEqual({
+          storage: 'os-credential-store',
+          displayHint: 'saved credential',
+        });
+        expect(JSON.stringify(body)).not.toContain('cred_ref');
         expect(JSON.stringify(body)).not.toContain('sk-secret-value');
       },
       { projectName: 'project' },
@@ -134,6 +139,272 @@ describe('agent connection routes', () => {
       expect(dismissRes.status).toBe(415);
       expect(body.error).toBe('content-type must be application/json');
     });
+  });
+
+  it('handles scan start, cancel, and SSE event streaming', async () => {
+    await withAgentConnectionServer(async (baseUrl) => {
+      const approvedDir = path.join(tempDir, 'approved-agents');
+      await fs.mkdir(approvedDir, { recursive: true });
+      const addDirRes = await fetch(`${baseUrl}/__agent-connections/scan/directories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: approvedDir }),
+      });
+      expect(addDirRes.status).toBe(200);
+      const addedDir = await addDirRes.json();
+      const approvedDirectoryId = addedDir.scanPreference.approvedDirectories[0].id;
+      const localCreateRes = await fetch(`${baseUrl}/__agent-connections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'manual-path',
+          displayName: 'Manual Codex',
+          provider: 'codex',
+          manualPathId: 'manual_path_ref',
+          scope: 'project-default',
+        }),
+      });
+      expect(localCreateRes.status).toBe(200);
+      const localConnection = await localCreateRes.json();
+      const byokCreateRes = await fetch(`${baseUrl}/__agent-connections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'byok',
+          displayName: 'Env OpenAI',
+          provider: 'openai',
+          credentialRef: 'env:AWESOME_SLIDE_TEST_KEY',
+          modelId: 'gpt-5',
+          scope: 'project-default',
+        }),
+      });
+      expect(byokCreateRes.status).toBe(200);
+      const byokConnection = await byokCreateRes.json();
+
+      const scanRes = await fetch(`${baseUrl}/__agent-connections/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          includePathCommands: true,
+          includeKnownInstallLocations: false,
+          approvedDirectoryIds: [approvedDirectoryId],
+        }),
+      });
+      expect(scanRes.status).toBe(200);
+      const scan = await scanRes.json();
+      expect(scan.scanId).toBeDefined();
+      expect(scan.state).toBe('scanning');
+      expect(scan.eventUrl).toBeDefined();
+
+      const eventsRes = await fetch(`${baseUrl}${scan.eventUrl}`);
+      expect(eventsRes.status).toBe(200);
+      expect(eventsRes.headers.get('content-type')).toContain('text/event-stream');
+
+      // Cancel the scan
+      const cancelRes = await fetch(`${baseUrl}/__agent-connections/scan/${scan.scanId}/cancel`, {
+        method: 'POST',
+      });
+      expect(cancelRes.status).toBe(200);
+      const cancel = await cancelRes.json();
+      expect(cancel.state).toBe('cancelled');
+
+      const rescanRes = await fetch(`${baseUrl}/__agent-connections/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ includePathCommands: false }),
+      });
+      expect(rescanRes.status).toBe(200);
+      const settingsAfterRescan = await fetch(`${baseUrl}/__agent-connections/settings`);
+      const settingsBody = await settingsAfterRescan.json();
+      expect(settingsBody.activeConnectionId).toBe(byokConnection.connection.id);
+      expect(
+        settingsBody.connections.some(
+          (connection: { id: string }) => connection.id === localConnection.connection.id,
+        ),
+      ).toBe(true);
+      const byok = settingsBody.connections.find(
+        (connection: { id: string }) => connection.id === byokConnection.connection.id,
+      );
+      expect(byok.credential).toEqual({
+        storage: 'environment-variable',
+        displayHint: '$AWESOME_SLIDE_TEST_KEY',
+      });
+
+      const removeDirRes = await fetch(
+        `${baseUrl}/__agent-connections/scan/directories/${approvedDirectoryId}`,
+        { method: 'DELETE' },
+      );
+      expect(removeDirRes.status).toBe(200);
+      const removedDir = await removeDirRes.json();
+      expect(removedDir.scanPreference.approvedDirectories).toHaveLength(0);
+    });
+  });
+
+  it('validates manual agent path and returns metadata', async () => {
+    await withAgentConnectionServer(async (baseUrl) => {
+      const validateRes = await fetch(`${baseUrl}/__agent-connections/manual-path/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: 'codex',
+          kind: 'command',
+        }),
+      });
+      expect(validateRes.status).toBe(200);
+      const res = await validateRes.json();
+      expect(res.validation).toBeDefined();
+      // Even if validation fails or passes depending on path existence in environment, response layout is correct.
+    });
+  });
+
+  it('POST / creates a connection from a manual path', async () => {
+    await withAgentConnectionServer(async (baseUrl) => {
+      const createRes = await fetch(`${baseUrl}/__agent-connections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'manual-path',
+          displayName: 'Test CLI Agent',
+          provider: 'codex',
+          manualPathId: 'path_123',
+          scope: 'project-default',
+        }),
+      });
+      expect(createRes.status).toBe(200);
+      const body = await createRes.json();
+      expect(body.connection).toBeDefined();
+      expect(body.connection.type).toBe('manual-agent-path');
+      expect(body.connection.displayName).toBe('Test CLI Agent');
+    });
+  });
+
+  it('POST / creates a BYOK connection, tests it, and deletes it', async () => {
+    process.env.AWESOME_SLIDE_TEST_KEY = 'sk-mock-key-value';
+    try {
+      await withAgentConnectionServer(async (baseUrl) => {
+        // 1. Create BYOK connection
+        const createRes = await fetch(`${baseUrl}/__agent-connections`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source: 'byok',
+            displayName: 'My OpenAI Connection',
+            provider: 'openai',
+            envVarName: 'AWESOME_SLIDE_TEST_KEY',
+            modelId: 'gpt-5.5',
+            scope: 'project-default',
+          }),
+        });
+
+        expect(createRes.status).toBe(200);
+        const createBody = await createRes.json();
+        expect(createBody.connection).toBeDefined();
+        expect(createBody.connection.type).toBe('api-key-provider');
+        expect(createBody.connection.displayName).toBe('My OpenAI Connection');
+        expect(createBody.connection.credentialRef).toBeUndefined();
+        expect(createBody.connection.credential).toEqual({
+          storage: 'environment-variable',
+          displayHint: '$AWESOME_SLIDE_TEST_KEY',
+        });
+        expect(JSON.stringify(createBody.connection)).not.toContain('sk-mock-key-value');
+        expect(JSON.stringify(createBody.connection)).not.toContain('env:AWESOME_SLIDE_TEST_KEY');
+
+        const connectionId = createBody.connection.id;
+
+        // 2. Test connection (it might fail auth or timeout because it's a mock key and it does a real fetch to api.openai.com, but it should return a valid status structure)
+        const testRes = await fetch(`${baseUrl}/__agent-connections/${connectionId}/test`, {
+          method: 'POST',
+        });
+        expect(testRes.status).toBe(200);
+        const testBody = await testRes.json();
+        expect(testBody.status).toBeDefined();
+        expect(testBody.status.state).toBeDefined();
+        expect(testBody.status.recoveryActions).toBeDefined();
+
+        // 3. Delete connection with credentials
+        const deleteRes = await fetch(`${baseUrl}/__agent-connections/${connectionId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deleteCredential: true }),
+        });
+        expect(deleteRes.status).toBe(200);
+        const deleteBody = await deleteRes.json();
+        expect(deleteBody.ok).toBe(true);
+
+        // 4. Verify connection is gone from settings
+        const settingsRes = await fetch(`${baseUrl}/__agent-connections/settings`);
+        const settingsBody = await settingsRes.json();
+        expect(settingsBody.connections.some((c: { id: string }) => c.id === connectionId)).toBe(
+          false,
+        );
+      });
+    } finally {
+      delete process.env.AWESOME_SLIDE_TEST_KEY;
+    }
+  });
+
+  it('T060: handles active connection selection, preferences, project default, reload persistence, and invalid persisted choice', async () => {
+    process.env.AWESOME_SLIDE_TEST_KEY = 'sk-mock-test-key';
+    try {
+      await withAgentConnectionServer(async (baseUrl) => {
+        // 1. Create connection
+        const createRes = await fetch(`${baseUrl}/__agent-connections`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source: 'byok',
+            displayName: 'Test API Connection',
+            provider: 'openai',
+            envVarName: 'AWESOME_SLIDE_TEST_KEY',
+            modelId: 'gpt-5',
+            scope: 'project-default',
+          }),
+        });
+        expect(createRes.status).toBe(200);
+        const createBody = await createRes.json();
+        const connectionId = createBody.connection.id;
+
+        // 2. Select active connection with model and reasoning overrides
+        const activeRes = await fetch(`${baseUrl}/__agent-connections/active`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            connectionId,
+            scope: 'project-default',
+            modelId: 'gpt-5.5',
+            reasoningEffort: 'high',
+          }),
+        });
+        expect(activeRes.status).toBe(200);
+        const activeBody = await activeRes.json();
+        expect(activeBody.ok).toBe(true);
+
+        // 3. Verify it is persisted and reloads correctly
+        const settingsRes = await fetch(`${baseUrl}/__agent-connections/settings`);
+        const settingsBody = await settingsRes.json();
+        expect(settingsBody.activeConnectionId).toBe(connectionId);
+        expect(settingsBody.projectDefaultConnectionId).toBe(connectionId);
+
+        const conn = settingsBody.connections.find((c: { id: string }) => c.id === connectionId);
+        expect(conn.modelId).toBe('gpt-5.5');
+        expect(conn.reasoningEffort).toBe('high');
+
+        // 4. Verify invalid persisted choice falls back safely
+        const invalidActiveRes = await fetch(`${baseUrl}/__agent-connections/active`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            connectionId: 'non_existent_id',
+            scope: 'session',
+          }),
+        });
+        expect(invalidActiveRes.status).toBe(404);
+        const invalidActiveBody = await invalidActiveRes.json();
+        expect(invalidActiveBody.error).toBe('Connection not found.');
+      });
+    } finally {
+      delete process.env.AWESOME_SLIDE_TEST_KEY;
+    }
   });
 });
 

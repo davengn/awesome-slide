@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AgentChatDrawer } from '../components/agent-chat/index.ts';
 import {
   agentConnectionReducer,
+  cancelAgentConnectionScan,
+  createConnectionStatus,
   createInitialAgentConnectionUiState,
   dismissFirstRunConnectionSetup,
   FirstRunAgentSetup,
@@ -11,6 +13,8 @@ import {
   getAgentConnectionBootstrap,
   ProjectSettingsEntry,
   SettingsModal,
+  startAgentConnectionScan,
+  streamAgentConnectionScanEvents,
 } from '../components/settings';
 import { CreateSlideDialog } from '../components/slide-management/CreateSlideDialog';
 import { DeleteConfirmDialog } from '../components/slide-management/DeleteConfirmDialog';
@@ -52,6 +56,7 @@ export function Home() {
   );
   const [firstRunError, setFirstRunError] = useState<string | null>(null);
   const [firstRunDismissPending, setFirstRunDismissPending] = useState(false);
+  const [activeScanId, setActiveScanId] = useState<string | null>(null);
   const [agentOpen, setAgentOpen] = useState(() => {
     return (
       typeof window !== 'undefined' && !!new URLSearchParams(window.location.search).get('prompt')
@@ -202,6 +207,58 @@ export function Home() {
     },
     [openConnectionSettings],
   );
+
+  const handleRescan = useCallback(() => {
+    dispatchAgentConnection({ type: 'START_SCAN' });
+    startAgentConnectionScan()
+      .then((res) => {
+        setActiveScanId(res.scanId);
+        streamAgentConnectionScanEvents(
+          res.scanId,
+          (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'completed') {
+              dispatchAgentConnection({ type: 'COMPLETE_SCAN' });
+              setActiveScanId(null);
+            } else if (data.type === 'failed') {
+              dispatchAgentConnection({
+                type: 'FAIL_SCAN',
+                payload: createConnectionStatus('failed', { message: data.error }),
+              });
+              setActiveScanId(null);
+            }
+          },
+          (err) => {
+            dispatchAgentConnection({
+              type: 'FAIL_SCAN',
+              payload: createConnectionStatus('failed', { message: err.message }),
+            });
+            setActiveScanId(null);
+          },
+        );
+      })
+      .catch((err) => {
+        dispatchAgentConnection({
+          type: 'SET_VALIDATION_ERROR',
+          payload: { field: 'scan', message: err.message },
+        });
+      });
+  }, []);
+
+  const handleCancelScan = useCallback(() => {
+    if (!activeScanId) return;
+    cancelAgentConnectionScan(activeScanId)
+      .then(() => {
+        dispatchAgentConnection({ type: 'CANCEL_SCAN' });
+        setActiveScanId(null);
+      })
+      .catch((err) => {
+        dispatchAgentConnection({
+          type: 'SET_VALIDATION_ERROR',
+          payload: { field: 'scan', message: err.message },
+        });
+      });
+  }, [activeScanId]);
 
   const patchCollection = useCallback(
     async (slideId: string, patch: SlideMetadataPatch) => {
@@ -546,6 +603,7 @@ export function Home() {
         scanState={agentConnectionState.settingsModal.scanState}
         validationErrors={agentConnectionState.settingsModal.validationErrors}
         returnFocusTo={agentConnectionState.settingsModal.returnFocusTo}
+        initialFocus={agentConnectionState.settingsModal.initialFocus}
         onOpenChange={(open, reason) => {
           dispatchAgentConnection(
             open
@@ -568,15 +626,8 @@ export function Home() {
         onViewportWidthChange={(width) => {
           dispatchAgentConnection({ type: 'SET_MODAL_VIEWPORT', payload: { width } });
         }}
-        onRequestRescan={() => {
-          dispatchAgentConnection({
-            type: 'SET_VALIDATION_ERROR',
-            payload: {
-              field: 'scan',
-              message: 'Bounded local discovery is not started in this phase.',
-            },
-          });
-        }}
+        onRequestRescan={handleRescan}
+        onRequestCancelScan={handleCancelScan}
       />
       <AgentChatDrawer
         isOpen={agentOpen}

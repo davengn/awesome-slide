@@ -48,6 +48,7 @@ interface AgentChatPanelProps {
   notes?: string;
   seedPrompt?: string;
   collection?: { folderId?: string; deckId?: string; slideIds?: string[] };
+  onOpenSettings?: () => void;
 }
 
 function createRunFailureEvent(
@@ -86,6 +87,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
   notes,
   seedPrompt,
   collection,
+  onOpenSettings,
 }) => {
   const [activeConnection, setActiveConnection] = useState<AgentConnectionRef | null>(null);
   const inspector = useInspectorOptional();
@@ -733,7 +735,13 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
                     Retry
                   </button>
                   <a
-                    href={settingsRoute}
+                    href={onOpenSettings ? '#' : settingsRoute}
+                    onClick={(e) => {
+                      if (onOpenSettings) {
+                        e.preventDefault();
+                        onOpenSettings();
+                      }
+                    }}
                     className="text-[11px] text-neutral-900 font-semibold underline flex items-center gap-0.5"
                   >
                     <Settings className="h-3 w-3" />
@@ -758,7 +766,13 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
                 </p>
                 <div className="flex items-center gap-3">
                   <a
-                    href={settingsRoute}
+                    href={onOpenSettings ? '#' : settingsRoute}
+                    onClick={(e) => {
+                      if (onOpenSettings) {
+                        e.preventDefault();
+                        onOpenSettings();
+                      }
+                    }}
                     className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-900 underline"
                   >
                     <Settings className="h-3 w-3" />
@@ -804,7 +818,13 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
                   Retry
                 </button>
                 <a
-                  href={settingsRoute}
+                  href={onOpenSettings ? '#' : settingsRoute}
+                  onClick={(e) => {
+                    if (onOpenSettings) {
+                      e.preventDefault();
+                      onOpenSettings();
+                    }
+                  }}
                   className="text-[11px] text-blue-900 font-semibold underline flex items-center gap-0.5"
                 >
                   <Settings className="h-3 w-3" />

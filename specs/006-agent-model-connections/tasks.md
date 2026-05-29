@@ -20,16 +20,16 @@
 
 **Purpose**: Prepare connection module entry points, local storage ignore rules, and route registration placeholders without changing behavior.
 
-- [X] T001 Add `.awesome-slide/agent-connections/` to `.gitignore` for local non-secret connection state, scan cache, and temporary diagnostics
-- [X] T002 [P] Create the connection settings component barrel in `packages/core/src/app/components/settings/index.ts`
-- [X] T003 [P] Create the app connection type module placeholder in `packages/core/src/app/lib/agent-connection-types.ts`
-- [X] T004 [P] Create the browser connection client module placeholder in `packages/core/src/app/lib/agent-connection-client.ts`
-- [X] T005 [P] Create the browser connection state module placeholder in `packages/core/src/app/lib/agent-connection-state.ts`
-- [X] T006 [P] Create the browser connection storage module placeholder in `packages/core/src/app/lib/agent-connection-storage.ts`
-- [X] T007 [P] Create the runtime connection API module placeholder in `packages/core/src/http/agent-connections-api.ts`
-- [X] T008 [P] Create the local agent discovery module placeholder in `packages/core/src/http/agent-discovery.ts`
-- [X] T009 [P] Create the provider adapter module placeholder in `packages/core/src/http/agent-connection-adapters.ts`
-- [X] T010 [P] Create the credential and redaction module placeholder in `packages/core/src/http/agent-secrets.ts`
+- [x] T001 Add `.awesome-slide/agent-connections/` to `.gitignore` for local non-secret connection state, scan cache, and temporary diagnostics
+- [x] T002 [P] Create the connection settings component barrel in `packages/core/src/app/components/settings/index.ts`
+- [x] T003 [P] Create the app connection type module placeholder in `packages/core/src/app/lib/agent-connection-types.ts`
+- [x] T004 [P] Create the browser connection client module placeholder in `packages/core/src/app/lib/agent-connection-client.ts`
+- [x] T005 [P] Create the browser connection state module placeholder in `packages/core/src/app/lib/agent-connection-state.ts`
+- [x] T006 [P] Create the browser connection storage module placeholder in `packages/core/src/app/lib/agent-connection-storage.ts`
+- [x] T007 [P] Create the runtime connection API module placeholder in `packages/core/src/http/agent-connections-api.ts`
+- [x] T008 [P] Create the local agent discovery module placeholder in `packages/core/src/http/agent-discovery.ts`
+- [x] T009 [P] Create the provider adapter module placeholder in `packages/core/src/http/agent-connection-adapters.ts`
+- [x] T010 [P] Create the credential and redaction module placeholder in `packages/core/src/http/agent-secrets.ts`
 
 ---
 
@@ -41,27 +41,27 @@
 
 ### Foundational Tests
 
-- [X] T011 [P] Add schema and safe snapshot tests for connection configs, capabilities, statuses, and first-run setup state in `packages/core/src/app/lib/agent-connections.test.ts`
-- [X] T012 [P] Add safe project settings and active connection persistence tests in `packages/core/src/app/lib/agent-connection-storage.test.ts`
-- [X] T013 [P] Add credential reference, OS credential storage, environment variable reference fallback, `secure-storage-unavailable`, deletion, and secret redaction tests in `packages/core/src/http/agent-secrets.test.ts`
-- [X] T014 [P] Add bounded scan registry tests for known commands, known install locations, approved directories, and no full-disk traversal in `packages/core/src/http/agent-discovery.test.ts`
-- [X] T015 [P] Add adapter event normalization, capability mapping, cancellation, and categorized failure tests in `packages/core/src/http/agent-connection-adapters.test.ts`
-- [X] T016 [P] Add bootstrap, settings, active connection, and no-secret route contract tests in `packages/core/src/http/agent-connections-api.test.ts`
-- [X] T017 [P] Add modal state, quick switcher state, first-run prompt, scan state, and validation error reducer tests in `packages/core/src/app/lib/agent-connection-state.test.ts`
+- [x] T011 [P] Add schema and safe snapshot tests for connection configs, capabilities, statuses, and first-run setup state in `packages/core/src/app/lib/agent-connections.test.ts`
+- [x] T012 [P] Add safe project settings and active connection persistence tests in `packages/core/src/app/lib/agent-connection-storage.test.ts`
+- [x] T013 [P] Add credential reference, OS credential storage, environment variable reference fallback, `secure-storage-unavailable`, deletion, and secret redaction tests in `packages/core/src/http/agent-secrets.test.ts`
+- [x] T014 [P] Add bounded scan registry tests for known commands, known install locations, approved directories, and no full-disk traversal in `packages/core/src/http/agent-discovery.test.ts`
+- [x] T015 [P] Add adapter event normalization, capability mapping, cancellation, and categorized failure tests in `packages/core/src/http/agent-connection-adapters.test.ts`
+- [x] T016 [P] Add bootstrap, settings, active connection, and no-secret route contract tests in `packages/core/src/http/agent-connections-api.test.ts`
+- [x] T017 [P] Add modal state, quick switcher state, first-run prompt, scan state, and validation error reducer tests in `packages/core/src/app/lib/agent-connection-state.test.ts`
 
 ### Foundational Implementation
 
-- [X] T018 [P] Define `AgentConnectionConfig`, `ConnectionCapabilities`, `ConnectionStatus`, `FirstRunConnectionSetup`, `LocalAgentCandidate`, `ManualAgentPath`, `ApiProviderCredential`, `ModelExecutionPreference`, `ActiveConnectionSnapshot`, `QuickConnectionSwitcherState`, and API DTO types in `packages/core/src/app/lib/agent-connection-types.ts`
-- [X] T019 [P] Implement provider registry defaults, capability normalization, safe active connection snapshot helpers, and error category to recovery action mapping in `packages/core/src/app/lib/agent-connections.ts`
-- [X] T020 [P] Implement reducer state for settings modal target, slide-page quick switcher open/close, Local CLI/BYOK tab, agent/model/reasoning selection, scan progress, manual path validation, BYOK form, and first-run prompt choices in `packages/core/src/app/lib/agent-connection-state.ts`
-- [X] T021 Implement project-local non-secret connection settings persistence, active connection persistence, first-run dismissal persistence, and invalid persisted choice handling in `packages/core/src/app/lib/agent-connection-storage.ts`
-- [X] T022 Implement credential reference storage, OS credential storage adapter shape, environment variable reference fallback detection, `secure-storage-unavailable` behavior, deletion behavior, and diagnostics redaction helpers in `packages/core/src/http/agent-secrets.ts`
-- [X] T023 Implement local provider registry, known command lookup, known install location lookup, approved directory validation, and redacted candidate summaries in `packages/core/src/http/agent-discovery.ts`
-- [X] T024 Implement provider-neutral adapter wrapper types, ordered event emission, timeout mapping, cancellation mapping, and capability defaults in `packages/core/src/http/agent-connection-adapters.ts`
-- [X] T025 Implement `GET /__agent-connections/bootstrap`, `GET /__agent-connections/settings`, `POST /__agent-connections/first-run/dismiss`, safe quick switcher bootstrap metadata, and shared error response helpers in `packages/core/src/http/agent-connections-api.ts`
-- [X] T026 Register `registerAgentConnectionRoutes` with the existing Vite API plugin in `packages/core/src/vite/api-plugin.ts`
-- [X] T027 Implement browser fetch helpers for bootstrap, settings, dismissal, scan, manual validation, connection CRUD, active selection with model/reasoning preferences, test, and delete in `packages/core/src/app/lib/agent-connection-client.ts`
-- [X] T028 Re-export shared connection modules and settings entry components from `packages/core/src/app/components/settings/index.ts`
+- [x] T018 [P] Define `AgentConnectionConfig`, `ConnectionCapabilities`, `ConnectionStatus`, `FirstRunConnectionSetup`, `LocalAgentCandidate`, `ManualAgentPath`, `ApiProviderCredential`, `ModelExecutionPreference`, `ActiveConnectionSnapshot`, `QuickConnectionSwitcherState`, and API DTO types in `packages/core/src/app/lib/agent-connection-types.ts`
+- [x] T019 [P] Implement provider registry defaults, capability normalization, safe active connection snapshot helpers, and error category to recovery action mapping in `packages/core/src/app/lib/agent-connections.ts`
+- [x] T020 [P] Implement reducer state for settings modal target, slide-page quick switcher open/close, Local CLI/BYOK tab, agent/model/reasoning selection, scan progress, manual path validation, BYOK form, and first-run prompt choices in `packages/core/src/app/lib/agent-connection-state.ts`
+- [x] T021 Implement project-local non-secret connection settings persistence, active connection persistence, first-run dismissal persistence, and invalid persisted choice handling in `packages/core/src/app/lib/agent-connection-storage.ts`
+- [x] T022 Implement credential reference storage, OS credential storage adapter shape, environment variable reference fallback detection, `secure-storage-unavailable` behavior, deletion behavior, and diagnostics redaction helpers in `packages/core/src/http/agent-secrets.ts`
+- [x] T023 Implement local provider registry, known command lookup, known install location lookup, approved directory validation, and redacted candidate summaries in `packages/core/src/http/agent-discovery.ts`
+- [x] T024 Implement provider-neutral adapter wrapper types, ordered event emission, timeout mapping, cancellation mapping, and capability defaults in `packages/core/src/http/agent-connection-adapters.ts`
+- [x] T025 Implement `GET /__agent-connections/bootstrap`, `GET /__agent-connections/settings`, `POST /__agent-connections/first-run/dismiss`, safe quick switcher bootstrap metadata, and shared error response helpers in `packages/core/src/http/agent-connections-api.ts`
+- [x] T026 Register `registerAgentConnectionRoutes` with the existing Vite API plugin in `packages/core/src/vite/api-plugin.ts`
+- [x] T027 Implement browser fetch helpers for bootstrap, settings, dismissal, scan, manual validation, connection CRUD, active selection with model/reasoning preferences, test, and delete in `packages/core/src/app/lib/agent-connection-client.ts`
+- [x] T028 Re-export shared connection modules and settings entry components from `packages/core/src/app/components/settings/index.ts`
 
 **Checkpoint**: Foundation ready; user story implementation can now begin.
 
@@ -75,19 +75,19 @@
 
 ### Tests for User Story 1
 
-- [X] T029 [P] [US1] Add first-run and project/settings entry state tests for no connection, dismissed setup, no auto-scan, modal target selection, and trigger focus metadata in `packages/core/src/app/lib/agent-connection-state.test.ts`
-- [X] T030 [US1] Add settings modal accessibility contract tests for focus return, Escape close, labelled controls, tab selection, and responsive state flags in `packages/core/src/app/lib/agent-connection-state.test.ts`
-- [X] T031 [P] [US1] Add first-run dismissal route tests for `POST /__agent-connections/first-run/dismiss` in `packages/core/src/http/agent-connections-api.test.ts`
+- [x] T029 [P] [US1] Add first-run and project/settings entry state tests for no connection, dismissed setup, no auto-scan, modal target selection, and trigger focus metadata in `packages/core/src/app/lib/agent-connection-state.test.ts`
+- [x] T030 [US1] Add settings modal accessibility contract tests for focus return, Escape close, labelled controls, tab selection, and responsive state flags in `packages/core/src/app/lib/agent-connection-state.test.ts`
+- [x] T031 [P] [US1] Add first-run dismissal route tests for `POST /__agent-connections/first-run/dismiss` in `packages/core/src/http/agent-connections-api.test.ts`
 
 ### Implementation for User Story 1
 
-- [X] T032 [P] [US1] Create the modal overlay, header, close control, focus management, responsive shell, and `Execution & model` target handling in `packages/core/src/app/components/settings/SettingsModal.tsx`
-- [X] T033 [P] [US1] Create the left navigation rail with `Configure execution mode` and placeholder settings categories in `packages/core/src/app/components/settings/SettingsNav.tsx`
-- [X] T034 [P] [US1] Create the first-run setup panel with `Auto-scan local agents`, `Specify agent path`, `Use BYOK provider`, and `Do later` actions in `packages/core/src/app/components/settings/FirstRunAgentSetup.tsx`
-- [X] T035 [US1] Create the initial `Execution & model` content with Local CLI/BYOK segmented control and Test/Rescan action placement in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
-- [X] T036 [US1] Create and wire the concrete project/settings trigger, first-run bootstrap, setup prompt rendering, modal open targets, and dismissal persistence in `packages/core/src/app/routes/home.tsx` and `packages/core/src/app/components/settings/ProjectSettingsEntry.tsx`
-- [X] T037 [US1] Ensure the first-run setup prompt does not block slide library navigation, management controls, or the existing agent chat drawer in `packages/core/src/app/routes/home.tsx`
-- [X] T038 [US1] Add modal state wiring, focus return, live error region, and narrow-width layout behavior for 375px, 768px, 1024px, and 1440px in `packages/core/src/app/components/settings/SettingsModal.tsx`
+- [x] T032 [P] [US1] Create the modal overlay, header, close control, focus management, responsive shell, and `Execution & model` target handling in `packages/core/src/app/components/settings/SettingsModal.tsx`
+- [x] T033 [P] [US1] Create the left navigation rail with `Configure execution mode` and placeholder settings categories in `packages/core/src/app/components/settings/SettingsNav.tsx`
+- [x] T034 [P] [US1] Create the first-run setup panel with `Auto-scan local agents`, `Specify agent path`, `Use BYOK provider`, and `Do later` actions in `packages/core/src/app/components/settings/FirstRunAgentSetup.tsx`
+- [x] T035 [US1] Create the initial `Execution & model` content with Local CLI/BYOK segmented control and Test/Rescan action placement in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
+- [x] T036 [US1] Create and wire the concrete project/settings trigger, first-run bootstrap, setup prompt rendering, modal open targets, and dismissal persistence in `packages/core/src/app/routes/home.tsx` and `packages/core/src/app/components/settings/ProjectSettingsEntry.tsx`
+- [x] T037 [US1] Ensure the first-run setup prompt does not block slide library navigation, management controls, or the existing agent chat drawer in `packages/core/src/app/routes/home.tsx`
+- [x] T038 [US1] Add modal state wiring, focus return, live error region, and narrow-width layout behavior for 375px, 768px, 1024px, and 1440px in `packages/core/src/app/components/settings/SettingsModal.tsx`
 
 **Checkpoint**: User Story 1 is fully functional and testable independently.
 
@@ -101,20 +101,20 @@
 
 ### Tests for User Story 2
 
-- [ ] T039 [P] [US2] Add scan start, scan event, scan cancel, approved directory, and rescan route tests in `packages/core/src/http/agent-connections-api.test.ts`
-- [ ] T040 [P] [US2] Add manual path validation tests for executable, command, project path, missing path, incompatible protocol, timeout, and redacted stdout/stderr in `packages/core/src/http/agent-discovery.test.ts`
+- [x] T039 [P] [US2] Add scan start, scan event, scan cancel, approved directory, and rescan route tests in `packages/core/src/http/agent-connections-api.test.ts`
+- [x] T040 [P] [US2] Add manual path validation tests for executable, command, project path, missing path, incompatible protocol, timeout, and redacted stdout/stderr in `packages/core/src/http/agent-discovery.test.ts`
 - [ ] T041 [P] [US2] Add Local CLI state tests for candidate states, selected state, scan progress, cancel, add directory, browse capability available/unavailable, and manual path form transitions in `packages/core/src/app/lib/agent-connection-state.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T042 [P] [US2] Create compact local agent cards with icon, display name, version, source label, installed/not-installed/incompatible/needs-manual-path state, selected state, and accessible names in `packages/core/src/app/components/settings/LocalAgentCard.tsx`
+- [x] T042 [P] [US2] Create compact local agent cards with icon, display name, version, source label, installed/not-installed/incompatible/needs-manual-path state, selected state, and accessible names in `packages/core/src/app/components/settings/LocalAgentCard.tsx`
 - [ ] T043 [P] [US2] Create manual path form fields, optional browse action shown only when runtime support exists, direct-entry fallback, kind selector, validate action, accessible errors, validation summary, and disabled activation state in `packages/core/src/app/components/settings/ManualAgentPathForm.tsx`
-- [ ] T044 [US2] Implement bounded scan start, event stream, cancel, and candidate persistence for `POST /__agent-connections/scan`, `GET /__agent-connections/scan/:scanId/events`, and `POST /__agent-connections/scan/:scanId/cancel` in `packages/core/src/http/agent-connections-api.ts`
-- [ ] T045 [US2] Implement manual path validation for `POST /__agent-connections/manual-path/validate` with existence checks, runnable command checks, version/protocol timeout, compatibility report, and redacted diagnostics in `packages/core/src/http/agent-connections-api.ts`
-- [ ] T046 [US2] Add user-approved scan directory add/remove behavior and no full-disk validation guards in `packages/core/src/http/agent-discovery.ts`
-- [ ] T047 [US2] Wire Local CLI cards, scan progress, cancel, rescan, approved directory controls, and manual path entry into `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
-- [ ] T048 [US2] Implement activation from auto-scanned candidate or validated manual path through `POST /__agent-connections` in `packages/core/src/http/agent-connections-api.ts`
-- [ ] T049 [US2] Ensure Rescan preserves manually configured local agents, BYOK connections, selected active connection, and stored credentials in `packages/core/src/app/lib/agent-connection-storage.ts`
+- [x] T044 [US2] Implement bounded scan start, event stream, cancel, and candidate persistence for `POST /__agent-connections/scan`, `GET /__agent-connections/scan/:scanId/events`, and `POST /__agent-connections/scan/:scanId/cancel` in `packages/core/src/http/agent-connections-api.ts`
+- [x] T045 [US2] Implement manual path validation for `POST /__agent-connections/manual-path/validate` with existence checks, runnable command checks, version/protocol timeout, compatibility report, and redacted diagnostics in `packages/core/src/http/agent-connections-api.ts`
+- [x] T046 [US2] Add user-approved scan directory add/remove behavior and no full-disk validation guards in `packages/core/src/http/agent-discovery.ts`
+- [x] T047 [US2] Wire Local CLI cards, scan progress, cancel, rescan, approved directory controls, and manual path entry into `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
+- [x] T048 [US2] Implement activation from auto-scanned candidate or validated manual path through `POST /__agent-connections` in `packages/core/src/http/agent-connections-api.ts`
+- [x] T049 [US2] Ensure Rescan preserves manually configured local agents, BYOK connections, selected active connection, and stored credentials in `packages/core/src/app/lib/agent-connection-storage.ts`
 
 **Checkpoint**: User Story 2 is fully functional and testable independently.
 
@@ -135,12 +135,12 @@
 ### Implementation for User Story 3
 
 - [ ] T053 [P] [US3] Create BYOK provider select, model select/model ID field, API key input, show/hide control, storage mode indicator, Test action, and Save action in `packages/core/src/app/components/settings/ByokProviderForm.tsx`
-- [ ] T054 [US3] Implement provider and model registry metadata for API key providers without provider-specific coupling to 005 in `packages/core/src/app/lib/agent-connections.ts`
+- [x] T054 [US3] Implement provider and model registry metadata for API key providers without provider-specific coupling to 005 in `packages/core/src/app/lib/agent-connections.ts`
 - [ ] T055 [US3] Implement BYOK credential storage, credential reference serialization, masked display hints, OS credential storage plus environment variable reference fallback warnings, `secure-storage-unavailable`, and raw key exclusion in `packages/core/src/http/agent-secrets.ts`
 - [ ] T056 [US3] Implement BYOK connection creation and cheap privacy-conscious provider test behavior for credential presence, minimal auth, optional model listing, manual model ID fallback, and normalized unsupported-model results in `packages/core/src/http/agent-connections-api.ts`
 - [ ] T057 [US3] Wire BYOK tab state, validation errors, masked saved credentials, storage warnings, and provider test feedback into `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
-- [ ] T058 [US3] Implement delete connection and optional credential deletion for `DELETE /__agent-connections/:connectionId` in `packages/core/src/http/agent-connections-api.ts`
-- [ ] T059 [US3] Add destructive credential removal confirmation UI with affected provider and credential hint in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
+- [x] T058 [US3] Implement delete connection and optional credential deletion for `DELETE /__agent-connections/:connectionId` in `packages/core/src/http/agent-connections-api.ts`
+- [x] T059 [US3] Add destructive credential removal confirmation UI with affected provider and credential hint in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
 
 **Checkpoint**: User Story 3 is fully functional and testable independently.
 
@@ -162,9 +162,9 @@
 
 - [ ] T063 [US4] Implement `POST /__agent-connections/active` with session scope, project default scope, model/reasoning preference updates, safe status refresh, and invalid active connection detection in `packages/core/src/http/agent-connections-api.ts`
 - [ ] T064 [US4] Render configured connection list, selected state, active badge, project default control, last tested time, and fast reversible switching in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx` and `packages/core/src/app/components/settings/QuickConnectionSwitcher.tsx`
-- [ ] T065 [US4] Expose active connection bootstrap metadata, model preference, reasoning preference, available model/reasoning options, status, capabilities, and `settingsModalTarget: "execution-model"` to slide-page and 005-safe consumers in `packages/core/src/app/lib/agent-connections.ts`
+- [x] T065 [US4] Expose active connection bootstrap metadata, model preference, reasoning preference, available model/reasoning options, status, capabilities, and `settingsModalTarget: "execution-model"` to slide-page and 005-safe consumers in `packages/core/src/app/lib/agent-connections.ts`
 - [ ] T066 [US4] Update agent chat session bootstrap to read 006 active connection metadata and no-connection/degraded/failed/offline recovery targets in `packages/core/src/http/agent-chat-api.ts`
-- [ ] T067 [US4] Update agent chat panel recovery controls to open the shared settings modal to `Execution & model` instead of relying only on `/settings/connections` copy in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
+- [x] T067 [US4] Update agent chat panel recovery controls to open the shared settings modal to `Execution & model` instead of relying only on `/settings/connections` copy in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
 - [ ] T068 [US4] Route 005 adapter run startup through the active connection adapter while preserving 005 prompt context, `packages/core/skills` workflow selection, proposal parsing, proposal validation, preview/apply, and audit ownership in `packages/core/src/http/agent-chat-api.ts`
 - [ ] T069 [US4] Wire `QuickConnectionSwitcher` into the slide page top-right toolbar, keep the settings gear as the rightmost control beside Present/Share actions, and ensure connection capability flags enable or degrade 005 controls in `packages/core/src/app/routes/slide.tsx` and `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
 
@@ -234,7 +234,7 @@
 - [ ] T093 Run `pnpm typecheck` from `D:\Projects\awesome-slide`
 - [ ] T094 Run `pnpm test` from `D:\Projects\awesome-slide`
 - [ ] T095 Run `pnpm build` from `D:\Projects\awesome-slide`
-- [X] T096 Add a patch changeset for `@awesome-slide/core` in `.changeset/`
+- [ ] T096 Add a patch changeset for `@awesome-slide/core` in `.changeset/`
 
 ---
 

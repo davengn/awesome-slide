@@ -142,6 +142,8 @@ export interface AgentConnectionConfig {
   agentCommandAlias?: string;
   manualPathRef?: string;
   credentialRef?: string;
+  credentialStorage?: 'os-credential-store' | 'environment-variable';
+  credentialDisplayHint?: string;
   capabilities: ConnectionCapabilities;
   status: ConnectionStatus;
   lastTestedAt?: string;
@@ -186,6 +188,19 @@ export interface ApiProviderCredential {
   createdAt: string;
   lastVerifiedAt?: string;
 }
+
+export interface SafeAgentConnectionCredential {
+  storage: ApiProviderCredential['storage'];
+  displayHint: string;
+}
+
+export type AgentConnectionSettingsConnection = Omit<
+  AgentConnectionConfig,
+  'credentialRef' | 'credentialStorage' | 'credentialDisplayHint'
+> & {
+  credential?: SafeAgentConnectionCredential;
+  credentialRef?: never;
+};
 
 export interface ProviderRegistryEntry {
   id: AgentProviderId;
@@ -286,7 +301,7 @@ export interface AgentConnectionsBootstrapResponse {
 }
 
 export interface AgentConnectionsSettingsResponse {
-  connections: AgentConnectionConfig[];
+  connections: AgentConnectionSettingsConnection[];
   activeConnectionId?: string;
   projectDefaultConnectionId?: string;
   scanPreference: AgentScanPreference;
@@ -338,7 +353,7 @@ export interface CreateAgentConnectionRequest {
 }
 
 export interface CreateAgentConnectionResponse {
-  connection: AgentConnectionConfig;
+  connection: AgentConnectionSettingsConnection;
 }
 
 export interface SetActiveConnectionRequest {

@@ -1,7 +1,11 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   createCredentialReference,
   createMemoryCredentialStorageAdapter,
+  createUserHomeCredentialStorageAdapter,
   deleteCredentialReference,
   redactDiagnostics,
   resolveCredentialSecret,
@@ -62,6 +66,31 @@ describe('agent secrets', () => {
     await deleteCredentialReference(result.credential, adapter);
     expect(await resolveCredentialSecret(result.credential, adapter)).toBeNull();
   });
+
+  it('user home storage adapter stores, retrieves and deletes credentials without plaintext files', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'awesome-slide-test-secrets-'));
+    const adapter = createUserHomeCredentialStorageAdapter({ secretsDir: tempDir });
+
+    if (!(await adapter.isAvailable())) {
+      await fs.rm(tempDir, { recursive: true, force: true });
+      return;
+    }
+
+    const ref = 'test_ref_key';
+    const secret = 'sk-test-secret-value';
+
+    await adapter.setSecret(ref, secret);
+    expect(await adapter.getSecret(ref)).toBe(secret);
+
+    const raw = await fs.readFile(path.join(tempDir, 'credentials.v1.json'), 'utf8');
+    expect(raw).not.toContain(secret);
+    expect(raw).toContain('dpapi:');
+
+    await adapter.deleteSecret(ref);
+    expect(await adapter.getSecret(ref)).toBeNull();
+
+    await fs.rm(tempDir, { recursive: true, force: true });
+  }, 15_000);
 
   it('redacts diagnostics containing secrets and user paths', () => {
     const redacted = redactDiagnostics(

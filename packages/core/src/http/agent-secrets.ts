@@ -1,3 +1,6 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import type {
   ApiProviderCredential,
   ApiProviderId,
@@ -11,6 +14,170 @@ export interface CredentialStorageAdapter {
   setSecret: (ref: string, secret: string) => Promise<void> | void;
   getSecret: (ref: string) => Promise<string | null> | string | null;
   deleteSecret: (ref: string) => Promise<void> | void;
+}
+
+export function createUserHomeCredentialStorageAdapter(
+  opts: { secretsDir?: string } = {},
+): CredentialStorageAdapter {
+  const secretsDir = opts.secretsDir ?? path.join(os.homedir(), '.awesome-slide');
+  const secretsPath = path.join(secretsDir, 'credentials.v1.json');
+
+  if (process.platform !== 'win32') {
+    return createUnavailableCredentialStorageAdapter();
+  }
+
+  return {
+    kind: 'os-credential-store',
+    isAvailable: async () => {
+      try {
+        await fs.mkdir(secretsDir, { recursive: true });
+        await protectWindowsSecret('availability-check');
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    setSecret: async (ref, secret) => {
+      const data = await readProtectedSecrets(secretsPath);
+      data[ref] = `dpapi:${await protectWindowsSecret(secret)}`;
+      await fs.mkdir(secretsDir, { recursive: true });
+      await fs.writeFile(secretsPath, JSON.stringify(data, null, 2), {
+        encoding: 'utf8',
+        mode: 0o600,
+      });
+    },
+    getSecret: async (ref) => {
+      const data = await readProtectedSecrets(secretsPath);
+      const blob = data[ref];
+      if (!blob?.startsWith('dpapi:')) return null;
+      return await unprotectWindowsSecret(blob.slice('dpapi:'.length));
+    },
+    deleteSecret: async (ref) => {
+      try {
+        const data = await readProtectedSecrets(secretsPath);
+        delete data[ref];
+        await fs.writeFile(secretsPath, JSON.stringify(data, null, 2), {
+          encoding: 'utf8',
+          mode: 0o600,
+        });
+      } catch {}
+    },
+  };
+}
+
+function createUnavailableCredentialStorageAdapter(): CredentialStorageAdapter {
+  return {
+    kind: 'os-credential-store',
+    isAvailable: () => false,
+    setSecret: async () => {
+      throw new Error('Secure credential storage is unavailable.');
+    },
+    getSecret: () => null,
+    deleteSecret: () => {},
+  };
+}
+
+async function readProtectedSecrets(secretsPath: string): Promise<Record<string, string>> {
+  try {
+    const raw = await fs.readFile(secretsPath, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter((entry): entry is [string, string] => {
+        return typeof entry[0] === 'string' && typeof entry[1] === 'string';
+      }),
+    );
+  } catch {
+    return {};
+  }
+}
+
+const WINDOWS_DPAPI_SCRIPT = `
+$ErrorActionPreference = 'Stop'
+try {
+  Add-Type -AssemblyName System.Security.Cryptography.ProtectedData -ErrorAction Stop
+} catch {
+  try { Add-Type -AssemblyName System.Security -ErrorAction Stop } catch {}
+}
+$payload = [Console]::In.ReadToEnd() | ConvertFrom-Json
+if ($payload.mode -eq 'protect') {
+  $bytes = [Text.Encoding]::UTF8.GetBytes([string]$payload.value)
+  $protected = [Security.Cryptography.ProtectedData]::Protect($bytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
+  [Console]::Out.Write([Convert]::ToBase64String($protected))
+} elseif ($payload.mode -eq 'unprotect') {
+  $bytes = [Convert]::FromBase64String([string]$payload.value)
+  $plain = [Security.Cryptography.ProtectedData]::Unprotect($bytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
+  [Console]::Out.Write([Text.Encoding]::UTF8.GetString($plain))
+} else {
+  throw 'Unknown DPAPI mode.'
+}
+`;
+
+async function protectWindowsSecret(secret: string): Promise<string> {
+  return await runWindowsPowerShellDpapi('protect', secret);
+}
+
+async function unprotectWindowsSecret(secret: string): Promise<string> {
+  return await runWindowsPowerShellDpapi('unprotect', secret);
+}
+
+async function runWindowsPowerShellDpapi(
+  mode: 'protect' | 'unprotect',
+  value: string,
+): Promise<string> {
+  const input = JSON.stringify({ mode, value });
+  const stdout = await runProcess(
+    'powershell.exe',
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-Command',
+      WINDOWS_DPAPI_SCRIPT,
+    ],
+    input,
+  );
+  return stdout.trim();
+}
+
+async function runProcess(file: string, args: string[], input: string): Promise<string> {
+  const { spawn } = await import('node:child_process');
+  return new Promise((resolve, reject) => {
+    const child = spawn(file, args, { windowsHide: true });
+    let stdout = '';
+    let stderr = '';
+    const timeout = windowlessTimeout(() => {
+      child.kill();
+      reject(new Error('Secure credential storage timed out.'));
+    }, 5000);
+
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.setEncoding('utf8');
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+    child.on('error', (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+    child.on('close', (code) => {
+      clearTimeout(timeout);
+      if (code === 0) {
+        resolve(stdout);
+        return;
+      }
+      reject(new Error(stderr.trim() || `Secure credential storage exited with ${code}.`));
+    });
+    child.stdin.end(input);
+  });
+}
+
+function windowlessTimeout(callback: () => void, ms: number): ReturnType<typeof setTimeout> {
+  return setTimeout(callback, ms);
 }
 
 export type CredentialReferenceResult =

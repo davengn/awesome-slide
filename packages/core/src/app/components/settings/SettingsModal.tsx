@@ -1,5 +1,5 @@
 import { Loader2, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,10 +7,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { getAgentConnectionSettings } from '@/lib/agent-connection-client';
+import {
+  addApprovedScanDirectory,
+  createAgentConnection,
+  deleteAgentConnection,
+  getAgentConnectionSettings,
+  removeApprovedScanDirectory,
+  setActiveAgentConnection,
+  testAgentConnection,
+} from '@/lib/agent-connection-client';
 import { SETTINGS_MODAL_ACCESSIBILITY_CONTRACT } from '@/lib/agent-connection-state';
 import type {
   AgentConnectionsSettingsResponse,
+  CreateAgentConnectionRequest,
+  ManualAgentPath,
   SettingsModalCloseReason,
   SettingsModalState,
 } from '@/lib/agent-connection-types';
@@ -27,11 +37,13 @@ type SettingsModalProps = {
   scanState?: SettingsModalState['scanState'];
   validationErrors?: Record<string, string>;
   returnFocusTo?: string;
+  initialFocus?: SettingsModalState['initialFocus'];
   onOpenChange: (open: boolean, reason?: SettingsModalCloseReason) => void;
   onSectionChange: (section: SettingsSection) => void;
   onExecutionTabChange: (tab: SettingsModalState['executionTab']) => void;
   onViewportWidthChange?: (width: number) => void;
   onRequestRescan?: () => void;
+  onRequestCancelScan?: () => void;
 };
 
 export function SettingsModal({
@@ -41,11 +53,13 @@ export function SettingsModal({
   scanState,
   validationErrors = {},
   returnFocusTo,
+  initialFocus,
   onOpenChange,
   onSectionChange,
   onExecutionTabChange,
   onViewportWidthChange,
   onRequestRescan,
+  onRequestCancelScan,
 }: SettingsModalProps) {
   const [settings, setSettings] = useState<AgentConnectionsSettingsResponse | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -70,6 +84,14 @@ export function SettingsModal({
   }, [open, returnFocusTo]);
 
   useEffect(() => {
+    if (!open || !initialFocus || loading) return;
+    const timeout = window.setTimeout(() => {
+      document.querySelector<HTMLElement>(`[data-agent-settings-focus="${initialFocus}"]`)?.focus();
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [open, initialFocus, loading]);
+
+  useEffect(() => {
     if (!open || !import.meta.env.DEV) return;
     let cancelled = false;
     setLoading(true);
@@ -91,6 +113,125 @@ export function SettingsModal({
       cancelled = true;
     };
   }, [open]);
+
+  const refreshSettings = useCallback(() => {
+    getAgentConnectionSettings()
+      .then((response) => {
+        setSettings(response);
+      })
+      .catch((err) => {
+        setLoadError(err instanceof Error ? err.message : String(err));
+      });
+  }, []);
+
+  useEffect(() => {
+    if (
+      open &&
+      (scanState === 'completed' || scanState === 'cancelled' || scanState === 'failed')
+    ) {
+      refreshSettings();
+    }
+  }, [scanState, open, refreshSettings]);
+
+  const handleAddApprovedDirectory = async (dirPath: string) => {
+    try {
+      await addApprovedScanDirectory(dirPath);
+      refreshSettings();
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleRemoveApprovedDirectory = async (id: string) => {
+    try {
+      await removeApprovedScanDirectory(id);
+      refreshSettings();
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleActivateCandidate = async (candidateId: string) => {
+    const candidate = settings?.candidates.find((c) => c.id === candidateId);
+    if (!candidate) return;
+    try {
+      await createAgentConnection({
+        source: 'candidate',
+        provider: candidate.provider,
+        candidateId,
+        scope: 'project-default',
+        displayName: candidate.displayName,
+      });
+      refreshSettings();
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleActivateManualPath = async (manualPath: ManualAgentPath) => {
+    try {
+      await createAgentConnection({
+        source: 'manual-path',
+        provider: manualPath.provider || 'codex',
+        manualPathId: manualPath.id,
+        displayName: manualPath.input,
+        scope: 'project-default',
+      });
+      refreshSettings();
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleActivateByok = async (request: {
+    provider: string;
+    modelId: string;
+    apiKey?: string;
+    envVarName?: string;
+    displayName: string;
+  }) => {
+    try {
+      await createAgentConnection({
+        source: 'byok',
+        provider: request.provider,
+        apiKey: request.apiKey,
+        envVarName: request.envVarName,
+        modelId: request.modelId,
+        displayName: request.displayName,
+        scope: 'project-default',
+      } as CreateAgentConnectionRequest & { apiKey?: string; envVarName?: string });
+      refreshSettings();
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleTestConnection = async (connectionId: string) => {
+    try {
+      await testAgentConnection(connectionId);
+      refreshSettings();
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleDeleteConnection = async (connectionId: string, deleteCredential?: boolean) => {
+    try {
+      await deleteAgentConnection(connectionId, { deleteCredential });
+      refreshSettings();
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleSetActiveConnection = async (connectionId: string) => {
+    try {
+      await setActiveAgentConnection({ connectionId, scope: 'project-default' });
+      refreshSettings();
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : String(err));
+    }
+  };
 
   useEffect(() => {
     if (!open || !onViewportWidthChange) return;
@@ -131,7 +272,7 @@ export function SettingsModal({
         onPointerDownOutside={() => {
           closeReasonRef.current = 'backdrop';
         }}
-        className="grid h-[min(860px,calc(100dvh-1rem))] w-[min(1040px,calc(100vw-1rem))] max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-[10px] p-0"
+        className="grid h-[min(860px,calc(100dvh-1rem))] w-[min(1040px,calc(100vw-1rem))] max-w-none sm:max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-[10px] p-0"
       >
         <DialogHeader className="border-b border-hairline px-5 py-4 pr-14">
           <p className="text-[10.5px] font-semibold uppercase text-brand">Settings</p>
@@ -149,6 +290,7 @@ export function SettingsModal({
           </DialogDescription>
           <button
             type="button"
+            data-agent-settings-focus="close"
             onClick={() => requestClose('close-button')}
             className="absolute right-3 top-3 inline-flex size-8 items-center justify-center rounded-full border border-hairline bg-background text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/35"
             aria-label={SETTINGS_MODAL_ACCESSIBILITY_CONTRACT.closeLabel}
@@ -190,15 +332,27 @@ export function SettingsModal({
               </div>
             ) : activeSection === 'execution-model' ? (
               <ExecutionModelSettings
+                initialFocus={initialFocus}
                 executionTab={executionTab}
                 scanState={scanState}
                 providers={providers}
                 connections={settings?.connections ?? []}
+                candidates={settings?.candidates ?? []}
+                approvedDirectories={settings?.scanPreference?.approvedDirectories ?? []}
                 activeConnectionId={settings?.activeConnectionId}
                 validationErrors={validationErrors}
                 executionTabLabel={SETTINGS_MODAL_ACCESSIBILITY_CONTRACT.executionTabLabel}
                 onExecutionTabChange={onExecutionTabChange}
                 onRequestRescan={onRequestRescan}
+                onRequestCancelScan={onRequestCancelScan}
+                onAddApprovedDirectory={handleAddApprovedDirectory}
+                onRemoveApprovedDirectory={handleRemoveApprovedDirectory}
+                onActivateCandidate={handleActivateCandidate}
+                onActivateManualPath={handleActivateManualPath}
+                onActivateByok={handleActivateByok}
+                onTestConnection={handleTestConnection}
+                onDeleteConnection={handleDeleteConnection}
+                onSetActiveConnection={handleSetActiveConnection}
               />
             ) : (
               <PlaceholderSettingsSection section={activeSection} />

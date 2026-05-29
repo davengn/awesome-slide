@@ -92,6 +92,7 @@ export function SettingsNav({
             <button
               key={item.id}
               type="button"
+              data-agent-settings-focus={item.id === 'execution-model' ? 'section-nav' : undefined}
               onClick={() => onSectionChange(item.id)}
               aria-current={active ? 'page' : undefined}
               className={cn(

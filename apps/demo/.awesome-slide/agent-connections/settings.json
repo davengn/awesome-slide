@@ -1,0 +1,17 @@
+{
+  "projectId": "demo",
+  "connections": [],
+  "scanPreference": {
+    "enabled": false,
+    "approvedDirectories": [],
+    "includePathCommands": true,
+    "includeKnownInstallLocations": true
+  },
+  "firstRunSetup": {
+    "hasSeenPrompt": true,
+    "dismissedAt": "2026-05-29T07:47:47.036Z",
+    "dismissReason": "do-later",
+    "lastPromptedProjectId": "demo"
+  },
+  "updatedAt": "2026-05-29T07:47:47.036Z"
+}

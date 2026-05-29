@@ -1,6 +1,7 @@
 import type {
   AgentConnectionsBootstrapResponse,
   AgentConnectionsSettingsResponse,
+  AgentScanPreference,
   CreateAgentConnectionRequest,
   CreateAgentConnectionResponse,
   DeleteConnectionRequest,
@@ -83,6 +84,21 @@ export async function cancelAgentConnectionScan(
   scanId: string,
 ): Promise<{ ok: true; scanId: string; state: 'cancelled' }> {
   return postJson(`/__agent-connections/scan/${scanId}/cancel`);
+}
+
+export async function addApprovedScanDirectory(
+  path: string,
+): Promise<{ ok: true; scanPreference: AgentScanPreference }> {
+  return postJson('/__agent-connections/scan/directories', { path });
+}
+
+export async function removeApprovedScanDirectory(
+  id: string,
+): Promise<{ ok: true; scanPreference: AgentScanPreference }> {
+  const res = await fetch(`/__agent-connections/scan/directories/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  return parseJsonResponse(res, 'Failed to remove approved directory');
 }
 
 export async function validateManualAgentPath(

@@ -4,6 +4,7 @@ import { createAgentChatError, redactDiagnostics } from '../app/lib/agent-chat-e
 import type {
   AgentChatContext,
   AgentChatError,
+  AgentChatEvent,
   AgentChatRun,
   AgentChatSession,
   AgentConnectionRef,
@@ -11,6 +12,7 @@ import type {
   AgentOperation,
   RuntimeMode,
 } from '../app/lib/agent-chat-types.ts';
+import { normalizeCapabilities, resolveActiveConnection } from '../app/lib/agent-connections.ts';
 import {
   captureFingerprints,
   normalizeProposal,
@@ -28,6 +30,44 @@ import {
   registerRun,
   subscribeRunEvents,
 } from './agent-chat-runs.ts';
+import type {
+  AgentConnectionRunner,
+  StartAgentConnectionRunRequest,
+} from './agent-connection-adapters.ts';
+import { runAgentConnectionAdapter } from './agent-connection-adapters.ts';
+import { readAgentConnectionSettingsForProject } from './agent-connections-api.ts';
+
+const AGENT_CHAT_EVENT_TYPES = new Set<AgentChatEvent['type']>([
+  'queued',
+  'token',
+  'progress',
+  'proposal',
+  'diagnostic',
+  'completed',
+  'cancelled',
+  'failed',
+]);
+
+const AGENT_CHAT_ERROR_CATEGORIES = new Set<AgentChatError['category']>([
+  'connection-unavailable',
+  'authentication-failed',
+  'model-failed',
+  'timeout',
+  'invalid-agent-output',
+  'patch-conflict',
+  'validation-failure',
+  'write-failure',
+  'cancelled',
+]);
+
+function toAgentChatErrorCategory(value: string): AgentChatError['category'] {
+  const category = value as AgentChatError['category'];
+  return AGENT_CHAT_ERROR_CATEGORIES.has(category) ? category : 'model-failed';
+}
+
+function isAgentChatEventType(value: string): value is AgentChatEvent['type'] {
+  return AGENT_CHAT_EVENT_TYPES.has(value as AgentChatEvent['type']);
+}
 
 async function getFileContentOrEmpty(filePath: string): Promise<string> {
   try {
@@ -61,7 +101,7 @@ const defaultConnection: AgentConnectionRef = {
   status: 'ready',
 };
 
-export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext): void {
+export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext): void {
   server.middlewares.use('/__agent-chat', async (req, res, next) => {
     const urlObj = new URL(req.url || '', `http://${req.headers.host || 'localhost'}`);
     const pathname = urlObj.pathname;
@@ -71,18 +111,46 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
       if (req.method === 'GET' && pathname === '/session') {
         const activeSlideId = urlObj.searchParams.get('slideId') || undefined;
 
+        const settings = await readAgentConnectionSettingsForProject(ctx).catch(() => null);
+        let connection: AgentConnectionRef = { ...defaultConnection };
+
+        if (settings) {
+          const active = resolveActiveConnection(settings);
+          if (active) {
+            connection = {
+              connectionId: active.id,
+              displayName: active.displayName,
+              type:
+                active.type === 'api-key-provider'
+                  ? 'api-provider'
+                  : active.type === 'manual-agent-path'
+                    ? 'manual-agent'
+                    : 'local-agent',
+              modelOrAgent: active.modelId || active.agentCommandAlias || active.displayName,
+              status: active.status.state as AgentConnectionRef['status'],
+            };
+          } else if (settings.connections.length > 0) {
+            connection = {
+              connectionId: 'none',
+              displayName: 'No Connection',
+              type: 'local-agent',
+              modelOrAgent: 'None',
+              status: 'needs-setup',
+            };
+          } else {
+            connection = { ...defaultConnection };
+          }
+        }
+
         const headerStatus = req.headers['x-connection-status'] as string | undefined;
         const queryStatus = urlObj.searchParams.get('connectionStatus') || undefined;
         const envStatus = process.env.AGENT_CONNECTION_STATUS || undefined;
         const resolvedStatus = (headerStatus ||
           queryStatus ||
           envStatus ||
-          defaultConnection.status) as AgentConnectionRef['status'];
+          connection.status) as AgentConnectionRef['status'];
 
-        const connection: AgentConnectionRef = {
-          ...defaultConnection,
-          status: resolvedStatus,
-        };
+        connection.status = resolvedStatus;
 
         const headerMode = req.headers['x-runtime-mode'] as string | undefined;
         const queryMode = urlObj.searchParams.get('runtimeMode') || undefined;
@@ -143,11 +211,44 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
           return json(res, 403, { error: 'Runs are not allowed in read-only mode.' });
         }
 
+        const settings = await readAgentConnectionSettingsForProject(ctx).catch(() => null);
+        let activeConnection: AgentConnectionRef = { ...defaultConnection };
+
+        if (settings) {
+          const active = resolveActiveConnection(settings);
+          if (active) {
+            activeConnection = {
+              connectionId: active.id,
+              displayName: active.displayName,
+              type:
+                active.type === 'api-key-provider'
+                  ? 'api-provider'
+                  : active.type === 'manual-agent-path'
+                    ? 'manual-agent'
+                    : 'local-agent',
+              modelOrAgent: active.modelId || active.agentCommandAlias || active.displayName,
+              status: active.status.state as AgentConnectionRef['status'],
+            };
+          } else if (settings.connections.length > 0) {
+            activeConnection = {
+              connectionId: 'none',
+              displayName: 'No Connection',
+              type: 'local-agent',
+              modelOrAgent: 'None',
+              status: 'needs-setup',
+            };
+          } else {
+            activeConnection = { ...defaultConnection };
+          }
+        }
+
         const headerStatus = req.headers['x-connection-status'] as string | undefined;
         const envStatus = process.env.AGENT_CONNECTION_STATUS || undefined;
         const resolvedStatus = (headerStatus ||
           envStatus ||
-          defaultConnection.status) as AgentConnectionRef['status'];
+          activeConnection.status) as AgentConnectionRef['status'];
+
+        activeConnection.status = resolvedStatus;
 
         if (
           resolvedStatus === 'failed' ||
@@ -186,10 +287,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
             project: { name: 'Awesome Slide Project' },
             limits: { maxBytes: 128 * 1024, generatedAt: new Date().toISOString() },
           },
-          connection: {
-            ...defaultConnection,
-            status: resolvedStatus,
-          },
+          connection: activeConnection,
           state: 'queued',
           events: [],
           startedAt: new Date().toISOString(),
@@ -205,108 +303,141 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
           eventUrl: `/__agent-chat/runs/${runId}/events`,
         });
 
-        // Simulate the run lifecycle in the background
-        setTimeout(() => {
-          if (abortController.signal.aborted) return;
-          addRunEvent(runId, 'queued', null);
+        // Run prompt session run through the adapter in the background
+        (async () => {
+          try {
+            // First emit queued
+            addRunEvent(runId, 'queued', null);
 
-          setTimeout(() => {
-            if (abortController.signal.aborted) return;
+            const connectionConfig = settings?.connections.find(
+              (c) => c.id === activeConnection.connectionId,
+            );
+            const runRequest: StartAgentConnectionRunRequest = {
+              runId,
+              prompt,
+              context: run.context,
+              workflows: [],
+              connectionId: activeConnection.connectionId,
+              modelId: connectionConfig?.modelId,
+              reasoningEffort: connectionConfig?.reasoningEffort,
+              capabilities: connectionConfig?.capabilities ?? normalizeCapabilities(),
+              signal: abortController.signal,
+            };
 
-            if (prompt.startsWith('simulate-error:')) {
-              const category = prompt
-                .replace('simulate-error:', '')
-                .trim() as AgentChatError['category'];
-              if (category === 'cancelled') {
-                addRunEvent(runId, 'cancelled', null);
-              } else {
-                const errorPayload = createAgentChatError(
-                  category,
-                  undefined,
-                  `Mock error diagnostics: key=supersecret123 path=C:\\Users\\bobsmith\\Desktop\\project`,
+            const runner: AgentConnectionRunner = async function* (req) {
+              if (prompt.startsWith('simulate-error:')) {
+                const category = toAgentChatErrorCategory(
+                  prompt.replace('simulate-error:', '').trim(),
                 );
-                addRunEvent(runId, 'failed', errorPayload);
-              }
-              return;
-            }
-
-            if (prompt.startsWith('simulate-proposal:')) {
-              const type = prompt.replace('simulate-proposal:', '').trim();
-
-              if (type === 'timeout') {
+                if (category === 'cancelled') {
+                  yield { type: 'cancelled', payload: null };
+                } else {
+                  const errorPayload = createAgentChatError(
+                    category,
+                    undefined,
+                    `Mock error diagnostics: key=supersecret123 path=C:\\Users\\bobsmith\\Desktop\\project`,
+                  );
+                  yield { type: 'failed', payload: errorPayload };
+                }
                 return;
               }
 
-              const operations: AgentOperation[] = [];
+              if (prompt.startsWith('simulate-proposal:')) {
+                const type = prompt.replace('simulate-proposal:', '').trim();
+                if (type === 'timeout') {
+                  // Wait to trigger watchdog
+                  await new Promise((_, reject) => {
+                    req.signal.addEventListener('abort', () => reject(new Error('aborted')));
+                  });
+                  return;
+                }
 
-              if (type === 'invalid') {
-                operations.push({
-                  id: 'op_invalid',
-                  kind: 'patch-slide-source',
-                  target: 'intro',
-                  description: 'Invalid TSX code',
-                  payload: { code: 'function Slide() { return <div;\n}' },
-                  requiresConfirmation: false,
-                  validationState: 'pending',
-                  reversible: true,
-                });
-              } else if (type === 'conflict') {
-                operations.push({
-                  id: 'op_conflict',
-                  kind: 'patch-slide-source',
-                  target: 'intro',
-                  description: 'Conflicting edit',
-                  payload: {
-                    code: 'function Slide() { return <div>Hello</div>; }',
-                    originalCode: 'CONFLICT',
-                  },
-                  requiresConfirmation: false,
-                  validationState: 'pending',
-                  reversible: true,
-                });
-              } else if (type === 'medium') {
-                operations.push({
-                  id: 'op_medium',
-                  kind: 'create-slide',
-                  target: 'deck_1',
-                  description: 'Create a new slide',
-                  payload: { title: 'New Slide' },
-                  requiresConfirmation: false,
-                  validationState: 'pending',
-                  reversible: true,
-                });
-              } else if (type === 'high') {
-                operations.push({
-                  id: 'op_high',
-                  kind: 'apply-theme',
-                  target: 'intro',
-                  description: 'Apply high risk theme',
-                  payload: { themeId: 'unsupported-theme', scope: 'deck' },
-                  requiresConfirmation: true,
-                  validationState: 'pending',
-                  reversible: true,
-                });
-              } else {
-                operations.push({
-                  id: 'op_low',
-                  kind: 'patch-slide-source',
-                  target: 'intro',
-                  description: 'Update slide title',
-                  payload: {
-                    code: 'function Slide() {\n  return <div>Welcome to Awesome Slide!</div>;\n}',
-                  },
-                  requiresConfirmation: false,
-                  validationState: 'pending',
-                  reversible: true,
-                });
+                yield { type: 'progress', payload: 'Generating slide modifications...' };
+                await new Promise((r) => setTimeout(r, 50));
+                yield { type: 'structured-output', payload: { type } };
+                return;
               }
 
-              addRunEvent(runId, 'progress', 'Generating slide modifications...');
+              yield { type: 'progress', payload: 'Analyzing slide layout...' };
+              await new Promise((r) => setTimeout(r, 50));
+              yield { type: 'token', payload: 'Here are the suggested edits for your slide:' };
+              await new Promise((r) => setTimeout(r, 50));
+              yield { type: 'completed', payload: null };
+            };
 
-              setTimeout(async () => {
-                if (abortController.signal.aborted) return;
+            const adapterEvents = runAgentConnectionAdapter(runner, runRequest);
 
-                const slidePath = resolveSlideEntryPath(_ctx, 'intro');
+            for await (const event of adapterEvents) {
+              if (abortController.signal.aborted) break;
+
+              if (event.type === 'structured-output') {
+                const payload = event.payload as { type: string };
+                const type = payload.type;
+                const operations: AgentOperation[] = [];
+
+                if (type === 'invalid') {
+                  operations.push({
+                    id: 'op_invalid',
+                    kind: 'patch-slide-source',
+                    target: 'intro',
+                    description: 'Invalid TSX code',
+                    payload: { code: 'function Slide() { return <div;\n}' },
+                    requiresConfirmation: false,
+                    validationState: 'pending',
+                    reversible: true,
+                  });
+                } else if (type === 'conflict') {
+                  operations.push({
+                    id: 'op_conflict',
+                    kind: 'patch-slide-source',
+                    target: 'intro',
+                    description: 'Conflicting edit',
+                    payload: {
+                      code: 'function Slide() { return <div>Hello</div>; }',
+                      originalCode: 'CONFLICT',
+                    },
+                    requiresConfirmation: false,
+                    validationState: 'pending',
+                    reversible: true,
+                  });
+                } else if (type === 'medium') {
+                  operations.push({
+                    id: 'op_medium',
+                    kind: 'create-slide',
+                    target: 'deck_1',
+                    description: 'Create a new slide',
+                    payload: { title: 'New Slide' },
+                    requiresConfirmation: false,
+                    validationState: 'pending',
+                    reversible: true,
+                  });
+                } else if (type === 'high') {
+                  operations.push({
+                    id: 'op_high',
+                    kind: 'apply-theme',
+                    target: 'intro',
+                    description: 'Apply high risk theme',
+                    payload: { themeId: 'unsupported-theme', scope: 'deck' },
+                    requiresConfirmation: true,
+                    validationState: 'pending',
+                    reversible: true,
+                  });
+                } else {
+                  operations.push({
+                    id: 'op_low',
+                    kind: 'patch-slide-source',
+                    target: 'intro',
+                    description: 'Update slide title',
+                    payload: {
+                      code: 'function Slide() {\n  return <div>Welcome to Awesome Slide!</div>;\n}',
+                    },
+                    requiresConfirmation: false,
+                    validationState: 'pending',
+                    reversible: true,
+                  });
+                }
+
+                const slidePath = resolveSlideEntryPath(ctx, 'intro');
                 const introContent = slidePath
                   ? await getFileContentOrEmpty(slidePath)
                   : 'original content';
@@ -343,23 +474,21 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
                 }
 
                 addRunEvent(runId, 'proposal', normalized);
-              }, 50);
-              return;
-            }
-
-            addRunEvent(runId, 'progress', 'Analyzing slide layout...');
-
-            setTimeout(() => {
-              if (abortController.signal.aborted) return;
-              addRunEvent(runId, 'token', 'Here are the suggested edits for your slide:');
-
-              setTimeout(() => {
-                if (abortController.signal.aborted) return;
+                // After proposal, complete the run
                 addRunEvent(runId, 'completed', null);
-              }, 50);
-            }, 50);
-          }, 50);
-        }, 10);
+              } else if (isAgentChatEventType(event.type)) {
+                addRunEvent(runId, event.type, event.payload);
+              } else {
+                addRunEvent(runId, 'diagnostic', event.payload);
+              }
+            }
+          } catch (err) {
+            if (!abortController.signal.aborted) {
+              const raw = err instanceof Error ? err.message : String(err);
+              addRunEvent(runId, 'failed', createAgentChatError('model-failed', undefined, raw));
+            }
+          }
+        })();
 
         return;
       }
@@ -439,6 +568,37 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
         } | null;
         const freshContext = body?.context || oldRun.context;
 
+        const settings = await readAgentConnectionSettingsForProject(ctx).catch(() => null);
+        let activeConnection: AgentConnectionRef = { ...defaultConnection };
+
+        if (settings) {
+          const active = resolveActiveConnection(settings);
+          if (active) {
+            activeConnection = {
+              connectionId: active.id,
+              displayName: active.displayName,
+              type:
+                active.type === 'api-key-provider'
+                  ? 'api-provider'
+                  : active.type === 'manual-agent-path'
+                    ? 'manual-agent'
+                    : 'local-agent',
+              modelOrAgent: active.modelId || active.agentCommandAlias || active.displayName,
+              status: active.status.state as AgentConnectionRef['status'],
+            };
+          } else if (settings.connections.length > 0) {
+            activeConnection = {
+              connectionId: 'none',
+              displayName: 'No Connection',
+              type: 'local-agent',
+              modelOrAgent: 'None',
+              status: 'needs-setup',
+            };
+          } else {
+            activeConnection = { ...defaultConnection };
+          }
+        }
+
         const nextRunId = `run_${Date.now()}`;
         const run: AgentChatRun = {
           id: nextRunId,
@@ -446,7 +606,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
           prompt: oldRun.prompt,
           actionId: oldRun.actionId,
           context: freshContext,
-          connection: defaultConnection,
+          connection: activeConnection,
           state: 'queued',
           events: [],
           startedAt: new Date().toISOString(),
@@ -461,32 +621,69 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
           eventUrl: `/__agent-chat/runs/${nextRunId}/events`,
         });
 
-        setTimeout(() => {
-          if (abortController.signal.aborted) return;
-          addRunEvent(nextRunId, 'queued', null);
-          setTimeout(() => {
-            if (abortController.signal.aborted) return;
+        // Run prompt session run through the adapter in the background
+        (async () => {
+          try {
+            // First emit queued
+            addRunEvent(nextRunId, 'queued', null);
 
-            if (oldRun.prompt.startsWith('simulate-error:')) {
-              const category = oldRun.prompt
-                .replace('simulate-error:', '')
-                .trim() as AgentChatError['category'];
-              if (category === 'cancelled') {
-                addRunEvent(nextRunId, 'cancelled', null);
-              } else {
-                const errorPayload = createAgentChatError(
-                  category,
-                  undefined,
-                  `Mock error diagnostics: key=supersecret123 path=C:\\Users\\bobsmith\\Desktop\\project`,
+            const connectionConfig = settings?.connections.find(
+              (c) => c.id === activeConnection.connectionId,
+            );
+            const runRequest: StartAgentConnectionRunRequest = {
+              runId: nextRunId,
+              prompt: oldRun.prompt,
+              context: freshContext,
+              workflows: [],
+              connectionId: activeConnection.connectionId,
+              modelId: connectionConfig?.modelId,
+              reasoningEffort: connectionConfig?.reasoningEffort,
+              capabilities: connectionConfig?.capabilities ?? normalizeCapabilities(),
+              signal: abortController.signal,
+            };
+
+            const runner: AgentConnectionRunner = async function* (_req) {
+              if (oldRun.prompt.startsWith('simulate-error:')) {
+                const category = toAgentChatErrorCategory(
+                  oldRun.prompt.replace('simulate-error:', '').trim(),
                 );
-                addRunEvent(nextRunId, 'failed', errorPayload);
+                if (category === 'cancelled') {
+                  yield { type: 'cancelled', payload: null };
+                } else {
+                  const errorPayload = createAgentChatError(
+                    category,
+                    undefined,
+                    `Mock error diagnostics: key=supersecret123 path=C:\\Users\\bobsmith\\Desktop\\project`,
+                  );
+                  yield { type: 'failed', payload: errorPayload };
+                }
+                return;
               }
-              return;
-            }
 
-            addRunEvent(nextRunId, 'completed', null);
-          }, 20);
-        }, 10);
+              yield { type: 'completed', payload: null };
+            };
+
+            const adapterEvents = runAgentConnectionAdapter(runner, runRequest);
+
+            for await (const event of adapterEvents) {
+              if (abortController.signal.aborted) break;
+              if (isAgentChatEventType(event.type)) {
+                addRunEvent(nextRunId, event.type, event.payload);
+              } else {
+                addRunEvent(nextRunId, 'diagnostic', event.payload);
+              }
+            }
+          } catch (err) {
+            if (!abortController.signal.aborted) {
+              const raw = err instanceof Error ? err.message : String(err);
+              addRunEvent(
+                nextRunId,
+                'failed',
+                createAgentChatError('model-failed', undefined, raw),
+              );
+            }
+          }
+        })();
 
         return;
       }
@@ -508,7 +705,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
           return json(res, 404, { error: 'Proposal not found.' });
         }
 
-        const currentContents = await collectCurrentContents(_ctx, proposal.operations);
+        const currentContents = await collectCurrentContents(ctx, proposal.operations);
         const validation = await validateProposal(proposal, currentContents);
 
         const mergedChecks = [...(proposal.validation?.checks || [])];
@@ -603,7 +800,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
             op.kind === 'apply-theme' ||
             op.kind === 'update-speaker-notes'
           ) {
-            const filePath = resolveSlideEntryPath(_ctx, op.target);
+            const filePath = resolveSlideEntryPath(ctx, op.target);
             if (filePath && !fileBackups.has(filePath)) {
               try {
                 const content = await fs.readFile(filePath, 'utf8');
@@ -620,7 +817,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
             if (op.kind === 'patch-slide-source' || op.kind === 'raw-patch') {
               const payload = op.payload as { code?: string } | undefined;
               const code = payload?.code || '';
-              const filePath = resolveSlideEntryPath(_ctx, op.target);
+              const filePath = resolveSlideEntryPath(ctx, op.target);
               if (!filePath) {
                 throw new Error(`Invalid slide target: ${op.target}`);
               }
@@ -640,7 +837,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
                   },
                 ).catch(() => null);
                 if (slideRes?.ok) {
-                  const filePath = resolveSlideEntryPath(_ctx, slideId);
+                  const filePath = resolveSlideEntryPath(ctx, slideId);
                   writtenFiles.push(filePath || `slides/${slideId}`);
                   server.ws?.send({ type: 'full-reload' });
                 } else {
@@ -651,7 +848,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
               const payload = op.payload as { themeId?: string } | undefined;
               const themeId = payload?.themeId;
               if (themeId) {
-                const filePath = resolveSlideEntryPath(_ctx, op.target);
+                const filePath = resolveSlideEntryPath(ctx, op.target);
                 if (filePath) {
                   let source = '';
                   try {
@@ -673,7 +870,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
               const payload = op.payload as { notes?: string } | undefined;
               const notes = payload?.notes;
               if (typeof notes === 'string') {
-                const filePath = resolveSlideEntryPath(_ctx, op.target);
+                const filePath = resolveSlideEntryPath(ctx, op.target);
                 if (!filePath) {
                   throw new Error(`Invalid slide target: ${op.target}`);
                 }
@@ -784,7 +981,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
         }
 
         const run = getRun(proposal.runId);
-        const auditEntry = await appendAuditEntry(_ctx.userCwd, {
+        const auditEntry = await appendAuditEntry(ctx.userCwd, {
           prompt: run?.prompt || 'In-app edit',
           contextSummary: proposal.scope,
           proposalSummary: proposal.summary,
@@ -823,7 +1020,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
 
       // GET /audit
       if (req.method === 'GET' && pathname === '/audit') {
-        const entries = await readAuditEntries(_ctx.userCwd);
+        const entries = await readAuditEntries(ctx.userCwd);
         return json(res, 200, { entries });
       }
 

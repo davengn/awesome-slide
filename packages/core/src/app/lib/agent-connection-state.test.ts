@@ -169,4 +169,39 @@ describe('agent connection UI state', () => {
     });
     expect(state.settingsModal.validationErrors.apiKey).toBeUndefined();
   });
+
+  it('handles scan state transitions (start, complete, cancel)', () => {
+    let state = createInitialAgentConnectionUiState();
+    state = agentConnectionReducer(state, { type: 'START_SCAN' });
+    expect(state.settingsModal.scanState).toBe('scanning');
+    expect(state.quickSwitcher.pendingAction).toBe('rescan-path');
+
+    state = agentConnectionReducer(state, { type: 'COMPLETE_SCAN' });
+    expect(state.settingsModal.scanState).toBe('completed');
+    expect(state.quickSwitcher.pendingAction).toBeUndefined();
+
+    state = agentConnectionReducer(state, { type: 'START_SCAN' });
+    state = agentConnectionReducer(state, { type: 'CANCEL_SCAN' });
+    expect(state.settingsModal.scanState).toBe('cancelled');
+    expect(state.quickSwitcher.pendingAction).toBeUndefined();
+  });
+
+  it('handles BYOK form field changes', () => {
+    let state = createInitialAgentConnectionUiState();
+
+    state = agentConnectionReducer(state, {
+      type: 'SET_BYOK_FIELD',
+      payload: {
+        providerId: 'anthropic',
+        modelId: 'claude-sonnet-4',
+        apiKey: 'sk-ant-key',
+        showKey: true,
+      },
+    });
+
+    expect(state.byokForm.providerId).toBe('anthropic');
+    expect(state.byokForm.modelId).toBe('claude-sonnet-4');
+    expect(state.byokForm.apiKey).toBe('sk-ant-key');
+    expect(state.byokForm.showKey).toBe(true);
+  });
 });

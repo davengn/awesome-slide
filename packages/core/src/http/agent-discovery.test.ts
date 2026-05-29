@@ -1,13 +1,20 @@
+import { exec } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   discoverLocalAgentCandidates,
   isFullDiskPath,
   validateApprovedDirectory,
   validateManualAgentPath,
 } from './agent-discovery.ts';
+
+vi.mock('node:child_process', () => {
+  return {
+    exec: vi.fn(),
+  };
+});
 
 let tempDir: string;
 
@@ -43,14 +50,68 @@ describe('agent discovery', () => {
   });
 
   it('validates manual commands and existing project paths without broad scans', async () => {
-    const command = await validateManualAgentPath('codex', 'command');
-    expect(command.status).toBe('pass');
-    expect(command.provider).toBe('codex');
-
     const project = await validateManualAgentPath(tempDir, 'project-path');
     expect(project.status).toBe('pass');
 
     const missing = await validateManualAgentPath(path.join(tempDir, 'missing.exe'), 'executable');
     expect(missing.status).toBe('fail');
+  });
+
+  it('runs command/executable and handles pass, incompatible protocol, timeout, and redaction', async () => {
+    const mockedExec = vi.mocked(exec);
+
+    // Case 1: Pass with version
+    mockedExec.mockImplementationOnce((_cmd, opts, callback) => {
+      const cb =
+        typeof opts === 'function'
+          ? (opts as (error: Error | null, stdout: string, stderr: string) => void)
+          : (callback as unknown as (error: Error | null, stdout: string, stderr: string) => void);
+      cb?.(null, 'codex-cli version v1.2.3\n', '');
+      return null as unknown as import('node:child_process').ChildProcess;
+    });
+    const result = await validateManualAgentPath('codex', 'command');
+    expect(result.status).toBe('pass');
+    expect(result.version).toBe('1.2.3');
+
+    // Case 2: Incompatible protocol
+    mockedExec.mockImplementationOnce((_cmd, opts, callback) => {
+      const cb =
+        typeof opts === 'function'
+          ? (opts as (error: Error | null, stdout: string, stderr: string) => void)
+          : (callback as unknown as (error: Error | null, stdout: string, stderr: string) => void);
+      cb?.(null, 'unknown protocol format version 0.1\n', '');
+      return null as unknown as import('node:child_process').ChildProcess;
+    });
+    const resultIncompat = await validateManualAgentPath('codex', 'command');
+    expect(resultIncompat.status).toBe('fail');
+    expect(resultIncompat.message).toContain('Incompatible agent protocol');
+
+    // Case 3: Timeout
+    mockedExec.mockImplementationOnce((_cmd, opts, callback) => {
+      const cb =
+        typeof opts === 'function'
+          ? (opts as (error: Error | null, stdout: string, stderr: string) => void)
+          : (callback as unknown as (error: Error | null, stdout: string, stderr: string) => void);
+      const err = new Error('Execution timed out') as Error & { signal?: string };
+      err.signal = 'SIGTERM';
+      cb?.(err, '', '');
+      return null as unknown as import('node:child_process').ChildProcess;
+    });
+    const resultTimeout = await validateManualAgentPath('codex', 'command');
+    expect(resultTimeout.status).toBe('fail');
+    expect(resultTimeout.message).toContain('Validation timed out');
+
+    // Case 4: Redacted output
+    mockedExec.mockImplementationOnce((_cmd, opts, callback) => {
+      const cb =
+        typeof opts === 'function'
+          ? (opts as (error: Error | null, stdout: string, stderr: string) => void)
+          : (callback as unknown as (error: Error | null, stdout: string, stderr: string) => void);
+      cb?.(null, 'Connected to secret key: sk-abc123xyz789\n', '');
+      return null as unknown as import('node:child_process').ChildProcess;
+    });
+    const resultRedact = await validateManualAgentPath('codex', 'command');
+    expect(resultRedact.diagnostics).not.toContain('sk-abc123xyz789');
+    expect(resultRedact.diagnostics).toContain('key=<redacted>');
   });
 });

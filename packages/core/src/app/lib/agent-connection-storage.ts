@@ -99,6 +99,17 @@ export function sanitizeConnectionConfig(value: unknown): AgentConnectionConfig 
       typeof raw.agentCommandAlias === 'string' ? raw.agentCommandAlias : undefined,
     manualPathRef: typeof raw.manualPathRef === 'string' ? raw.manualPathRef : undefined,
     credentialRef: typeof raw.credentialRef === 'string' ? raw.credentialRef : undefined,
+    credentialStorage:
+      raw.credentialStorage === 'os-credential-store' ||
+      raw.credentialStorage === 'environment-variable'
+        ? raw.credentialStorage
+        : typeof raw.credentialRef === 'string' && raw.credentialRef.startsWith('env:')
+          ? 'environment-variable'
+          : typeof raw.credentialRef === 'string'
+            ? 'os-credential-store'
+            : undefined,
+    credentialDisplayHint:
+      typeof raw.credentialDisplayHint === 'string' ? raw.credentialDisplayHint : undefined,
     capabilities: normalizeCapabilities(raw.capabilities),
     status,
     lastTestedAt: typeof raw.lastTestedAt === 'string' ? raw.lastTestedAt : undefined,
