@@ -175,7 +175,7 @@ Rules:
 
 - `blank` creates a minimal valid slide file with `meta.title` and `meta.createdAt`.
 - `template` copies a trusted local template/theme starter and applies the requested ID/title.
-- `prompt` creates a blank placeholder slide with `status: 'draft'`, stores the user's prompt text in `meta.notes`, and returns a handoff target for the agent chat workflow. The agent chat spec (004) owns actual model invocation and content generation.
+- `prompt` creates a blank placeholder slide with `status: 'draft'`, stores the user's prompt text in `meta.notes`, and returns a handoff target for the agent chat workflow. The agent chat spec (005) owns actual model invocation and content generation.
 
 ## SlideMetadataPatch
 

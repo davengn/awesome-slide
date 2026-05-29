@@ -21,13 +21,6 @@
           "speckit.git.remote",
           "speckit.git.initialize",
           "speckit.git.commit"
-        ],
-        "codex": [
-          "speckit.git.feature",
-          "speckit.git.validate",
-          "speckit.git.remote",
-          "speckit.git.initialize",
-          "speckit.git.commit"
         ]
       },
       "registered_skills": [],

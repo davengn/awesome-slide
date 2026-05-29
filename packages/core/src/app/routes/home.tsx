@@ -1,6 +1,7 @@
-import { X } from 'lucide-react';
-import { type KeyboardEvent, useCallback, useMemo, useState } from 'react';
+import { Bot, X } from 'lucide-react';
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AgentChatDrawer } from '../components/agent-chat/index.ts';
 import { CreateSlideDialog } from '../components/slide-management/CreateSlideDialog';
 import { DeleteConfirmDialog } from '../components/slide-management/DeleteConfirmDialog';
 import { DuplicateSlideDialog } from '../components/slide-management/DuplicateSlideDialog';
@@ -12,6 +13,7 @@ import { SearchSortToolbar } from '../components/slide-management/SearchSortTool
 import { SlideGrid } from '../components/slide-management/SlideGrid';
 import { SlideInspector } from '../components/slide-management/SlideInspector';
 import { SlideList } from '../components/slide-management/SlideList';
+import { Button } from '../components/ui/button.tsx';
 import { type SlideSortMode, searchSlides, sortSlides, useManagement } from '../lib/management';
 import type { Deck, SlideMetadataPatch, SlideRecord } from '../lib/sdk';
 
@@ -33,6 +35,35 @@ export function Home() {
   const [duplicateSlideId, setDuplicateSlideId] = useState<string | null>(null);
   const [deleteSlideId, setDeleteSlideId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [agentOpen, setAgentOpen] = useState(() => {
+    return (
+      typeof window !== 'undefined' && !!new URLSearchParams(window.location.search).get('prompt')
+    );
+  });
+  const seedPrompt =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('prompt') || undefined
+      : undefined;
+
+  useEffect(() => {
+    const promptParam = searchParams.get('prompt');
+    if (promptParam) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('prompt');
+          return next;
+        },
+        { replace: true },
+      );
+    }
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (selectedSlideId && !management.slides.some((s) => s.id === selectedSlideId)) {
+      setSelectedSlideId(null);
+    }
+  }, [selectedSlideId, management.slides]);
 
   const selection = useMemo(
     () => selectionFromParams(searchParams, management.folders, management.decks),
@@ -54,6 +85,14 @@ export function Home() {
     () => sortSlides(filteredSlides, sortMode),
     [filteredSlides, sortMode],
   );
+
+  const collectionContext = useMemo(() => {
+    return {
+      folderId: selection.type === 'folder' ? selection.id : undefined,
+      deckId: selection.type === 'deck' ? selection.id : undefined,
+      slideIds: visibleSlides.map((s) => s.id),
+    };
+  }, [selection, visibleSlides]);
 
   const title = collectionTitle(selection, management.decks, management.folders);
   const selectedSlide = management.slides.find((slide) => slide.id === selectedSlideId) ?? null;
@@ -216,7 +255,7 @@ export function Home() {
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="grid gap-4 border-b border-hairline bg-canvas px-4 py-4 md:px-7">
-          <div className="flex min-w-0 items-end gap-4">
+          <div className="flex min-w-0 items-end gap-4 justify-between">
             <div className="min-w-0 flex-1">
               <h1 className="truncate font-heading text-[26px] font-semibold leading-none tracking-[-0.8px] md:text-[28px] md:tracking-[-1px]">
                 {title}
@@ -225,6 +264,18 @@ export function Home() {
                 {visibleSlides.length.toString().padStart(2, '0')} of{' '}
                 {collectionSlides.length.toString().padStart(2, '0')} slides
               </p>
+            </div>
+            <div className="shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Agent Chat"
+                aria-label="Toggle Agent Chat"
+                onClick={() => setAgentOpen((v) => !v)}
+                className="h-10 w-10 text-muted-foreground hover:text-foreground"
+              >
+                <Bot className="size-5" />
+              </Button>
             </div>
           </div>
           <SearchSortToolbar
@@ -384,6 +435,17 @@ export function Home() {
             setActionError(err instanceof Error ? err.message : String(err));
           }
         }}
+      />
+      <AgentChatDrawer
+        isOpen={agentOpen}
+        onClose={() => setAgentOpen(false)}
+        collection={collectionContext}
+        seedPrompt={seedPrompt}
+        slideId={selectedSlideId ?? undefined}
+        slideContext={
+          selectedSlide ? { id: selectedSlide.id, title: selectedSlide.title } : undefined
+        }
+        notes={selectedSlide?.notes}
       />
     </section>
   );

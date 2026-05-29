@@ -1,0 +1,120 @@
+# Research: In-App Agent Chat
+
+## Decision: Build the chat as a `@awesome-slide/core` runtime feature
+
+**Rationale**: The chat needs live slide state, current selection, theme metadata, slide management context, and local write access. Those all already converge in `packages/core/src/app`, `packages/core/src/http`, and the Vite middleware layer.
+
+**Alternatives considered**:
+
+- Separate app package: rejected because it would duplicate runtime state and add cross-app integration.
+- CLI-only workflow: rejected because the spec requires in-app preview/apply behavior.
+
+## Decision: Depend on the active connection adapter from `specs/006-agent-model-connections`
+
+**Rationale**: The chat should not know provider protocols, credential storage, or local-agent discovery. It only needs an active connection reference, status, streaming response capability, cancellation, and structured proposal output.
+
+**Alternatives considered**:
+
+- Implement provider calls directly in chat: rejected because it violates the connection spec boundary.
+- Require a single bundled provider: rejected because Awesome Slide should support local-first and hosted-model workflows.
+
+## Decision: Use `packages/core/skills` as the authoritative in-app workflow source
+
+**Rationale**: The current Awesome Slide agent experience already ships `create-slide`, `slide-authoring`, `current-slide`, `apply-comments`, and `create-theme` skills under `packages/core/skills`. The 005 feature is an upgrade to bring those workflows into the product UI, not a replacement generic chat. The runtime should select the relevant workflow, include the associated skill instructions in the adapter request, and show the workflow in status, proposal, and audit metadata so users can create and update slides without opening a separate agent chat or manually invoking skills.
+
+**Alternatives considered**:
+
+- Re-encode the skill instructions directly in the 005 spec and implementation: rejected because it creates a stale second source of truth.
+- Ignore the bundled skills and rely on generic model prompting: rejected because generated slides may drift from Awesome Slide's 1920x1080 canvas contract, `DesignSystem` expectations, theme rules, and inspector comment semantics.
+- Keep the old external-skill-only flow: rejected because the user goal is to make create/update/theme/comment workflows available in-app.
+
+## Decision: Use explicit bounded `AgentChatContext`
+
+**Rationale**: The draft spec requires contextual prompts without leaking hidden files, secrets, or unrelated project files. A bounded context object can include current slide ID, page index, selected element descriptors, deck/folder metadata, theme IDs, notes inclusion, and limited source excerpts while making every included context visible as removable chips.
+
+**Alternatives considered**:
+
+- Send whole project files by default: rejected for privacy, performance, and relevance.
+- Send only a rendered screenshot: rejected because copy/layout/source edits need semantic source and metadata.
+
+## Decision: Model chat runs as a cancellable state machine with streamed events
+
+**Rationale**: The UI must represent loading, queued, streaming, completed, cancelled, failed, and needs-review states. A run state machine keeps UI behavior deterministic and makes cancellation semantics testable.
+
+**Alternatives considered**:
+
+- Ad hoc component-local flags: rejected because preview/apply, retry, refine, and cancellation need shared transitions.
+- Poll-only updates: rejected because streaming response text and proposal progress should appear promptly.
+
+## Decision: Use local run routes plus server-sent events for streaming
+
+**Rationale**: Local Vite middleware already owns mutation routes. A `POST /__agent-chat/runs` plus `GET /__agent-chat/runs/:id/events` contract keeps request creation, stream consumption, cancellation, and retry explicit without coupling to Vite HMR internals.
+
+**Alternatives considered**:
+
+- Reuse Vite HMR WebSocket: rejected because agent run semantics and cancellation should not depend on dev-server implementation details.
+- Single blocking POST response: rejected because it cannot show streaming and progress states cleanly.
+
+## Decision: Guard prompt creation, SSE setup, and terminal cleanup against stuck runs
+
+**Rationale**: User testing showed that a submitted prompt can appear pending forever. The UI should create a visible queued turn immediately, preserve the prompt if `POST /runs` fails, clear stream subscriptions on terminal events, and convert startup, replay, disconnect, or adapter timeout failures into categorized failed turns with retry/edit-prompt recovery actions.
+
+**Alternatives considered**:
+
+- Waiting for the server run ID before rendering the user turn: rejected because failed or slow run creation leaves users without visible feedback.
+- Trusting the EventSource `error` event alone: rejected because normal terminal stream closure and abnormal disconnects must be distinguished.
+- Leaving watchdog behavior to provider adapters: rejected because the Awesome Slide UI owns the local run contract and must guarantee that active runs release controls.
+
+## Decision: Represent file changes as structured proposals first, patch fallback second
+
+**Rationale**: Existing edit and management helpers can validate targeted operations such as metadata patches, source edits, page changes, slide creation, speaker notes updates, and theme application. Structured operations support selective apply, risk labeling, preview rendering, and audit summaries. Raw patches remain a fallback for edits that cannot be expressed structurally.
+
+**Alternatives considered**:
+
+- Raw unified diff only: rejected because selected apply and semantic validation become harder.
+- Direct agent writes: rejected by the spec and by project safety expectations.
+
+## Decision: Require preview and validation before writes
+
+**Rationale**: File-changing responses must enter `needs-review` with preview artifacts before any mutation. Preflight validation should parse TSX/source changes, validate metadata/deck IDs, detect patch conflicts, classify destructive or broad edits, and block writes when cancelled.
+
+**Alternatives considered**:
+
+- Apply then show undo: rejected because the spec requires review before writes.
+- Always run full project typecheck before preview: rejected as too slow for common interactions; typecheck remains a focused/final validation option.
+
+## Decision: Keep chat history short and local by default
+
+**Rationale**: The feature only needs current-project continuity. Browser storage can keep message summaries and context preferences, while project-local ignored audit JSONL records applied changes without storing secrets or bulky generated artifacts.
+
+**Alternatives considered**:
+
+- Cloud-synced chat history: rejected as a non-goal.
+- Git-tracked chat transcripts: rejected because prompts may contain sensitive or noisy context.
+
+## Decision: Integrate the UI as a desktop side panel and narrow-screen drawer
+
+**Rationale**: The slide route already has a slide canvas, thumbnail rail, inspector, and design panel; the management route has a sidebar and inspector. A dedicated agent panel/drawer can preserve the slide preview by default on desktop and match the spec's responsive requirement.
+
+**Alternatives considered**:
+
+- Full-screen chat route: rejected because it hides the slide/deck context users are editing.
+- Modal-only chat: rejected because long-running streamed work and preview review need persistent space.
+
+## Decision: Use the supplied Open Design screenshot as the desktop rail anatomy reference
+
+**Rationale**: The current implementation is a generic white sidebar. The target experience should feel like an app-native agent workspace: a persistent rail beside the slide canvas, Chat/Comments tabs, compact assistant turns, inline running/done/error cards, a files-from-this-turn tray for generated artifacts, and a pinned composer. The visual language should still use Awesome Slide tokens, lucide icons, accessible labels, and responsive drawer behavior.
+
+**Alternatives considered**:
+
+- Keep the current plain sidebar and only fix behavior: rejected because the user explicitly called out that the UI is not friendly and supplied a reference.
+- Copy the Open Design brand exactly: rejected because this is an Awesome Slide framework feature and should remain visually consistent with the host app.
+
+## Decision: Test domain logic with Vitest and validate UI in the demo app
+
+**Rationale**: The repo already uses Vitest and has no dedicated React component testing harness. High-risk behavior can be covered through pure state, context, proposal, route, and file/audit tests, with responsive and accessibility flows verified in the demo runtime.
+
+**Alternatives considered**:
+
+- Add a new UI testing dependency immediately: rejected unless implementation reveals an unavoidable gap.
+- Manual-only validation: rejected because state transitions, cancellation, and proposal safety need repeatable tests.

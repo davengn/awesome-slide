@@ -48,9 +48,6 @@ Filter to one package: `pnpm core <script>` / `pnpm cli <script>`.
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read:
-- specs/001-rebrand-awesome-slide/plan.md
-- specs/002-reshape-landing-navigation/plan.md
-- specs/003-slide-management-ui/plan.md
-- specs/004-migrate-ui-inter/plan.md
+shell commands, and other important information, read the current plan:
+`specs/005-agent-chat-ui/plan.md`
 <!-- SPECKIT END -->
