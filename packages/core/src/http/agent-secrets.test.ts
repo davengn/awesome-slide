@@ -1,0 +1,78 @@
+import { describe, expect, it } from 'vitest';
+import {
+  createCredentialReference,
+  createMemoryCredentialStorageAdapter,
+  deleteCredentialReference,
+  redactDiagnostics,
+  resolveCredentialSecret,
+} from './agent-secrets.ts';
+
+describe('agent secrets', () => {
+  it('stores raw API keys only in an available credential adapter', async () => {
+    const adapter = createMemoryCredentialStorageAdapter();
+    const result = await createCredentialReference(
+      { provider: 'openai', apiKey: 'sk-super-secret-value' },
+      adapter,
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.credential.storage).toBe('os-credential-store');
+    expect(JSON.stringify(result.credential)).not.toContain('sk-super-secret-value');
+    expect(await resolveCredentialSecret(result.credential, adapter)).toBe('sk-super-secret-value');
+  });
+
+  it('supports environment variable references without storing raw values', async () => {
+    process.env.AWESOME_SLIDE_TEST_KEY = 'env-secret-value';
+    const result = await createCredentialReference({
+      provider: 'openai',
+      envVarName: 'AWESOME_SLIDE_TEST_KEY',
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.credential.ref).toBe('env:AWESOME_SLIDE_TEST_KEY');
+    expect(result.credential.displayHint).toBe('$AWESOME_SLIDE_TEST_KEY');
+    expect(JSON.stringify(result.credential)).not.toContain('env-secret-value');
+    expect(await resolveCredentialSecret(result.credential)).toBe('env-secret-value');
+    delete process.env.AWESOME_SLIDE_TEST_KEY;
+  });
+
+  it('reports secure-storage-unavailable when no safe storage path exists', async () => {
+    const adapter = createMemoryCredentialStorageAdapter({ available: false });
+    const result = await createCredentialReference(
+      { provider: 'openai', apiKey: 'sk-super-secret-value' },
+      adapter,
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.status.category).toBe('secure-storage-unavailable');
+  });
+
+  it('deletes credential references from available storage', async () => {
+    const adapter = createMemoryCredentialStorageAdapter();
+    const result = await createCredentialReference(
+      { provider: 'openai', apiKey: 'sk-super-secret-value' },
+      adapter,
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    await deleteCredentialReference(result.credential, adapter);
+    expect(await resolveCredentialSecret(result.credential, adapter)).toBeNull();
+  });
+
+  it('redacts diagnostics containing secrets and user paths', () => {
+    const redacted = redactDiagnostics(
+      'key=supersecret123 path=C:\\Users\\Admin\\project token:abcd123456789 OPENAI_API_KEY=abcdef123456',
+    );
+
+    expect(redacted).not.toContain('supersecret123');
+    expect(redacted).not.toContain('Admin');
+    expect(redacted).not.toContain('abcd123456789');
+    expect(redacted).not.toContain('abcdef123456');
+    expect(redacted).toContain('<redacted>');
+    expect(redacted).toContain('<user>');
+  });
+});

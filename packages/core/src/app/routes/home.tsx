@@ -1,7 +1,17 @@
 import { Bot, X } from 'lucide-react';
-import { type KeyboardEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AgentChatDrawer } from '../components/agent-chat/index.ts';
+import {
+  agentConnectionReducer,
+  createInitialAgentConnectionUiState,
+  dismissFirstRunConnectionSetup,
+  FirstRunAgentSetup,
+  type FirstRunAgentSetupAction,
+  getAgentConnectionBootstrap,
+  ProjectSettingsEntry,
+  SettingsModal,
+} from '../components/settings';
 import { CreateSlideDialog } from '../components/slide-management/CreateSlideDialog';
 import { DeleteConfirmDialog } from '../components/slide-management/DeleteConfirmDialog';
 import { DuplicateSlideDialog } from '../components/slide-management/DuplicateSlideDialog';
@@ -35,6 +45,13 @@ export function Home() {
   const [duplicateSlideId, setDuplicateSlideId] = useState<string | null>(null);
   const [deleteSlideId, setDeleteSlideId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [agentConnectionState, dispatchAgentConnection] = useReducer(
+    agentConnectionReducer,
+    undefined,
+    createInitialAgentConnectionUiState,
+  );
+  const [firstRunError, setFirstRunError] = useState<string | null>(null);
+  const [firstRunDismissPending, setFirstRunDismissPending] = useState(false);
   const [agentOpen, setAgentOpen] = useState(() => {
     return (
       typeof window !== 'undefined' && !!new URLSearchParams(window.location.search).get('prompt')
@@ -64,6 +81,22 @@ export function Home() {
       setSelectedSlideId(null);
     }
   }, [selectedSlideId, management.slides]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAgentConnectionBootstrap()
+      .then((bootstrap) => {
+        if (!cancelled && bootstrap.firstRunSetup.shouldShow) {
+          dispatchAgentConnection({ type: 'SHOW_FIRST_RUN_PROMPT' });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFirstRunError(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const selection = useMemo(
     () => selectionFromParams(searchParams, management.folders, management.decks),
@@ -106,6 +139,68 @@ export function Home() {
       setSidebarOpen(false);
     },
     [setSearchParams],
+  );
+
+  const openConnectionSettings = useCallback(
+    (
+      tab: 'local-cli' | 'byok',
+      triggerId: string,
+      initialFocus: 'section-nav' | 'auto-scan' | 'manual-path' | 'byok-provider',
+    ) => {
+      dispatchAgentConnection({
+        type: 'OPEN_SETTINGS_MODAL',
+        payload: {
+          section: 'execution-model',
+          tab,
+          triggerId,
+          initialFocus,
+        },
+      });
+    },
+    [],
+  );
+
+  const handleProjectSettingsOpen = useCallback(
+    (triggerId: string) => {
+      openConnectionSettings('local-cli', triggerId, 'section-nav');
+    },
+    [openConnectionSettings],
+  );
+
+  const handleFirstRunAction = useCallback(
+    (action: FirstRunAgentSetupAction, triggerId: string) => {
+      setFirstRunError(null);
+      if (action === 'do-later') {
+        setFirstRunDismissPending(true);
+        dismissFirstRunConnectionSetup('do-later')
+          .then(() => {
+            dispatchAgentConnection({
+              type: 'DISMISS_FIRST_RUN_PROMPT',
+              payload: 'do-later',
+            });
+          })
+          .catch((err) => {
+            setFirstRunError(err instanceof Error ? err.message : String(err));
+          })
+          .finally(() => setFirstRunDismissPending(false));
+        return;
+      }
+
+      dispatchAgentConnection({
+        type: 'DISMISS_FIRST_RUN_PROMPT',
+        payload: action,
+      });
+      if (action === 'byok') {
+        openConnectionSettings('byok', triggerId, 'byok-provider');
+        return;
+      }
+      openConnectionSettings(
+        'local-cli',
+        triggerId,
+        action === 'manual-path' ? 'manual-path' : 'auto-scan',
+      );
+    },
+    [openConnectionSettings],
   );
 
   const patchCollection = useCallback(
@@ -265,7 +360,8 @@ export function Home() {
                 {collectionSlides.length.toString().padStart(2, '0')} slides
               </p>
             </div>
-            <div className="shrink-0">
+            <div className="flex shrink-0 items-center gap-2">
+              <ProjectSettingsEntry onOpen={handleProjectSettingsOpen} />
               <Button
                 variant="ghost"
                 size="icon"
@@ -296,6 +392,13 @@ export function Home() {
           {management.mode === 'readonly' && <ReadOnlyBanner />}
           {management.mutation.error && (
             <ActionError message={management.mutation.error} mode={management.mode} />
+          )}
+          {agentConnectionState.firstRunPrompt.visible && (
+            <FirstRunAgentSetup
+              pending={firstRunDismissPending}
+              error={firstRunError}
+              onAction={handleFirstRunAction}
+            />
           )}
         </header>
 
@@ -434,6 +537,45 @@ export function Home() {
           } catch (err) {
             setActionError(err instanceof Error ? err.message : String(err));
           }
+        }}
+      />
+      <SettingsModal
+        open={agentConnectionState.settingsModal.open}
+        activeSection={agentConnectionState.settingsModal.activeSection}
+        executionTab={agentConnectionState.settingsModal.executionTab}
+        scanState={agentConnectionState.settingsModal.scanState}
+        validationErrors={agentConnectionState.settingsModal.validationErrors}
+        returnFocusTo={agentConnectionState.settingsModal.returnFocusTo}
+        onOpenChange={(open, reason) => {
+          dispatchAgentConnection(
+            open
+              ? {
+                  type: 'OPEN_SETTINGS_MODAL',
+                  payload: { section: 'execution-model' },
+                }
+              : {
+                  type: 'CLOSE_SETTINGS_MODAL',
+                  payload: { reason },
+                },
+          );
+        }}
+        onSectionChange={(section) => {
+          dispatchAgentConnection({ type: 'SET_SETTINGS_SECTION', payload: section });
+        }}
+        onExecutionTabChange={(tab) => {
+          dispatchAgentConnection({ type: 'SET_EXECUTION_TAB', payload: tab });
+        }}
+        onViewportWidthChange={(width) => {
+          dispatchAgentConnection({ type: 'SET_MODAL_VIEWPORT', payload: { width } });
+        }}
+        onRequestRescan={() => {
+          dispatchAgentConnection({
+            type: 'SET_VALIDATION_ERROR',
+            payload: {
+              field: 'scan',
+              message: 'Bounded local discovery is not started in this phase.',
+            },
+          });
         }}
       />
       <AgentChatDrawer

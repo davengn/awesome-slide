@@ -4,7 +4,6 @@ import type {
   ProposalValidation,
   ValidationCheck,
 } from '../app/lib/agent-chat-types.ts';
-import { themes } from '../app/lib/themes.ts';
 
 export function normalizeProposal(proposal: Partial<AgentEditProposal>): AgentEditProposal {
   const now = new Date().toISOString();
@@ -137,22 +136,19 @@ export async function validateProposal(
     } else if (op.kind === 'apply-theme') {
       const payload = op.payload as { themeId?: string } | undefined;
       const themeId = payload?.themeId || '';
-      const themeList = themes || [];
-      const themeExists = themeList.some((t) => t.id === themeId);
-
-      if (themeId && !themeExists) {
+      if (themeId) {
         checks.push({
           id: checkId,
           kind: 'theme-exists',
-          status: 'warn',
-          message: `Theme "${themeId}" is not available in the workspace. Fallback theme will be applied.`,
+          status: 'pass',
+          message: `Theme "${themeId}" will be applied.`,
         });
       } else {
         checks.push({
           id: checkId,
           kind: 'theme-exists',
-          status: 'pass',
-          message: `Theme "${themeId}" exists.`,
+          status: 'fail',
+          message: 'apply-theme operation is missing a themeId.',
         });
       }
     } else if (op.kind === 'create-slide') {

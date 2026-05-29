@@ -1,5 +1,6 @@
 import type { Plugin } from 'vite';
 import { registerAgentChatRoutes } from '../http/agent-chat-api.ts';
+import { registerAgentConnectionRoutes } from '../http/agent-connections-api.ts';
 import { registerManagementRoutes } from '../http/management-api.ts';
 import { registerAssetRoutes } from './routes/assets.ts';
 import { registerCommentRoutes } from './routes/comments.ts';
@@ -29,6 +30,7 @@ export function apiPlugin(opts: ApiPluginOptions): Plugin {
       registerSvglRoutes(server);
       registerFolderRoutes(server, ctx);
       registerManagementRoutes(server, ctx);
+      registerAgentConnectionRoutes(server, ctx);
       registerAgentChatRoutes(server, ctx);
     },
   };
