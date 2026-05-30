@@ -14,8 +14,16 @@ import {
   Pencil,
   Play,
 } from 'lucide-react';
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AssetView } from '@/components/asset-view';
 import { HistoryProvider } from '@/components/history-provider';
@@ -49,6 +57,19 @@ import { ClickNavZones } from '../components/click-nav-zones';
 import { NotesDrawer } from '../components/notes-drawer';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
+import type { ActiveConnectionSnapshot } from '../components/settings';
+import {
+  agentConnectionReducer,
+  cancelAgentConnectionScan,
+  createConnectionStatus,
+  createInitialAgentConnectionUiState,
+  getAgentConnectionBootstrap,
+  QuickConnectionSwitcher,
+  SettingsModal,
+  setActiveAgentConnection,
+  startAgentConnectionScan,
+  streamAgentConnectionScanEvents,
+} from '../components/settings';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
 import { type ThumbnailActions, ThumbnailRail } from '../components/thumbnail-rail';
@@ -68,15 +89,22 @@ export function Slide() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { slide, error } = useSlideModule(slideId);
   const [playMode, setPlayMode] = useState<'window' | 'fullscreen' | null>(null);
-
-  const seedPrompt =
-    typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('prompt') || undefined
-      : undefined;
+  const [seedPromptState, setSeedPromptState] = useState<{
+    slideId: string;
+    prompt: string;
+  } | null>(() => {
+    const prompt =
+      typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('prompt') || undefined
+        : undefined;
+    return prompt ? { slideId, prompt } : null;
+  });
+  const seedPrompt = seedPromptState?.slideId === slideId ? seedPromptState.prompt : undefined;
 
   useEffect(() => {
     const promptParam = searchParams.get('prompt');
     if (promptParam) {
+      setSeedPromptState({ slideId, prompt: promptParam });
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
@@ -86,7 +114,7 @@ export function Slide() {
         { replace: true },
       );
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, slideId]);
 
   const t = useLocale();
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -290,6 +318,117 @@ function SlideWorkspace({
   const linkCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [designOpen, setDesignOpen] = useState(false);
   const [agentChatOpen, setAgentChatOpen] = useState(true);
+
+  const navigate = useNavigate();
+  const [activeConnection, setActiveConnection] = useState<ActiveConnectionSnapshot | null>(null);
+  const [connections, setConnections] = useState<ActiveConnectionSnapshot[]>([]);
+  const [agentConnectionState, dispatchAgentConnection] = useReducer(
+    agentConnectionReducer,
+    undefined,
+    createInitialAgentConnectionUiState,
+  );
+  const [activeScanId, setActiveScanId] = useState<string | null>(null);
+  const scanStreamRef = useRef<{ abort: () => void } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAgentConnectionBootstrap()
+      .then((bootstrap) => {
+        if (!cancelled) {
+          setActiveConnection(bootstrap.activeConnection);
+          setConnections(bootstrap.connections);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load agent connection bootstrap', err);
+      });
+    return () => {
+      cancelled = true;
+      scanStreamRef.current?.abort();
+    };
+  }, []);
+
+  const handleSetActiveConnection = async (
+    id: string,
+    modelId?: string,
+    reasoningEffort?: string,
+  ) => {
+    try {
+      await setActiveAgentConnection({ connectionId: id, modelId, reasoningEffort });
+      const bootstrap = await getAgentConnectionBootstrap();
+      setActiveConnection(bootstrap.activeConnection);
+      setConnections(bootstrap.connections);
+      toast.success('Agent connection updated');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update agent connection');
+    }
+  };
+
+  const handleRescan = useCallback(async () => {
+    dispatchAgentConnection({ type: 'START_SCAN' });
+    try {
+      const res = await startAgentConnectionScan();
+      setActiveScanId(res.scanId);
+      scanStreamRef.current = streamAgentConnectionScanEvents(
+        res.scanId,
+        (event) => {
+          const data = JSON.parse(event.data);
+          if (data.type === 'completed') {
+            dispatchAgentConnection({ type: 'COMPLETE_SCAN' });
+            setActiveScanId(null);
+            getAgentConnectionBootstrap().then((bootstrap) => {
+              setActiveConnection(bootstrap.activeConnection);
+              setConnections(bootstrap.connections);
+            });
+          } else if (data.type === 'failed') {
+            dispatchAgentConnection({
+              type: 'FAIL_SCAN',
+              payload: createConnectionStatus('failed', { message: data.error }),
+            });
+            setActiveScanId(null);
+          }
+        },
+        (err) => {
+          dispatchAgentConnection({
+            type: 'FAIL_SCAN',
+            payload: createConnectionStatus('failed', { message: err.message }),
+          });
+          setActiveScanId(null);
+        },
+      );
+    } catch (err) {
+      dispatchAgentConnection({
+        type: 'SET_VALIDATION_ERROR',
+        payload: { field: 'scan', message: err instanceof Error ? err.message : String(err) },
+      });
+    }
+  }, []);
+
+  const handleCancelScan = useCallback(() => {
+    if (!activeScanId) return;
+    cancelAgentConnectionScan(activeScanId)
+      .then(() => {
+        dispatchAgentConnection({ type: 'CANCEL_SCAN' });
+        setActiveScanId(null);
+      })
+      .catch((err) => {
+        dispatchAgentConnection({
+          type: 'SET_VALIDATION_ERROR',
+          payload: { field: 'scan', message: err.message },
+        });
+      });
+  }, [activeScanId]);
+
+  const handleOpenFullSettings = useCallback(() => {
+    dispatchAgentConnection({
+      type: 'OPEN_SETTINGS_MODAL',
+      payload: { section: 'execution-model' },
+    });
+  }, []);
+
+  const handleBackToProjects = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
 
   useEffect(() => {
     return () => {
@@ -628,6 +767,16 @@ function SlideWorkspace({
               <DesignToggleButton active={designOpen} onToggle={() => setDesignOpen((v) => !v)} />
             )}
             {view === 'slides' && <InspectToggleButton />}
+            {import.meta.env.DEV && (
+              <QuickConnectionSwitcher
+                activeConnection={activeConnection}
+                connections={connections}
+                onSetActiveConnection={handleSetActiveConnection}
+                onRescan={handleRescan}
+                onOpenFullSettings={handleOpenFullSettings}
+                onBackToProjects={handleBackToProjects}
+              />
+            )}
 
             <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-hairline md:block" />
             {view === 'slides' && (
@@ -707,12 +856,14 @@ function SlideWorkspace({
                 {agentChatOpen && (
                   <div className="hidden md:block shrink-0 h-full">
                     <AgentChatPanel
+                      key={slideId}
                       onClose={() => setAgentChatOpen(false)}
                       slideId={slideId}
                       slideContext={currentSlideContext}
                       selectedElements={selectedElements}
                       notes={slide.notes?.[index]}
                       seedPrompt={seedPrompt ?? undefined}
+                      onOpenSettings={handleOpenFullSettings}
                     />
                   </div>
                 )}
@@ -783,6 +934,7 @@ function SlideWorkspace({
                     selectedElements={selectedElements}
                     notes={slide.notes?.[index]}
                     seedPrompt={seedPrompt ?? undefined}
+                    onOpenSettings={handleOpenFullSettings}
                   />
                 </div>
               </div>
@@ -796,6 +948,40 @@ function SlideWorkspace({
               )}
             </div>
           </DesignProvider>
+        )}
+        {import.meta.env.DEV && (
+          <SettingsModal
+            open={agentConnectionState.settingsModal.open}
+            activeSection={agentConnectionState.settingsModal.activeSection}
+            executionTab={agentConnectionState.settingsModal.executionTab}
+            scanState={agentConnectionState.settingsModal.scanState}
+            validationErrors={agentConnectionState.settingsModal.validationErrors}
+            returnFocusTo={agentConnectionState.settingsModal.returnFocusTo}
+            onOpenChange={(open, reason) => {
+              dispatchAgentConnection(
+                open
+                  ? {
+                      type: 'OPEN_SETTINGS_MODAL',
+                      payload: { section: 'execution-model' },
+                    }
+                  : {
+                      type: 'CLOSE_SETTINGS_MODAL',
+                      payload: { reason },
+                    },
+              );
+            }}
+            onSectionChange={(section) => {
+              dispatchAgentConnection({ type: 'SET_SETTINGS_SECTION', payload: section });
+            }}
+            onExecutionTabChange={(tab) => {
+              dispatchAgentConnection({ type: 'SET_EXECUTION_TAB', payload: tab });
+            }}
+            onViewportWidthChange={(width) => {
+              dispatchAgentConnection({ type: 'SET_MODAL_VIEWPORT', payload: { width } });
+            }}
+            onRequestRescan={handleRescan}
+            onRequestCancelScan={handleCancelScan}
+          />
         )}
       </div>
     </>

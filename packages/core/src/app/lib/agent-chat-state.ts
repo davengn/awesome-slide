@@ -89,11 +89,12 @@ export function agentChatReducer(
         case 'token':
           message.state = 'streaming';
           if (payload && typeof payload === 'string') {
-            const textPartIndex = message.content.findIndex((p) => p.type === 'text');
+            const filteredContent = message.content.filter((p) => p.type !== 'progress');
+            const textPartIndex = filteredContent.findIndex((p) => p.type === 'text');
             if (textPartIndex === -1) {
-              message.content = [...message.content, { type: 'text', text: payload }];
+              message.content = [...filteredContent, { type: 'text', text: payload }];
             } else {
-              const content = [...message.content];
+              const content = [...filteredContent];
               content[textPartIndex] = {
                 ...content[textPartIndex],
                 text: (content[textPartIndex].text || '') + payload,
@@ -119,15 +120,18 @@ export function agentChatReducer(
         case 'completed':
           message.state = 'completed';
           message.completedAt = now;
+          message.content = message.content.filter((p) => p.type !== 'progress');
           break;
         case 'cancelled':
           message.state = 'cancelled';
           message.completedAt = now;
+          message.content = message.content.filter((p) => p.type !== 'progress');
           break;
         case 'failed':
           message.state = 'failed';
           message.completedAt = now;
           message.error = payload as AgentChatError;
+          message.content = message.content.filter((p) => p.type !== 'progress');
           break;
       }
 

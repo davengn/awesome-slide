@@ -1,10 +1,14 @@
-import { createAgentChatError } from './agent-chat-errors.ts';
 import type { AgentChatMessage, AgentChatSession } from './agent-chat-types.ts';
 
 const ACTIVE_MESSAGE_STATES = new Set<AgentChatMessage['state']>([
   'queued',
   'loading',
   'streaming',
+]);
+
+const RECOVERED_RUN_ERROR_MESSAGES = new Set([
+  'The previous agent run was interrupted before it completed.',
+  'The agent response stream disconnected before it completed.',
 ]);
 
 export function capSession(session: AgentChatSession): AgentChatSession {
@@ -65,33 +69,59 @@ export function loadSession(
 }
 
 export function recoverInterruptedRun(session: AgentChatSession): AgentChatSession {
+  let recovered = false;
+  const messagesWithoutRecoveredErrors = session.messages.filter((message) => {
+    const isRecoveredError =
+      message.role === 'assistant' &&
+      message.state === 'failed' &&
+      message.error?.message &&
+      RECOVERED_RUN_ERROR_MESSAGES.has(message.error.message);
+
+    if (isRecoveredError) {
+      recovered = true;
+      return false;
+    }
+    return true;
+  });
+
   if (!session.currentRunId) {
-    return session;
+    return recovered
+      ? {
+          ...session,
+          messages: messagesWithoutRecoveredErrors,
+          updatedAt: new Date().toISOString(),
+        }
+      : session;
   }
 
-  let recovered = false;
-  const messages = session.messages.map((message) => {
+  const messages = messagesWithoutRecoveredErrors.flatMap((message) => {
     if (
       message.runId === session.currentRunId &&
       message.role === 'assistant' &&
       ACTIVE_MESSAGE_STATES.has(message.state)
     ) {
       recovered = true;
+      const content = message.content.filter((part) => part.type !== 'progress');
+      if (content.length === 0) {
+        return [];
+      }
       return {
         ...message,
-        state: 'failed' as const,
+        state: 'cancelled' as const,
+        content,
         completedAt: new Date().toISOString(),
-        error: createAgentChatError(
-          'timeout',
-          'The previous agent run was interrupted before it completed.',
-        ),
       };
     }
-    return message;
+    return [message];
   });
 
   if (!recovered) {
-    return session;
+    return {
+      ...session,
+      currentRunId: undefined,
+      messages,
+      updatedAt: new Date().toISOString(),
+    };
   }
 
   return {

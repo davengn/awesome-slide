@@ -1,3 +1,4 @@
+import type { ConnectionCapabilities } from './agent-connection-types.ts';
 import type { DeckId, FolderId, SlideId } from './sdk.ts';
 
 export type RuntimeMode = 'interactive' | 'read-only';
@@ -8,6 +9,7 @@ export interface AgentConnectionRef {
   type: 'local-agent' | 'manual-agent' | 'api-provider';
   modelOrAgent: string;
   status: 'ready' | 'needs-setup' | 'testing' | 'degraded' | 'failed' | 'offline';
+  capabilities?: ConnectionCapabilities;
 }
 
 export interface ContextPreference {

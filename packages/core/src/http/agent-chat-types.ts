@@ -1,5 +1,6 @@
 import type {
   AgentChatContext,
+  AgentChatSession,
   AgentConnectionRef,
   ContextPreference,
   RunState,
@@ -8,11 +9,7 @@ import type {
 } from '../app/lib/agent-chat-types.ts';
 
 export interface GetSessionResponse {
-  session: {
-    id: string;
-    origin: 'slide-workspace' | 'slide-management';
-    activeSlideId?: string;
-  };
+  session: AgentChatSession;
   activeConnection: AgentConnectionRef;
   runtime: {
     mode: RuntimeMode;

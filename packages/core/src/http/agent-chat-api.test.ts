@@ -23,13 +23,14 @@ import path from 'node:path';
 import type { ViteDevServer } from 'vite';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type {
+  AgentChatEvent,
   AgentChatRun,
   AgentConnectionRef,
   AgentEditProposal,
 } from '../app/lib/agent-chat-types.ts';
 import type { ApiContext } from '../vite/routes/context.ts';
 import { registerAgentChatRoutes } from './agent-chat-api.ts';
-import { addRunEvent, registerRun } from './agent-chat-runs.ts';
+import { addRunEvent, getRunEvents, registerRun } from './agent-chat-runs.ts';
 
 let tempDir: string;
 
@@ -42,10 +43,12 @@ type MountedHandler = (
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'awesome-slide-agent-api-'));
   await fs.mkdir(path.join(tempDir, 'slides'), { recursive: true });
+  process.env.AGENT_CONNECTION_STATUS = 'ready';
 });
 
 afterEach(async () => {
   await fs.rm(tempDir, { recursive: true, force: true });
+  delete process.env.AGENT_CONNECTION_STATUS;
 });
 
 describe('Agent Chat API Routes', () => {
@@ -173,6 +176,7 @@ describe('Agent Chat API Routes', () => {
       const body = await res.json();
       expect(body.session.origin).toBe('slide-workspace');
       expect(body.session.activeSlideId).toBe('intro');
+      expect(body.session.id).toBe('session_slide_intro');
     });
   });
 
@@ -182,6 +186,7 @@ describe('Agent Chat API Routes', () => {
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.session.origin).toBe('slide-management');
+      expect(body.session.id).toBe('session_management');
     });
   });
 
@@ -196,6 +201,256 @@ describe('Agent Chat API Routes', () => {
       const body = await res.json();
       expect(body.error).toBeDefined();
     });
+  });
+
+  it('runs Codex CLI connections through non-interactive exec mode', async () => {
+    const binPath = path.join(tempDir, 'fake-codex.mjs');
+    const argvPath = path.join(tempDir, 'codex-argv.json');
+    const stdinPath = path.join(tempDir, 'codex-stdin.txt');
+    await fs.writeFile(
+      binPath,
+      `#!/usr/bin/env node
+import fs from 'node:fs';
+
+let input = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => {
+  input += chunk;
+});
+process.stdin.on('end', () => {
+  fs.writeFileSync(process.env.AGENT_TEST_ARGV_PATH, JSON.stringify(process.argv.slice(2)));
+  fs.writeFileSync(process.env.AGENT_TEST_STDIN_PATH, input);
+  process.stdout.write('codex completed');
+});
+`,
+      'utf8',
+    );
+    await fs.chmod(binPath, 0o755);
+    await fs.mkdir(path.join(tempDir, '.awesome-slide', 'agent-connections'), {
+      recursive: true,
+    });
+    const now = new Date().toISOString();
+    await fs.writeFile(
+      path.join(tempDir, '.awesome-slide', 'agent-connections', 'settings.json'),
+      `${JSON.stringify(
+        {
+          projectId: 'test-project',
+          connections: [
+            {
+              id: 'conn_codex',
+              displayName: 'Codex CLI',
+              type: 'auto-scanned-local-agent',
+              provider: 'codex',
+              scope: 'project-default',
+              agentCommandAlias: binPath,
+              capabilities: { streaming: true, cancellation: true },
+              status: { state: 'ready', recoveryActions: [], checkedAt: now },
+              createdAt: now,
+              updatedAt: now,
+            },
+          ],
+          activeConnectionId: 'conn_codex',
+          projectDefaultConnectionId: 'conn_codex',
+          scanPreference: {
+            enabled: false,
+            approvedDirectories: [],
+            includePathCommands: true,
+            includeKnownInstallLocations: true,
+          },
+          firstRunSetup: { hasSeenPrompt: true },
+          updatedAt: now,
+        },
+        null,
+        2,
+      )}\n`,
+      'utf8',
+    );
+
+    const previousArgvPath = process.env.AGENT_TEST_ARGV_PATH;
+    const previousStdinPath = process.env.AGENT_TEST_STDIN_PATH;
+    process.env.AGENT_TEST_ARGV_PATH = argvPath;
+    process.env.AGENT_TEST_STDIN_PATH = stdinPath;
+
+    try {
+      await withAgentChatServer(async (baseUrl) => {
+        const runRes = await fetch(`${baseUrl}/__agent-chat/runs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: 'session_slide_intro',
+            prompt: 'Build the requested slide',
+            context: { project: { name: 'Demo' } },
+          }),
+        });
+        expect(runRes.status).toBe(200);
+        const { runId } = await runRes.json();
+
+        await waitForRunEvents(runId, (events) =>
+          events.some((event) => event.type === 'completed'),
+        );
+
+        const events = getRunEvents(runId);
+        expect(events.some((event) => event.type === 'token')).toBe(true);
+        expect(events.map((event) => event.type)).toContain('completed');
+
+        const argv = JSON.parse(await fs.readFile(argvPath, 'utf8')) as string[];
+        expect(argv).toEqual(
+          expect.arrayContaining([
+            'exec',
+            '--cd',
+            tempDir,
+            '--sandbox',
+            'workspace-write',
+            '--ask-for-approval',
+            'never',
+            '--color',
+            'never',
+            '-',
+          ]),
+        );
+        expect(argv[0]).toBe('exec');
+
+        const stdin = await fs.readFile(stdinPath, 'utf8');
+        expect(stdin).toContain('Build the requested slide');
+        expect(stdin).toContain('<awesome-slide-context>');
+      });
+    } finally {
+      if (previousArgvPath === undefined) {
+        delete process.env.AGENT_TEST_ARGV_PATH;
+      } else {
+        process.env.AGENT_TEST_ARGV_PATH = previousArgvPath;
+      }
+      if (previousStdinPath === undefined) {
+        delete process.env.AGENT_TEST_STDIN_PATH;
+      } else {
+        process.env.AGENT_TEST_STDIN_PATH = previousStdinPath;
+      }
+    }
+  });
+
+  it('runs Claude Code connections through non-interactive print mode', async () => {
+    const binPath = path.join(tempDir, 'fake-claude.mjs');
+    const argvPath = path.join(tempDir, 'claude-argv.json');
+    const stdinPath = path.join(tempDir, 'claude-stdin.txt');
+    await fs.writeFile(
+      binPath,
+      `#!/usr/bin/env node
+import fs from 'node:fs';
+
+let input = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => {
+  input += chunk;
+});
+process.stdin.on('end', () => {
+  fs.writeFileSync(process.env.AGENT_TEST_ARGV_PATH, JSON.stringify(process.argv.slice(2)));
+  fs.writeFileSync(process.env.AGENT_TEST_STDIN_PATH, input);
+  process.stdout.write('claude completed');
+});
+`,
+      'utf8',
+    );
+    await fs.chmod(binPath, 0o755);
+    await fs.mkdir(path.join(tempDir, '.awesome-slide', 'agent-connections'), {
+      recursive: true,
+    });
+    const now = new Date().toISOString();
+    await fs.writeFile(
+      path.join(tempDir, '.awesome-slide', 'agent-connections', 'settings.json'),
+      `${JSON.stringify(
+        {
+          projectId: 'test-project',
+          connections: [
+            {
+              id: 'conn_claude',
+              displayName: 'Claude Code',
+              type: 'auto-scanned-local-agent',
+              provider: 'claude-code',
+              scope: 'project-default',
+              agentCommandAlias: binPath,
+              modelId: 'sonnet',
+              capabilities: { streaming: true, cancellation: true },
+              status: { state: 'ready', recoveryActions: [], checkedAt: now },
+              createdAt: now,
+              updatedAt: now,
+            },
+          ],
+          activeConnectionId: 'conn_claude',
+          projectDefaultConnectionId: 'conn_claude',
+          scanPreference: {
+            enabled: false,
+            approvedDirectories: [],
+            includePathCommands: true,
+            includeKnownInstallLocations: true,
+          },
+          firstRunSetup: { hasSeenPrompt: true },
+          updatedAt: now,
+        },
+        null,
+        2,
+      )}\n`,
+      'utf8',
+    );
+
+    const previousArgvPath = process.env.AGENT_TEST_ARGV_PATH;
+    const previousStdinPath = process.env.AGENT_TEST_STDIN_PATH;
+    process.env.AGENT_TEST_ARGV_PATH = argvPath;
+    process.env.AGENT_TEST_STDIN_PATH = stdinPath;
+
+    try {
+      await withAgentChatServer(async (baseUrl) => {
+        const runRes = await fetch(`${baseUrl}/__agent-chat/runs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: 'session_slide_intro',
+            prompt: 'Build a full deck from this outline',
+            context: { project: { name: 'Demo' } },
+          }),
+        });
+        expect(runRes.status).toBe(200);
+        const { runId } = await runRes.json();
+
+        await waitForRunEvents(runId, (events) =>
+          events.some((event) => event.type === 'completed'),
+        );
+
+        const events = getRunEvents(runId);
+        expect(events.some((event) => event.type === 'token')).toBe(true);
+        expect(events.map((event) => event.type)).toContain('completed');
+
+        const argv = JSON.parse(await fs.readFile(argvPath, 'utf8')) as string[];
+        expect(argv).toEqual(
+          expect.arrayContaining([
+            '--print',
+            '--input-format',
+            'text',
+            '--output-format',
+            'text',
+            '--permission-mode',
+            'acceptEdits',
+            '--model',
+            'sonnet',
+          ]),
+        );
+        expect(argv).not.toEqual([]);
+
+        const stdin = await fs.readFile(stdinPath, 'utf8');
+        expect(stdin).toContain('Build a full deck from this outline');
+        expect(stdin).toContain('<awesome-slide-context>');
+      });
+    } finally {
+      if (previousArgvPath === undefined) {
+        delete process.env.AGENT_TEST_ARGV_PATH;
+      } else {
+        process.env.AGENT_TEST_ARGV_PATH = previousArgvPath;
+      }
+      if (previousStdinPath === undefined) {
+        delete process.env.AGENT_TEST_STDIN_PATH;
+      } else {
+        process.env.AGENT_TEST_STDIN_PATH = previousStdinPath;
+      }
+    }
   });
 
   it('POST /__agent-chat/runs/:runId/cancel returns 400 for already-completed runs', async () => {
@@ -882,6 +1137,52 @@ describe('Agent Chat API Routes', () => {
       expect(entry.proposalSummary).toContain('<redacted>');
     });
   });
+
+  it('T061: verifies session bootstrap connection status options and metadata parity', async () => {
+    await withAgentChatServer(async (baseUrl) => {
+      const statuses = ['ready', 'needs-setup', 'degraded', 'failed', 'offline'];
+      for (const status of statuses) {
+        const res = await fetch(`${baseUrl}/__agent-chat/session?connectionStatus=${status}`);
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expect(body.connectionStatus).toBe(status);
+        expect(body.runtime.settingsRoute).toBe('/settings/connections');
+        if (status !== 'ready') {
+          expect(body.recoveryRoute).toBe('/settings/connections');
+        }
+      }
+    });
+  });
+
+  it('T006_fallback: no connection fallback to needs-setup when settings are empty', async () => {
+    delete process.env.AGENT_CONNECTION_STATUS;
+    try {
+      await withAgentChatServer(async (baseUrl) => {
+        // 1. GET /session should return needs-setup
+        const sessionRes = await fetch(`${baseUrl}/__agent-chat/session`);
+        expect(sessionRes.status).toBe(200);
+        const sessionBody = await sessionRes.json();
+        expect(sessionBody.connectionStatus).toBe('needs-setup');
+        expect(sessionBody.recoveryRoute).toBe('/settings/connections');
+
+        // 2. POST /runs should fail with 503
+        const runRes = await fetch(`${baseUrl}/__agent-chat/runs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: 'session_1',
+            prompt: 'Make slide look better',
+            contextPreferences: [],
+          }),
+        });
+        expect(runRes.status).toBe(503);
+        const runBody = await runRes.json();
+        expect(runBody.category).toBe('connection-unavailable');
+      });
+    } finally {
+      process.env.AGENT_CONNECTION_STATUS = 'ready';
+    }
+  });
 });
 
 async function withAgentChatServer(run: (baseUrl: string) => Promise<void>): Promise<void> {
@@ -923,8 +1224,12 @@ async function withAgentChatServer(run: (baseUrl: string) => Promise<void>): Pro
     });
   });
 
-  await new Promise<void>((resolve) => {
-    server.listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      server.off('error', reject);
+      resolve();
+    });
   });
 
   try {
@@ -935,4 +1240,18 @@ async function withAgentChatServer(run: (baseUrl: string) => Promise<void>): Pro
       server.close((err) => (err ? reject(err) : resolve()));
     });
   }
+}
+
+async function waitForRunEvents(
+  runId: string,
+  predicate: (events: AgentChatEvent[]) => boolean,
+): Promise<void> {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const events = getRunEvents(runId);
+    if (predicate(events)) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error(`Timed out waiting for events on ${runId}`);
 }

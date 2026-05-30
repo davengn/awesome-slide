@@ -12,6 +12,7 @@ interface AgentChatDrawerProps {
   notes?: string;
   seedPrompt?: string;
   collection?: { folderId?: string; deckId?: string; slideIds?: string[] };
+  onOpenSettings?: () => void;
 }
 
 export const AgentChatDrawer: React.FC<AgentChatDrawerProps> = ({
@@ -23,8 +24,10 @@ export const AgentChatDrawer: React.FC<AgentChatDrawerProps> = ({
   notes,
   seedPrompt,
   collection,
+  onOpenSettings,
 }) => {
   if (!isOpen) return null;
+  const sessionKey = slideId ?? collection?.deckId ?? collection?.folderId ?? 'management';
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -33,6 +36,7 @@ export const AgentChatDrawer: React.FC<AgentChatDrawerProps> = ({
         className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm transition-opacity duration-300"
         onClick={onClose}
         aria-hidden="true"
+        role="presentation"
       />
 
       {/* Drawer content */}
@@ -42,6 +46,7 @@ export const AgentChatDrawer: React.FC<AgentChatDrawerProps> = ({
         )}
       >
         <AgentChatPanel
+          key={sessionKey}
           onClose={onClose}
           slideId={slideId}
           slideContext={slideContext}
@@ -49,6 +54,7 @@ export const AgentChatDrawer: React.FC<AgentChatDrawerProps> = ({
           notes={notes}
           seedPrompt={seedPrompt}
           collection={collection}
+          onOpenSettings={onOpenSettings}
         />
       </div>
     </div>

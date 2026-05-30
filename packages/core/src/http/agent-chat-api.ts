@@ -4,6 +4,7 @@ import { createAgentChatError, redactDiagnostics } from '../app/lib/agent-chat-e
 import type {
   AgentChatContext,
   AgentChatError,
+  AgentChatEvent,
   AgentChatRun,
   AgentChatSession,
   AgentConnectionRef,
@@ -11,6 +12,8 @@ import type {
   AgentOperation,
   RuntimeMode,
 } from '../app/lib/agent-chat-types.ts';
+import type { ApiProviderId } from '../app/lib/agent-connection-types.ts';
+import { normalizeCapabilities, resolveActiveConnection } from '../app/lib/agent-connections.ts';
 import {
   captureFingerprints,
   normalizeProposal,
@@ -25,9 +28,54 @@ import {
   addRunEvent,
   findProposal,
   getRun,
+  LOCAL_AGENT_RUN_WATCHDOG_TIMEOUT_MS,
   registerRun,
   subscribeRunEvents,
 } from './agent-chat-runs.ts';
+import type {
+  AgentConnectionRunner,
+  StartAgentConnectionRunRequest,
+} from './agent-connection-adapters.ts';
+import { runAgentConnectionAdapter } from './agent-connection-adapters.ts';
+import { readAgentConnectionSettingsForProject } from './agent-connections-api.ts';
+import {
+  createUserHomeCredentialStorageAdapter,
+  resolveCredentialSecret,
+} from './agent-secrets.ts';
+
+const SESSION_PROJECT_KEY = 'project_default';
+
+const AGENT_CHAT_EVENT_TYPES = new Set<AgentChatEvent['type']>([
+  'queued',
+  'token',
+  'progress',
+  'proposal',
+  'diagnostic',
+  'completed',
+  'cancelled',
+  'failed',
+]);
+
+const AGENT_CHAT_ERROR_CATEGORIES = new Set<AgentChatError['category']>([
+  'connection-unavailable',
+  'authentication-failed',
+  'model-failed',
+  'timeout',
+  'invalid-agent-output',
+  'patch-conflict',
+  'validation-failure',
+  'write-failure',
+  'cancelled',
+]);
+
+function toAgentChatErrorCategory(value: string): AgentChatError['category'] {
+  const category = value as AgentChatError['category'];
+  return AGENT_CHAT_ERROR_CATEGORIES.has(category) ? category : 'model-failed';
+}
+
+function isAgentChatEventType(value: string): value is AgentChatEvent['type'] {
+  return AGENT_CHAT_EVENT_TYPES.has(value as AgentChatEvent['type']);
+}
 
 async function getFileContentOrEmpty(filePath: string): Promise<string> {
   try {
@@ -54,14 +102,196 @@ async function collectCurrentContents(
 }
 
 const defaultConnection: AgentConnectionRef = {
-  connectionId: 'local-codex',
-  displayName: 'Codex',
+  connectionId: 'none',
+  displayName: 'No Connection',
   type: 'local-agent',
-  modelOrAgent: 'codex',
-  status: 'ready',
+  modelOrAgent: 'None',
+  status: 'needs-setup',
 };
 
-export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext): void {
+function sessionIdForSlide(activeSlideId?: string): string {
+  if (!activeSlideId) {
+    return 'session_management';
+  }
+  return `session_slide_${activeSlideId.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+}
+
+function createSession(activeSlideId?: string): AgentChatSession {
+  const now = new Date().toISOString();
+  const hasSlide = !!activeSlideId;
+  return {
+    id: sessionIdForSlide(activeSlideId),
+    projectKey: SESSION_PROJECT_KEY,
+    origin: hasSlide ? 'slide-workspace' : 'slide-management',
+    activeSlideId,
+    messages: [],
+    contextPreferences: [
+      {
+        id: 'ctx-slide',
+        kind: 'current-slide',
+        enabled: hasSlide,
+        required: hasSlide,
+        label: 'Current Slide',
+      },
+      {
+        id: 'ctx-elements',
+        kind: 'selected-elements',
+        enabled: hasSlide,
+        required: false,
+        label: 'Selected Elements',
+      },
+    ],
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export type LocalAgentConfig = {
+  provider?: string;
+  type?: string;
+  agentCommandAlias?: string;
+  manualPathRef?: string;
+};
+
+function commandBasename(commandOrPath: string): string | undefined {
+  return commandOrPath.toLowerCase().replace(/\\/g, '/').split('/').pop();
+}
+
+export function isCodexCli(commandOrPath: string, connectionConfig?: LocalAgentConfig): boolean {
+  if (connectionConfig?.provider === 'codex') {
+    return true;
+  }
+  const basename = commandBasename(commandOrPath);
+  return basename === 'codex' || basename === 'codex.cmd' || basename === 'codex.exe';
+}
+
+export function isClaudeCodeCli(
+  commandOrPath: string,
+  connectionConfig?: LocalAgentConfig,
+): boolean {
+  if (connectionConfig?.provider === 'claude-code') {
+    return true;
+  }
+  const basename = commandBasename(commandOrPath);
+  return basename === 'claude' || basename === 'claude.cmd' || basename === 'claude.exe';
+}
+
+function buildLocalAgentPrompt(req: StartAgentConnectionRunRequest): string {
+  return [
+    req.prompt,
+    '',
+    'You are running from Awesome Slide agent chat. Use this context when it is relevant.',
+    '<awesome-slide-context>',
+    JSON.stringify({ context: req.context, workflows: req.workflows }, null, 2),
+    '</awesome-slide-context>',
+  ].join('\n');
+}
+
+export function createLocalAgentInvocation(
+  commandOrPath: string,
+  connectionConfig: LocalAgentConfig | undefined,
+  req: StartAgentConnectionRunRequest,
+  cwd: string,
+): { args: string[]; input: string } {
+  const input = buildLocalAgentPrompt(req);
+  if (isCodexCli(commandOrPath, connectionConfig)) {
+    const args = [
+      'exec',
+      '--cd',
+      cwd,
+      '--sandbox',
+      'workspace-write',
+      '--ask-for-approval',
+      'never',
+      '--color',
+      'never',
+    ];
+    if (req.modelId) {
+      args.push('--model', req.modelId);
+    }
+    args.push('-');
+    return { args, input };
+  }
+
+  if (isClaudeCodeCli(commandOrPath, connectionConfig)) {
+    const args = [
+      '--print',
+      '--input-format',
+      'text',
+      '--output-format',
+      'text',
+      '--permission-mode',
+      'acceptEdits',
+    ];
+    if (req.modelId) {
+      args.push('--model', req.modelId);
+    }
+    return { args, input };
+  }
+
+  return {
+    args: [],
+    input: JSON.stringify({
+      prompt: req.prompt,
+      context: req.context,
+      workflows: req.workflows,
+    }),
+  };
+}
+
+async function* runLocalAgentCli(
+  commandOrPath: string,
+  connectionConfig: LocalAgentConfig | undefined,
+  req: StartAgentConnectionRunRequest,
+  cwd: string,
+): AsyncIterable<{ type: 'token' | 'diagnostic'; payload: string }> {
+  const { spawn } = await import('node:child_process');
+  const invocation = createLocalAgentInvocation(commandOrPath, connectionConfig, req, cwd);
+  const child = spawn(commandOrPath, invocation.args, {
+    cwd,
+    shell: false,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  let output = '';
+  let stderr = '';
+  const closePromise = new Promise<number | null>((resolve, reject) => {
+    child.once('error', reject);
+    child.once('close', resolve);
+  });
+  const killChild = () => {
+    child.kill();
+  };
+
+  req.signal.addEventListener('abort', killChild, { once: true });
+  child.stderr.on('data', (chunk: Buffer) => {
+    stderr += chunk.toString();
+  });
+
+  try {
+    child.stdin.end(invocation.input);
+    for await (const chunk of child.stdout) {
+      if (req.signal.aborted) {
+        child.kill();
+        break;
+      }
+      const str = chunk.toString();
+      output += str;
+      yield { type: 'token', payload: str };
+    }
+
+    const exitCode = await closePromise;
+    if (stderr.trim()) {
+      yield { type: 'diagnostic', payload: stderr };
+    }
+    if (exitCode !== 0 && !req.signal.aborted) {
+      throw new Error(`Local agent CLI exited with code ${exitCode}. Output: ${output || stderr}`);
+    }
+  } finally {
+    req.signal.removeEventListener('abort', killChild);
+  }
+}
+
+export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext): void {
   server.middlewares.use('/__agent-chat', async (req, res, next) => {
     const urlObj = new URL(req.url || '', `http://${req.headers.host || 'localhost'}`);
     const pathname = urlObj.pathname;
@@ -71,18 +301,47 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
       if (req.method === 'GET' && pathname === '/session') {
         const activeSlideId = urlObj.searchParams.get('slideId') || undefined;
 
+        const settings = await readAgentConnectionSettingsForProject(ctx).catch(() => null);
+        let connection: AgentConnectionRef = { ...defaultConnection };
+
+        if (settings) {
+          const active = resolveActiveConnection(settings);
+          if (active) {
+            connection = {
+              connectionId: active.id,
+              displayName: active.displayName,
+              type:
+                active.type === 'api-key-provider'
+                  ? 'api-provider'
+                  : active.type === 'manual-agent-path'
+                    ? 'manual-agent'
+                    : 'local-agent',
+              modelOrAgent: active.modelId || active.agentCommandAlias || active.displayName,
+              status: active.status.state as AgentConnectionRef['status'],
+              capabilities: active.capabilities,
+            };
+          } else if (settings.connections.length > 0) {
+            connection = {
+              connectionId: 'none',
+              displayName: 'No Connection',
+              type: 'local-agent',
+              modelOrAgent: 'None',
+              status: 'needs-setup',
+            };
+          } else {
+            connection = { ...defaultConnection };
+          }
+        }
+
         const headerStatus = req.headers['x-connection-status'] as string | undefined;
         const queryStatus = urlObj.searchParams.get('connectionStatus') || undefined;
         const envStatus = process.env.AGENT_CONNECTION_STATUS || undefined;
         const resolvedStatus = (headerStatus ||
           queryStatus ||
           envStatus ||
-          defaultConnection.status) as AgentConnectionRef['status'];
+          connection.status) as AgentConnectionRef['status'];
 
-        const connection: AgentConnectionRef = {
-          ...defaultConnection,
-          status: resolvedStatus,
-        };
+        connection.status = resolvedStatus;
 
         const headerMode = req.headers['x-runtime-mode'] as string | undefined;
         const queryMode = urlObj.searchParams.get('runtimeMode') || undefined;
@@ -94,31 +353,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
             ? 'interactive'
             : 'interactive')) as RuntimeMode;
 
-        const session: AgentChatSession = {
-          id: 'session_default',
-          projectKey: 'project_default',
-          origin: activeSlideId ? 'slide-workspace' : 'slide-management',
-          activeSlideId,
-          messages: [],
-          contextPreferences: [
-            {
-              id: 'ctx-slide',
-              kind: 'current-slide',
-              enabled: true,
-              required: true,
-              label: 'Current Slide',
-            },
-            {
-              id: 'ctx-elements',
-              kind: 'selected-elements',
-              enabled: true,
-              required: false,
-              label: 'Selected Elements',
-            },
-          ],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
+        const session = createSession(activeSlideId);
 
         return json(res, 200, {
           session,
@@ -143,17 +378,46 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
           return json(res, 403, { error: 'Runs are not allowed in read-only mode.' });
         }
 
+        const settings = await readAgentConnectionSettingsForProject(ctx).catch(() => null);
+        let activeConnection: AgentConnectionRef = { ...defaultConnection };
+
+        if (settings) {
+          const active = resolveActiveConnection(settings);
+          if (active) {
+            activeConnection = {
+              connectionId: active.id,
+              displayName: active.displayName,
+              type:
+                active.type === 'api-key-provider'
+                  ? 'api-provider'
+                  : active.type === 'manual-agent-path'
+                    ? 'manual-agent'
+                    : 'local-agent',
+              modelOrAgent: active.modelId || active.agentCommandAlias || active.displayName,
+              status: active.status.state as AgentConnectionRef['status'],
+            };
+          } else if (settings.connections.length > 0) {
+            activeConnection = {
+              connectionId: 'none',
+              displayName: 'No Connection',
+              type: 'local-agent',
+              modelOrAgent: 'None',
+              status: 'needs-setup',
+            };
+          } else {
+            activeConnection = { ...defaultConnection };
+          }
+        }
+
         const headerStatus = req.headers['x-connection-status'] as string | undefined;
         const envStatus = process.env.AGENT_CONNECTION_STATUS || undefined;
         const resolvedStatus = (headerStatus ||
           envStatus ||
-          defaultConnection.status) as AgentConnectionRef['status'];
+          activeConnection.status) as AgentConnectionRef['status'];
 
-        if (
-          resolvedStatus === 'failed' ||
-          resolvedStatus === 'offline' ||
-          resolvedStatus === 'needs-setup'
-        ) {
+        activeConnection.status = resolvedStatus;
+
+        if (resolvedStatus !== 'ready' && resolvedStatus !== 'degraded') {
           const mappedError = createAgentChatError('connection-unavailable');
           return json(res, 503, {
             error: mappedError.message,
@@ -170,6 +434,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
           actionId,
           contextPreferences: _contextPreferences,
           context,
+          workflows = [],
         } = body;
 
         if (!prompt?.trim()) {
@@ -186,17 +451,19 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
             project: { name: 'Awesome Slide Project' },
             limits: { maxBytes: 128 * 1024, generatedAt: new Date().toISOString() },
           },
-          connection: {
-            ...defaultConnection,
-            status: resolvedStatus,
-          },
+          connection: activeConnection,
           state: 'queued',
           events: [],
           startedAt: new Date().toISOString(),
         };
 
         const abortController = new AbortController();
-        registerRun(run, abortController);
+        registerRun(run, abortController, {
+          watchdogTimeoutMs:
+            activeConnection.type === 'api-provider'
+              ? undefined
+              : LOCAL_AGENT_RUN_WATCHDOG_TIMEOUT_MS,
+        });
 
         // Respond immediately with the run status
         json(res, 200, {
@@ -205,108 +472,333 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
           eventUrl: `/__agent-chat/runs/${runId}/events`,
         });
 
-        // Simulate the run lifecycle in the background
-        setTimeout(() => {
-          if (abortController.signal.aborted) return;
-          addRunEvent(runId, 'queued', null);
+        // Run prompt session run through the adapter in the background
+        (async () => {
+          try {
+            // First emit queued
+            addRunEvent(runId, 'queued', null);
 
-          setTimeout(() => {
-            if (abortController.signal.aborted) return;
+            const connectionConfig = settings?.connections.find(
+              (c) => c.id === activeConnection.connectionId,
+            );
+            const runRequest: StartAgentConnectionRunRequest = {
+              runId,
+              prompt,
+              context: run.context,
+              workflows,
+              connectionId: activeConnection.connectionId,
+              modelId: connectionConfig?.modelId,
+              reasoningEffort: connectionConfig?.reasoningEffort,
+              capabilities: connectionConfig?.capabilities ?? normalizeCapabilities(),
+              signal: abortController.signal,
+            };
 
-            if (prompt.startsWith('simulate-error:')) {
-              const category = prompt
-                .replace('simulate-error:', '')
-                .trim() as AgentChatError['category'];
-              if (category === 'cancelled') {
-                addRunEvent(runId, 'cancelled', null);
-              } else {
-                const errorPayload = createAgentChatError(
-                  category,
-                  undefined,
-                  `Mock error diagnostics: key=supersecret123 path=C:\\Users\\bobsmith\\Desktop\\project`,
+            const runner: AgentConnectionRunner = async function* (req) {
+              if (prompt.startsWith('simulate-error:')) {
+                const category = toAgentChatErrorCategory(
+                  prompt.replace('simulate-error:', '').trim(),
                 );
-                addRunEvent(runId, 'failed', errorPayload);
-              }
-              return;
-            }
-
-            if (prompt.startsWith('simulate-proposal:')) {
-              const type = prompt.replace('simulate-proposal:', '').trim();
-
-              if (type === 'timeout') {
+                if (category === 'cancelled') {
+                  yield { type: 'cancelled', payload: null };
+                } else {
+                  const errorPayload = createAgentChatError(
+                    category,
+                    undefined,
+                    `Mock error diagnostics: key=supersecret123 path=C:\\Users\\bobsmith\\Desktop\\project`,
+                  );
+                  yield { type: 'failed', payload: errorPayload };
+                }
                 return;
               }
 
-              const operations: AgentOperation[] = [];
+              if (prompt.startsWith('simulate-proposal:')) {
+                const type = prompt.replace('simulate-proposal:', '').trim();
+                if (type === 'timeout') {
+                  // Wait to trigger watchdog
+                  await new Promise((_, reject) => {
+                    req.signal.addEventListener('abort', () => reject(new Error('aborted')));
+                  });
+                  return;
+                }
 
-              if (type === 'invalid') {
-                operations.push({
-                  id: 'op_invalid',
-                  kind: 'patch-slide-source',
-                  target: 'intro',
-                  description: 'Invalid TSX code',
-                  payload: { code: 'function Slide() { return <div;\n}' },
-                  requiresConfirmation: false,
-                  validationState: 'pending',
-                  reversible: true,
-                });
-              } else if (type === 'conflict') {
-                operations.push({
-                  id: 'op_conflict',
-                  kind: 'patch-slide-source',
-                  target: 'intro',
-                  description: 'Conflicting edit',
-                  payload: {
-                    code: 'function Slide() { return <div>Hello</div>; }',
-                    originalCode: 'CONFLICT',
-                  },
-                  requiresConfirmation: false,
-                  validationState: 'pending',
-                  reversible: true,
-                });
-              } else if (type === 'medium') {
-                operations.push({
-                  id: 'op_medium',
-                  kind: 'create-slide',
-                  target: 'deck_1',
-                  description: 'Create a new slide',
-                  payload: { title: 'New Slide' },
-                  requiresConfirmation: false,
-                  validationState: 'pending',
-                  reversible: true,
-                });
-              } else if (type === 'high') {
-                operations.push({
-                  id: 'op_high',
-                  kind: 'apply-theme',
-                  target: 'intro',
-                  description: 'Apply high risk theme',
-                  payload: { themeId: 'unsupported-theme', scope: 'deck' },
-                  requiresConfirmation: true,
-                  validationState: 'pending',
-                  reversible: true,
-                });
-              } else {
-                operations.push({
-                  id: 'op_low',
-                  kind: 'patch-slide-source',
-                  target: 'intro',
-                  description: 'Update slide title',
-                  payload: {
-                    code: 'function Slide() {\n  return <div>Welcome to Awesome Slide!</div>;\n}',
-                  },
-                  requiresConfirmation: false,
-                  validationState: 'pending',
-                  reversible: true,
-                });
+                yield { type: 'progress', payload: 'Generating slide modifications...' };
+                await new Promise((r) => setTimeout(r, 50));
+                yield { type: 'structured-output', payload: { type } };
+                return;
               }
 
-              addRunEvent(runId, 'progress', 'Generating slide modifications...');
+              // If there is no real config or we are simulating, run simulation
+              if (!connectionConfig) {
+                if (req.prompt === 'slow prompt' || req.prompt.startsWith('slow-')) {
+                  yield { type: 'progress', payload: 'Slow operation started...' };
+                  await new Promise((resolve, reject) => {
+                    const timer = setTimeout(resolve, 5000);
+                    req.signal.addEventListener('abort', () => {
+                      clearTimeout(timer);
+                      reject(new Error('aborted'));
+                    });
+                  });
+                  return;
+                }
+                yield { type: 'progress', payload: 'Analyzing slide layout...' };
+                await new Promise((r) => setTimeout(r, 50));
+                yield { type: 'token', payload: 'Here are the suggested edits for your slide:' };
+                await new Promise((r) => setTimeout(r, 50));
+                yield { type: 'completed', payload: null };
+                return;
+              }
 
-              setTimeout(async () => {
-                if (abortController.signal.aborted) return;
+              // Real Connection Execution
 
-                const slidePath = resolveSlideEntryPath(_ctx, 'intro');
+              if (activeConnection.type === 'api-provider') {
+                const adapter = createUserHomeCredentialStorageAdapter();
+                let apiKey: string | null = null;
+                if (connectionConfig?.credentialRef) {
+                  const storage =
+                    connectionConfig.credentialStorage ??
+                    (connectionConfig.credentialRef.startsWith('env:')
+                      ? 'environment-variable'
+                      : 'os-credential-store');
+                  apiKey = await resolveCredentialSecret(
+                    {
+                      ref: connectionConfig.credentialRef,
+                      provider: connectionConfig.provider as ApiProviderId,
+                      storage,
+                      displayHint: '',
+                      createdAt: '',
+                    },
+                    adapter,
+                  );
+                }
+
+                if (!apiKey) {
+                  throw new Error('API key is missing or secure storage is unavailable.');
+                }
+
+                const provider = connectionConfig?.provider;
+                const modelId =
+                  connectionConfig?.modelId ||
+                  (provider === 'openai'
+                    ? 'gpt-4o'
+                    : provider === 'anthropic'
+                      ? 'claude-3-5-sonnet-latest'
+                      : provider === 'deepseek'
+                        ? 'deepseek-chat'
+                        : provider === 'openrouter'
+                          ? 'openai/gpt-4o'
+                          : 'gemini-2.0-flash');
+
+                const fetchSignal = AbortSignal.any([req.signal, AbortSignal.timeout(120_000)]);
+
+                if (provider === 'openai') {
+                  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${apiKey}`,
+                    },
+                    body: JSON.stringify({
+                      model: modelId,
+                      messages: [{ role: 'user', content: req.prompt }],
+                      stream: false,
+                    }),
+                    signal: fetchSignal,
+                  });
+                  if (!response.ok) {
+                    throw new Error(
+                      `OpenAI API returned status ${response.status}: ${await response.text()}`,
+                    );
+                  }
+                  const data = (await response.json()) as any;
+                  const text = data.choices?.[0]?.message?.content || '';
+                  yield { type: 'token', payload: text };
+                } else if (provider === 'anthropic') {
+                  const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'x-api-key': apiKey,
+                      'anthropic-version': '2023-06-01',
+                    },
+                    body: JSON.stringify({
+                      model: modelId,
+                      messages: [{ role: 'user', content: req.prompt }],
+                      max_tokens: 4096,
+                      stream: false,
+                    }),
+                    signal: fetchSignal,
+                  });
+                  if (!response.ok) {
+                    throw new Error(
+                      `Anthropic API returned status ${response.status}: ${await response.text()}`,
+                    );
+                  }
+                  const data = (await response.json()) as any;
+                  const text = data.content?.[0]?.text || '';
+                  yield { type: 'token', payload: text };
+                } else if (provider === 'google') {
+                  const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
+                    {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        contents: [{ parts: [{ text: req.prompt }] }],
+                      }),
+                      signal: fetchSignal,
+                    },
+                  );
+                  if (!response.ok) {
+                    throw new Error(
+                      `Google API returned status ${response.status}: ${await response.text()}`,
+                    );
+                  }
+                  const data = (await response.json()) as any;
+                  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                  yield { type: 'token', payload: text };
+                } else if (provider === 'openrouter') {
+                  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${apiKey}`,
+                    },
+                    body: JSON.stringify({
+                      model: modelId,
+                      messages: [{ role: 'user', content: req.prompt }],
+                    }),
+                    signal: fetchSignal,
+                  });
+                  if (!response.ok) {
+                    throw new Error(
+                      `OpenRouter API returned status ${response.status}: ${await response.text()}`,
+                    );
+                  }
+                  const data = (await response.json()) as any;
+                  const text = data.choices?.[0]?.message?.content || '';
+                  yield { type: 'token', payload: text };
+                } else if (provider === 'deepseek') {
+                  const response = await fetch('https://api.deepseek.com/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${apiKey}`,
+                    },
+                    body: JSON.stringify({
+                      model: modelId,
+                      messages: [{ role: 'user', content: req.prompt }],
+                    }),
+                    signal: fetchSignal,
+                  });
+                  if (!response.ok) {
+                    throw new Error(
+                      `DeepSeek API returned status ${response.status}: ${await response.text()}`,
+                    );
+                  }
+                  const data = (await response.json()) as any;
+                  const text = data.choices?.[0]?.message?.content || '';
+                  yield { type: 'token', payload: text };
+                } else {
+                  throw new Error(`Unsupported API provider: ${provider}`);
+                }
+              } else {
+                const commandOrPath =
+                  connectionConfig?.type === 'manual-agent-path'
+                    ? connectionConfig.manualPathRef
+                    : connectionConfig?.agentCommandAlias;
+
+                if (!commandOrPath) {
+                  throw new Error('Local CLI command or path is not configured.');
+                }
+
+                for await (const event of runLocalAgentCli(
+                  commandOrPath,
+                  connectionConfig,
+                  req,
+                  ctx.userCwd,
+                )) {
+                  yield event;
+                }
+              }
+
+              yield { type: 'completed', payload: null };
+            };
+
+            const adapterEvents = runAgentConnectionAdapter(runner, runRequest);
+
+            for await (const event of adapterEvents) {
+              if (abortController.signal.aborted) break;
+
+              if (event.type === 'structured-output') {
+                const payload = event.payload as { type: string };
+                const type = payload.type;
+                const operations: AgentOperation[] = [];
+
+                if (type === 'invalid') {
+                  operations.push({
+                    id: 'op_invalid',
+                    kind: 'patch-slide-source',
+                    target: 'intro',
+                    description: 'Invalid TSX code',
+                    payload: { code: 'function Slide() { return <div;\n}' },
+                    requiresConfirmation: false,
+                    validationState: 'pending',
+                    reversible: true,
+                  });
+                } else if (type === 'conflict') {
+                  operations.push({
+                    id: 'op_conflict',
+                    kind: 'patch-slide-source',
+                    target: 'intro',
+                    description: 'Conflicting edit',
+                    payload: {
+                      code: 'function Slide() { return <div>Hello</div>; }',
+                      originalCode: 'CONFLICT',
+                    },
+                    requiresConfirmation: false,
+                    validationState: 'pending',
+                    reversible: true,
+                  });
+                } else if (type === 'medium') {
+                  operations.push({
+                    id: 'op_medium',
+                    kind: 'create-slide',
+                    target: 'deck_1',
+                    description: 'Create a new slide',
+                    payload: { title: 'New Slide' },
+                    requiresConfirmation: false,
+                    validationState: 'pending',
+                    reversible: true,
+                  });
+                } else if (type === 'high') {
+                  operations.push({
+                    id: 'op_high',
+                    kind: 'apply-theme',
+                    target: 'intro',
+                    description: 'Apply high risk theme',
+                    payload: { themeId: 'unsupported-theme', scope: 'deck' },
+                    requiresConfirmation: true,
+                    validationState: 'pending',
+                    reversible: true,
+                  });
+                } else {
+                  operations.push({
+                    id: 'op_low',
+                    kind: 'patch-slide-source',
+                    target: 'intro',
+                    description: 'Update slide title',
+                    payload: {
+                      code: 'function Slide() {\n  return <div>Welcome to Awesome Slide!</div>;\n}',
+                    },
+                    requiresConfirmation: false,
+                    validationState: 'pending',
+                    reversible: true,
+                  });
+                }
+
+                const slidePath = resolveSlideEntryPath(ctx, 'intro');
                 const introContent = slidePath
                   ? await getFileContentOrEmpty(slidePath)
                   : 'original content';
@@ -343,23 +835,23 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
                 }
 
                 addRunEvent(runId, 'proposal', normalized);
-              }, 50);
-              return;
-            }
-
-            addRunEvent(runId, 'progress', 'Analyzing slide layout...');
-
-            setTimeout(() => {
-              if (abortController.signal.aborted) return;
-              addRunEvent(runId, 'token', 'Here are the suggested edits for your slide:');
-
-              setTimeout(() => {
-                if (abortController.signal.aborted) return;
+                // After proposal, complete the run
                 addRunEvent(runId, 'completed', null);
-              }, 50);
-            }, 50);
-          }, 50);
-        }, 10);
+              } else if (isAgentChatEventType(event.type)) {
+                addRunEvent(runId, event.type, event.payload);
+              } else {
+                addRunEvent(runId, 'diagnostic', event.payload);
+              }
+            }
+          } catch (err) {
+            if (!abortController.signal.aborted) {
+              const raw = err instanceof Error ? err.message : String(err);
+              const isTimeout = err instanceof Error && err.name === 'TimeoutError';
+              const category = isTimeout ? 'timeout' : 'model-failed';
+              addRunEvent(runId, 'failed', createAgentChatError(category, undefined, raw));
+            }
+          }
+        })();
 
         return;
       }
@@ -436,8 +928,58 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
 
         const body = (await readBody(req).catch(() => null)) as {
           context?: AgentChatContext;
+          workflows?: Array<{ id: string; contentHash: string; instructions: string }>;
         } | null;
         const freshContext = body?.context || oldRun.context;
+        const freshWorkflows = body?.workflows || [];
+
+        const settings = await readAgentConnectionSettingsForProject(ctx).catch(() => null);
+        let activeConnection: AgentConnectionRef = { ...defaultConnection };
+
+        if (settings) {
+          const active = resolveActiveConnection(settings);
+          if (active) {
+            activeConnection = {
+              connectionId: active.id,
+              displayName: active.displayName,
+              type:
+                active.type === 'api-key-provider'
+                  ? 'api-provider'
+                  : active.type === 'manual-agent-path'
+                    ? 'manual-agent'
+                    : 'local-agent',
+              modelOrAgent: active.modelId || active.agentCommandAlias || active.displayName,
+              status: active.status.state as AgentConnectionRef['status'],
+            };
+          } else if (settings.connections.length > 0) {
+            activeConnection = {
+              connectionId: 'none',
+              displayName: 'No Connection',
+              type: 'local-agent',
+              modelOrAgent: 'None',
+              status: 'needs-setup',
+            };
+          } else {
+            activeConnection = { ...defaultConnection };
+          }
+        }
+
+        const headerStatus = req.headers['x-connection-status'] as string | undefined;
+        const envStatus = process.env.AGENT_CONNECTION_STATUS || undefined;
+        const resolvedStatus = (headerStatus ||
+          envStatus ||
+          activeConnection.status) as AgentConnectionRef['status'];
+
+        activeConnection.status = resolvedStatus;
+
+        if (resolvedStatus !== 'ready' && resolvedStatus !== 'degraded') {
+          const mappedError = createAgentChatError('connection-unavailable');
+          return json(res, 503, {
+            error: mappedError.message,
+            category: mappedError.category,
+            recoveryActions: mappedError.recoveryActions,
+          });
+        }
 
         const nextRunId = `run_${Date.now()}`;
         const run: AgentChatRun = {
@@ -446,14 +988,19 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
           prompt: oldRun.prompt,
           actionId: oldRun.actionId,
           context: freshContext,
-          connection: defaultConnection,
+          connection: activeConnection,
           state: 'queued',
           events: [],
           startedAt: new Date().toISOString(),
         };
 
         const abortController = new AbortController();
-        registerRun(run, abortController);
+        registerRun(run, abortController, {
+          watchdogTimeoutMs:
+            activeConnection.type === 'api-provider'
+              ? undefined
+              : LOCAL_AGENT_RUN_WATCHDOG_TIMEOUT_MS,
+        });
 
         json(res, 200, {
           runId: nextRunId,
@@ -461,32 +1008,263 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
           eventUrl: `/__agent-chat/runs/${nextRunId}/events`,
         });
 
-        setTimeout(() => {
-          if (abortController.signal.aborted) return;
-          addRunEvent(nextRunId, 'queued', null);
-          setTimeout(() => {
-            if (abortController.signal.aborted) return;
+        // Run prompt session run through the adapter in the background
+        (async () => {
+          try {
+            // First emit queued
+            addRunEvent(nextRunId, 'queued', null);
 
-            if (oldRun.prompt.startsWith('simulate-error:')) {
-              const category = oldRun.prompt
-                .replace('simulate-error:', '')
-                .trim() as AgentChatError['category'];
-              if (category === 'cancelled') {
-                addRunEvent(nextRunId, 'cancelled', null);
-              } else {
-                const errorPayload = createAgentChatError(
-                  category,
-                  undefined,
-                  `Mock error diagnostics: key=supersecret123 path=C:\\Users\\bobsmith\\Desktop\\project`,
+            const connectionConfig = settings?.connections.find(
+              (c) => c.id === activeConnection.connectionId,
+            );
+            const runRequest: StartAgentConnectionRunRequest = {
+              runId: nextRunId,
+              prompt: oldRun.prompt,
+              context: freshContext,
+              workflows: freshWorkflows,
+              connectionId: activeConnection.connectionId,
+              modelId: connectionConfig?.modelId,
+              reasoningEffort: connectionConfig?.reasoningEffort,
+              capabilities: connectionConfig?.capabilities ?? normalizeCapabilities(),
+              signal: abortController.signal,
+            };
+
+            const runner: AgentConnectionRunner = async function* (req) {
+              if (oldRun.prompt.startsWith('simulate-error:')) {
+                const category = toAgentChatErrorCategory(
+                  oldRun.prompt.replace('simulate-error:', '').trim(),
                 );
-                addRunEvent(nextRunId, 'failed', errorPayload);
+                if (category === 'cancelled') {
+                  yield { type: 'cancelled', payload: null };
+                } else {
+                  const errorPayload = createAgentChatError(
+                    category,
+                    undefined,
+                    `Mock error diagnostics: key=supersecret123 path=C:\\Users\\bobsmith\\Desktop\\project`,
+                  );
+                  yield { type: 'failed', payload: errorPayload };
+                }
+                return;
               }
-              return;
-            }
 
-            addRunEvent(nextRunId, 'completed', null);
-          }, 20);
-        }, 10);
+              // If there is no real config or we are simulating, run simulation
+              if (!connectionConfig) {
+                if (req.prompt === 'slow prompt' || req.prompt.startsWith('slow-')) {
+                  yield { type: 'progress', payload: 'Slow operation started...' };
+                  await new Promise((resolve, reject) => {
+                    const timer = setTimeout(resolve, 5000);
+                    req.signal.addEventListener('abort', () => {
+                      clearTimeout(timer);
+                      reject(new Error('aborted'));
+                    });
+                  });
+                  return;
+                }
+                yield { type: 'progress', payload: 'Analyzing slide layout...' };
+                await new Promise((r) => setTimeout(r, 50));
+                yield { type: 'token', payload: 'Here are the suggested edits for your slide:' };
+                await new Promise((r) => setTimeout(r, 50));
+                yield { type: 'completed', payload: null };
+                return;
+              }
+
+              // Real Connection Execution
+
+              if (activeConnection.type === 'api-provider') {
+                const adapter = createUserHomeCredentialStorageAdapter();
+                let apiKey: string | null = null;
+                if (connectionConfig?.credentialRef) {
+                  const storage =
+                    connectionConfig.credentialStorage ??
+                    (connectionConfig.credentialRef.startsWith('env:')
+                      ? 'environment-variable'
+                      : 'os-credential-store');
+                  apiKey = await resolveCredentialSecret(
+                    {
+                      ref: connectionConfig.credentialRef,
+                      provider: connectionConfig.provider as ApiProviderId,
+                      storage,
+                      displayHint: '',
+                      createdAt: '',
+                    },
+                    adapter,
+                  );
+                }
+
+                if (!apiKey) {
+                  throw new Error('API key is missing or secure storage is unavailable.');
+                }
+
+                const provider = connectionConfig?.provider;
+                const modelId =
+                  connectionConfig?.modelId ||
+                  (provider === 'openai'
+                    ? 'gpt-4o'
+                    : provider === 'anthropic'
+                      ? 'claude-3-5-sonnet-latest'
+                      : provider === 'deepseek'
+                        ? 'deepseek-chat'
+                        : provider === 'openrouter'
+                          ? 'openai/gpt-4o'
+                          : 'gemini-2.0-flash');
+
+                const fetchSignal = AbortSignal.any([req.signal, AbortSignal.timeout(120_000)]);
+
+                if (provider === 'openai') {
+                  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${apiKey}`,
+                    },
+                    body: JSON.stringify({
+                      model: modelId,
+                      messages: [{ role: 'user', content: req.prompt }],
+                      stream: false,
+                    }),
+                    signal: fetchSignal,
+                  });
+                  if (!response.ok) {
+                    throw new Error(
+                      `OpenAI API returned status ${response.status}: ${await response.text()}`,
+                    );
+                  }
+                  const data = (await response.json()) as any;
+                  const text = data.choices?.[0]?.message?.content || '';
+                  yield { type: 'token', payload: text };
+                } else if (provider === 'anthropic') {
+                  const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'x-api-key': apiKey,
+                      'anthropic-version': '2023-06-01',
+                    },
+                    body: JSON.stringify({
+                      model: modelId,
+                      messages: [{ role: 'user', content: req.prompt }],
+                      max_tokens: 4096,
+                      stream: false,
+                    }),
+                    signal: fetchSignal,
+                  });
+                  if (!response.ok) {
+                    throw new Error(
+                      `Anthropic API returned status ${response.status}: ${await response.text()}`,
+                    );
+                  }
+                  const data = (await response.json()) as any;
+                  const text = data.content?.[0]?.text || '';
+                  yield { type: 'token', payload: text };
+                } else if (provider === 'google') {
+                  const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
+                    {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        contents: [{ parts: [{ text: req.prompt }] }],
+                      }),
+                      signal: fetchSignal,
+                    },
+                  );
+                  if (!response.ok) {
+                    throw new Error(
+                      `Google API returned status ${response.status}: ${await response.text()}`,
+                    );
+                  }
+                  const data = (await response.json()) as any;
+                  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                  yield { type: 'token', payload: text };
+                } else if (provider === 'openrouter') {
+                  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${apiKey}`,
+                    },
+                    body: JSON.stringify({
+                      model: modelId,
+                      messages: [{ role: 'user', content: req.prompt }],
+                    }),
+                    signal: fetchSignal,
+                  });
+                  if (!response.ok) {
+                    throw new Error(
+                      `OpenRouter API returned status ${response.status}: ${await response.text()}`,
+                    );
+                  }
+                  const data = (await response.json()) as any;
+                  const text = data.choices?.[0]?.message?.content || '';
+                  yield { type: 'token', payload: text };
+                } else if (provider === 'deepseek') {
+                  const response = await fetch('https://api.deepseek.com/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${apiKey}`,
+                    },
+                    body: JSON.stringify({
+                      model: modelId,
+                      messages: [{ role: 'user', content: req.prompt }],
+                    }),
+                    signal: fetchSignal,
+                  });
+                  if (!response.ok) {
+                    throw new Error(
+                      `DeepSeek API returned status ${response.status}: ${await response.text()}`,
+                    );
+                  }
+                  const data = (await response.json()) as any;
+                  const text = data.choices?.[0]?.message?.content || '';
+                  yield { type: 'token', payload: text };
+                } else {
+                  throw new Error(`Unsupported API provider: ${provider}`);
+                }
+              } else {
+                const commandOrPath =
+                  connectionConfig?.type === 'manual-agent-path'
+                    ? connectionConfig.manualPathRef
+                    : connectionConfig?.agentCommandAlias;
+
+                if (!commandOrPath) {
+                  throw new Error('Local CLI command or path is not configured.');
+                }
+
+                for await (const event of runLocalAgentCli(
+                  commandOrPath,
+                  connectionConfig,
+                  req,
+                  ctx.userCwd,
+                )) {
+                  yield event;
+                }
+              }
+
+              yield { type: 'completed', payload: null };
+            };
+
+            const adapterEvents = runAgentConnectionAdapter(runner, runRequest);
+
+            for await (const event of adapterEvents) {
+              if (abortController.signal.aborted) break;
+              if (isAgentChatEventType(event.type)) {
+                addRunEvent(nextRunId, event.type, event.payload);
+              } else {
+                addRunEvent(nextRunId, 'diagnostic', event.payload);
+              }
+            }
+          } catch (err) {
+            if (!abortController.signal.aborted) {
+              const raw = err instanceof Error ? err.message : String(err);
+              const isTimeout = err instanceof Error && err.name === 'TimeoutError';
+              const category = isTimeout ? 'timeout' : 'model-failed';
+              addRunEvent(nextRunId, 'failed', createAgentChatError(category, undefined, raw));
+            }
+          }
+        })();
 
         return;
       }
@@ -508,7 +1286,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
           return json(res, 404, { error: 'Proposal not found.' });
         }
 
-        const currentContents = await collectCurrentContents(_ctx, proposal.operations);
+        const currentContents = await collectCurrentContents(ctx, proposal.operations);
         const validation = await validateProposal(proposal, currentContents);
 
         const mergedChecks = [...(proposal.validation?.checks || [])];
@@ -603,7 +1381,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
             op.kind === 'apply-theme' ||
             op.kind === 'update-speaker-notes'
           ) {
-            const filePath = resolveSlideEntryPath(_ctx, op.target);
+            const filePath = resolveSlideEntryPath(ctx, op.target);
             if (filePath && !fileBackups.has(filePath)) {
               try {
                 const content = await fs.readFile(filePath, 'utf8');
@@ -620,7 +1398,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
             if (op.kind === 'patch-slide-source' || op.kind === 'raw-patch') {
               const payload = op.payload as { code?: string } | undefined;
               const code = payload?.code || '';
-              const filePath = resolveSlideEntryPath(_ctx, op.target);
+              const filePath = resolveSlideEntryPath(ctx, op.target);
               if (!filePath) {
                 throw new Error(`Invalid slide target: ${op.target}`);
               }
@@ -640,7 +1418,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
                   },
                 ).catch(() => null);
                 if (slideRes?.ok) {
-                  const filePath = resolveSlideEntryPath(_ctx, slideId);
+                  const filePath = resolveSlideEntryPath(ctx, slideId);
                   writtenFiles.push(filePath || `slides/${slideId}`);
                   server.ws?.send({ type: 'full-reload' });
                 } else {
@@ -651,7 +1429,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
               const payload = op.payload as { themeId?: string } | undefined;
               const themeId = payload?.themeId;
               if (themeId) {
-                const filePath = resolveSlideEntryPath(_ctx, op.target);
+                const filePath = resolveSlideEntryPath(ctx, op.target);
                 if (filePath) {
                   let source = '';
                   try {
@@ -673,7 +1451,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
               const payload = op.payload as { notes?: string } | undefined;
               const notes = payload?.notes;
               if (typeof notes === 'string') {
-                const filePath = resolveSlideEntryPath(_ctx, op.target);
+                const filePath = resolveSlideEntryPath(ctx, op.target);
                 if (!filePath) {
                   throw new Error(`Invalid slide target: ${op.target}`);
                 }
@@ -784,7 +1562,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
         }
 
         const run = getRun(proposal.runId);
-        const auditEntry = await appendAuditEntry(_ctx.userCwd, {
+        const auditEntry = await appendAuditEntry(ctx.userCwd, {
           prompt: run?.prompt || 'In-app edit',
           contextSummary: proposal.scope,
           proposalSummary: proposal.summary,
@@ -823,7 +1601,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, _ctx: ApiContext)
 
       // GET /audit
       if (req.method === 'GET' && pathname === '/audit') {
-        const entries = await readAuditEntries(_ctx.userCwd);
+        const entries = await readAuditEntries(ctx.userCwd);
         return json(res, 200, { entries });
       }
 

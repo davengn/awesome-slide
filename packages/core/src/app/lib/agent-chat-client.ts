@@ -10,8 +10,13 @@ import type {
 } from '../../http/agent-chat-types.ts';
 import type { AgentChatContext, AgentChatEvent, ContextPreference } from './agent-chat-types.ts';
 
-export async function getSession(): Promise<GetSessionResponse> {
-  const res = await fetch('/__agent-chat/session');
+export async function getSession(options: { slideId?: string } = {}): Promise<GetSessionResponse> {
+  const params = new URLSearchParams();
+  if (options.slideId) {
+    params.set('slideId', options.slideId);
+  }
+  const query = params.toString();
+  const res = await fetch(query ? `/__agent-chat/session?${query}` : '/__agent-chat/session');
   if (!res.ok) {
     throw new Error(`Failed to get session: ${res.statusText}`);
   }

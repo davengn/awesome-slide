@@ -1,4 +1,4 @@
-import { AlertCircle, Bot, Loader2, User } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import type React from 'react';
 import type { AgentChatMessage, AgentEditProposal, RunState } from '../../lib/agent-chat-types.ts';
 import { cn } from '../../lib/utils.ts';
@@ -25,39 +25,15 @@ export const AgentTurnCard: React.FC<AgentTurnCardProps> = ({
   onRejectProposal,
 }) => {
   const isUser = message.role === 'user';
-
   return (
     <div
       className={cn(
-        'group flex flex-col gap-2 rounded-xl p-3 text-xs leading-relaxed transition-all duration-200 hover:shadow-sm border',
+        'group flex flex-col gap-2.5 rounded-xl p-3.5 text-xs leading-relaxed transition-all duration-200 hover:shadow-xs border w-full self-start',
         isUser
-          ? 'self-end bg-neutral-900 text-white border-neutral-800 max-w-[85%] rounded-br-none'
-          : 'self-start bg-neutral-50/70 border-neutral-200/60 text-neutral-900 rounded-bl-none w-full',
+          ? 'bg-neutral-50/40 border-neutral-200/50 border-l-2 border-l-neutral-400 text-neutral-800'
+          : 'bg-white border-neutral-200/60 border-l-2 border-l-emerald-500 text-neutral-900 shadow-xs',
       )}
     >
-      {/* Title / Header of the Turn Card */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 font-medium text-[10px] text-neutral-400 select-none">
-          {isUser ? (
-            <>
-              <User className="h-3 w-3 stroke-[2.5]" />
-              <span>You</span>
-            </>
-          ) : (
-            <>
-              <Bot className="h-3 w-3 stroke-[2.5] text-neutral-500" />
-              <span>Agent</span>
-            </>
-          )}
-        </div>
-        <span className="text-[9px] text-neutral-400 select-none">
-          {new Date(message.createdAt).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </span>
-      </div>
-
       {/* Main body of the turn card */}
       <div className="flex flex-col gap-3 overflow-hidden">
         {message.content.map((part, index) => {
@@ -73,10 +49,10 @@ export const AgentTurnCard: React.FC<AgentTurnCardProps> = ({
             return (
               <div
                 key={partKey}
-                className="flex items-center gap-2 text-[11px] text-neutral-500 bg-neutral-100/50 border border-neutral-200/40 rounded-lg p-2 animate-pulse"
+                className="flex items-center gap-2 text-[10px] text-neutral-500 font-mono bg-neutral-50/60 border border-neutral-200/30 rounded-lg px-2.5 py-1.5"
               >
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-400" />
-                <span className="font-medium font-sans">{part.text}</span>
+                <Loader2 className="h-3 w-3 animate-spin text-neutral-400 shrink-0" />
+                <span className="font-semibold">{part.text}</span>
               </div>
             );
           }
@@ -113,12 +89,12 @@ export const AgentTurnCard: React.FC<AgentTurnCardProps> = ({
             return (
               <div
                 key={partKey}
-                className="mt-1 p-2.5 bg-neutral-100 border border-neutral-200/50 rounded-lg flex flex-col gap-1.5"
+                className="mt-1 p-3 bg-neutral-50/80 border border-neutral-200/40 rounded-xl flex flex-col gap-1.5"
               >
-                <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider block">
+                <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider block font-mono">
                   Proposed Changes
                 </span>
-                <p className="text-xs text-neutral-700">{part.text}</p>
+                <p className="text-xs text-neutral-700 font-sans">{part.text}</p>
               </div>
             );
           }
@@ -127,8 +103,8 @@ export const AgentTurnCard: React.FC<AgentTurnCardProps> = ({
 
         {/* Queued indicator */}
         {message.state === 'queued' && (
-          <div className="flex items-center gap-2 text-[11px] text-neutral-500 italic bg-neutral-100/40 border border-neutral-200/30 rounded-lg p-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-400" />
+          <div className="flex items-center gap-2 text-[10px] text-neutral-400 font-mono bg-neutral-50/40 border border-neutral-200/30 rounded-lg px-2.5 py-1.5">
+            <Loader2 className="h-3 w-3 animate-spin text-neutral-400 shrink-0" />
             <span>Queued...</span>
           </div>
         )}
