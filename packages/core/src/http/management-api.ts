@@ -5,8 +5,8 @@ import type {
   CreateSlideRequest,
   Deck,
   DuplicateSlideRequest,
+  ListSlidesResponse,
   ManagementCapabilities,
-  ManagementMode,
   SlideMetadataPatch,
   SlideRecord,
   UpdateOrderRequest,
@@ -122,6 +122,22 @@ async function buildSlideRecord(
   };
 }
 
+export async function readManagementData(ctx: ApiContext): Promise<ListSlidesResponse> {
+  const manifest = await readManifest(ctx.manifestPath);
+  const slideIds = await listSlideIds(ctx.slidesRoot);
+  const slides = await Promise.all(
+    slideIds.map((id) => buildSlideRecord(ctx.slidesRoot, id, manifest)),
+  );
+  return {
+    mode: 'editable',
+    capabilities: editableCaps(),
+    slides,
+    folders: manifest.folders,
+    decks: manifest.decks,
+    manualOrder: manifest.manualOrder,
+  };
+}
+
 async function readTemplateSource(
   themesRoot: string,
   templateId: unknown,
@@ -168,19 +184,7 @@ export function registerManagementRoutes(server: ViteDevServer, ctx: ApiContext)
     try {
       // GET /__management/slides
       if (method === 'GET' && url.pathname === '/slides') {
-        const manifest = await readManifest(ctx.manifestPath);
-        const slideIds = await listSlideIds(ctx.slidesRoot);
-        const slides = await Promise.all(
-          slideIds.map((id) => buildSlideRecord(ctx.slidesRoot, id, manifest)),
-        );
-        return json(res, 200, {
-          mode: 'editable' as ManagementMode,
-          capabilities: editableCaps(),
-          slides,
-          folders: manifest.folders,
-          decks: manifest.decks,
-          manualOrder: manifest.manualOrder,
-        });
+        return json(res, 200, await readManagementData(ctx));
       }
 
       // POST /__management/slides

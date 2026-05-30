@@ -135,6 +135,7 @@ export async function applyProposal(
   const body: ApplyProposalRequest = {
     operationIds,
     confirmation,
+    confirmedHighRisk: confirmation?.acceptedRiskLevel === 'high',
   };
   const res = await fetch(`/__agent-chat/proposals/${proposalId}/apply`, {
     method: 'POST',

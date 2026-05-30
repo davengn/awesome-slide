@@ -1,9 +1,15 @@
 import { FilePlus, FileText, Layout, ListOrdered, Palette } from 'lucide-react';
 import type React from 'react';
-import type { AgentEditProposal, OperationKind } from '../../lib/agent-chat-types.ts';
+import type {
+  AgentEditProposal,
+  GeneratedFileSummary,
+  GeneratedFileSummaryItem,
+  OperationKind,
+} from '../../lib/agent-chat-types.ts';
 
 interface FilesFromTurnProps {
-  proposal: AgentEditProposal;
+  proposal?: AgentEditProposal;
+  summary?: GeneratedFileSummary;
 }
 
 const KIND_METADATA: Record<
@@ -52,10 +58,20 @@ const KIND_METADATA: Record<
   },
 };
 
-export const FilesFromTurn: React.FC<FilesFromTurnProps> = ({ proposal }) => {
-  const operations = proposal.operations || [];
+function itemsFromProposal(proposal: AgentEditProposal): GeneratedFileSummaryItem[] {
+  return proposal.operations.map((operation) => ({
+    operationId: operation.id,
+    operationKind: operation.kind,
+    path: operation.target,
+    target: operation.target,
+    summary: operation.description,
+  }));
+}
 
-  if (operations.length === 0) return null;
+export const FilesFromTurn: React.FC<FilesFromTurnProps> = ({ proposal, summary }) => {
+  const items = summary?.files ?? (proposal ? itemsFromProposal(proposal) : []);
+
+  if (items.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-1.5 font-sans select-none">
@@ -63,8 +79,8 @@ export const FilesFromTurn: React.FC<FilesFromTurnProps> = ({ proposal }) => {
         Modified in this turn
       </span>
       <div className="flex flex-wrap gap-1.5">
-        {operations.map((op) => {
-          const meta = KIND_METADATA[op.kind] || {
+        {items.map((item) => {
+          const meta = KIND_METADATA[item.operationKind] || {
             icon: FileText,
             label: 'Operation',
             colorClass: 'bg-neutral-50 text-neutral-700 border-neutral-100',
@@ -73,12 +89,12 @@ export const FilesFromTurn: React.FC<FilesFromTurnProps> = ({ proposal }) => {
 
           return (
             <div
-              key={op.id}
+              key={`${item.operationId}-${item.path}`}
               className={`flex items-center gap-1.5 border rounded-lg px-2 py-1 text-[10px] font-medium leading-none ${meta.colorClass}`}
-              title={`${meta.label}: ${op.target}`}
+              title={`${meta.label}: ${item.path}`}
             >
               <Icon className="h-3 w-3 stroke-[2]" />
-              <span className="max-w-[120px] truncate">{op.target || 'target'}</span>
+              <span className="max-w-[120px] truncate">{item.path || item.target || 'target'}</span>
             </div>
           );
         })}

@@ -86,7 +86,7 @@ describe('Agent Chat API Routes', () => {
     const slidePath = path.join(tempDir, 'slides', 'intro');
     await fs.mkdir(slidePath, { recursive: true });
     const indexPath = path.join(slidePath, 'index.tsx');
-    await fs.writeFile(indexPath, 'original content', 'utf8');
+    await fs.writeFile(indexPath, 'export default [() => <div>Original</div>];', 'utf8');
 
     const runId = 'run_prop_test';
     const proposalId = 'prop_test_1';
@@ -119,7 +119,7 @@ describe('Agent Chat API Routes', () => {
           kind: 'patch-slide-source',
           target: 'intro',
           description: 'Patch intro slide',
-          payload: { code: 'new patched content' },
+          payload: { code: 'export default [() => <div>Patched</div>];' },
           requiresConfirmation: false,
           validationState: 'pending',
           reversible: true,
@@ -144,9 +144,13 @@ describe('Agent Chat API Routes', () => {
       const applyBody = await applyRes.json();
       expect(applyBody.ok).toBe(true);
       expect(applyBody.writtenFiles).toHaveLength(1);
+      expect(applyBody.proposalId).toBe(proposalId);
+      expect(applyBody.state).toBe('applied');
+      expect(applyBody.refresh.slides).toEqual(['intro']);
+      expect(applyBody.refresh.sourceVersions['slides/intro/index.tsx']).toBeDefined();
 
       const writtenContent = await fs.readFile(indexPath, 'utf8');
-      expect(writtenContent).toBe('new patched content');
+      expect(writtenContent).toBe('export default [() => <div>Patched</div>];');
 
       const rejectRes = await fetch(`${baseUrl}/__agent-chat/proposals/${proposalId}/reject`, {
         method: 'POST',
@@ -588,7 +592,97 @@ process.stdin.on('end', () => {
     });
   });
 
+  it('POST /__agent-chat/proposals/:proposalId/apply requires high-risk confirmation', async () => {
+    const slidePath = path.join(tempDir, 'slides', 'intro');
+    await fs.mkdir(slidePath, { recursive: true });
+    await fs.writeFile(
+      path.join(slidePath, 'index.tsx'),
+      "export const meta = { title: 'Intro' };\nexport default [() => <div>Intro</div>];",
+      'utf8',
+    );
+
+    const runId = 'run_high_risk_route';
+    const proposalId = 'prop_high_risk_route';
+    const mockRun = {
+      id: runId,
+      sessionId: 'session_high',
+      prompt: 'Apply a deck theme',
+      context: { project: {} },
+      connection: {
+        connectionId: 'local-codex',
+        displayName: 'Codex',
+        type: 'local-agent',
+        modelOrAgent: 'codex',
+        status: 'ready',
+      },
+      state: 'queued',
+      events: [],
+      startedAt: new Date().toISOString(),
+    } as unknown as AgentChatRun;
+    const mockProposal = {
+      id: proposalId,
+      runId,
+      summary: 'Theme change',
+      scope: 'deck',
+      riskLevel: 'high',
+      operations: [
+        {
+          id: 'op_theme',
+          kind: 'apply-theme',
+          target: 'intro',
+          description: 'Apply theme',
+          payload: { themeId: 'theme_default' },
+          requiresConfirmation: true,
+          validationState: 'pending',
+          reversible: true,
+        },
+      ],
+      previewArtifacts: [],
+      validation: { status: 'valid', checks: [] },
+      state: 'pending-review',
+      createdAt: new Date().toISOString(),
+    };
+
+    registerRun(mockRun, new AbortController());
+    addRunEvent(runId, 'proposal', mockProposal);
+
+    await withAgentChatServer(async (baseUrl) => {
+      const blockedRes = await fetch(`${baseUrl}/__agent-chat/proposals/${proposalId}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operationIds: ['op_theme'] }),
+      });
+      expect(blockedRes.status).toBe(428);
+      const blockedBody = await blockedRes.json();
+      expect(blockedBody.category).toBe('validation-failure');
+
+      const confirmedRes = await fetch(`${baseUrl}/__agent-chat/proposals/${proposalId}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operationIds: ['op_theme'],
+          confirmation: { acceptedRiskLevel: 'high' },
+        }),
+      });
+      expect(confirmedRes.status).toBe(200);
+      const confirmedBody = await confirmedRes.json();
+      expect(confirmedBody.refresh.slides).toEqual(['intro']);
+    });
+  });
+
   it('POST /__agent-chat/proposals/:proposalId/apply handles update-deck, create-slide, and reorder-pages', async () => {
+    await fs.mkdir(path.join(tempDir, 'slides'), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, 'slides', '.folders.json'),
+      `${JSON.stringify({
+        folders: [],
+        assignments: {},
+        decks: [{ id: 'deck_id', name: 'Deck', slideOrder: ['slide1', 'slide2'] }],
+        manualOrder: {},
+      })}\n`,
+      'utf8',
+    );
+
     const runId = 'run_deck_test';
     const proposalId = 'prop_deck_test_1';
     const mockRun = {
@@ -630,7 +724,7 @@ process.stdin.on('end', () => {
           kind: 'create-slide',
           target: 'deck_id',
           description: 'Create slide',
-          payload: { title: 'New Slide Title', deckId: 'deck_id' },
+          payload: { title: 'New Slide Title', deckId: 'deck_id', slideId: 'slide_generated' },
           requiresConfirmation: false,
           validationState: 'pending',
           reversible: true,
@@ -690,18 +784,27 @@ process.stdin.on('end', () => {
         expect(applyRes.status).toBe(200);
         const applyBody = await applyRes.json();
         expect(applyBody.ok).toBe(true);
+        expect(applyBody.writtenFiles).toContain('slides/.folders.json');
+        expect(applyBody.writtenFiles).toContain('slides/slide_generated/index.tsx');
         expect(applyBody.writtenFiles).toContain('decks/deck_id');
-        expect(applyBody.writtenFiles.some((f: string) => f.startsWith('slides/slide_'))).toBe(
-          true,
-        );
         expect(applyBody.writtenFiles).toContain('decks/deck_id/order');
+        expect(applyBody.refresh.decks).toEqual(['deck_id']);
+        expect(applyBody.refresh.managementIndex).toBe(true);
       });
     } finally {
       fetchSpy.mockRestore();
     }
   });
 
-  it('POST /__agent-chat/proposals/:proposalId/apply handles patch-slide-metadata via management API', async () => {
+  it('POST /__agent-chat/proposals/:proposalId/apply handles patch-slide-metadata via source metadata', async () => {
+    const slidePath = path.join(tempDir, 'slides', 'intro');
+    await fs.mkdir(slidePath, { recursive: true });
+    await fs.writeFile(
+      path.join(slidePath, 'index.tsx'),
+      "export const meta = { title: 'Intro' };\nexport default [() => <div>Intro</div>];",
+      'utf8',
+    );
+
     const runId = 'run_meta_test';
     const proposalId = 'prop_meta_test_1';
     const mockRun = {
@@ -962,7 +1065,7 @@ process.stdin.on('end', () => {
           kind: 'patch-slide-source',
           target: 'intro',
           description: 'Conflict',
-          payload: { code: 'conflict' },
+          payload: { code: 'export default [() => <div>Conflict</div>];' },
           requiresConfirmation: false,
           validationState: 'conflict',
           reversible: true,
@@ -1122,7 +1225,7 @@ process.stdin.on('end', () => {
     const slidePath = path.join(tempDir, 'slides', 'intro');
     await fs.mkdir(slidePath, { recursive: true });
     const indexPath = path.join(slidePath, 'index.tsx');
-    await fs.writeFile(indexPath, 'original content', 'utf8');
+    await fs.writeFile(indexPath, 'export default [() => <div>Original</div>];', 'utf8');
 
     const runId = 'run_audit_test';
     const proposalId = 'prop_audit_1';
@@ -1155,7 +1258,7 @@ process.stdin.on('end', () => {
           kind: 'patch-slide-source',
           target: 'intro',
           description: 'Patch intro slide',
-          payload: { code: 'new audited content' },
+          payload: { code: 'export default [() => <div>Audited</div>];' },
           requiresConfirmation: false,
           validationState: 'pending',
           reversible: true,

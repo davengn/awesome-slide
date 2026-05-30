@@ -1,4 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('virtual:awesome-slide/themes', () => {
   return {
@@ -16,12 +19,24 @@ vi.mock('virtual:awesome-slide/themes', () => {
 });
 
 import type { AgentOperation } from '../app/lib/agent-chat-types.ts';
+import { makeContext } from '../vite/routes/context.ts';
 import {
+  applyAgentProposalTransaction,
   classifyRiskLevel,
   getSourceFingerprint,
   normalizeProposal,
   validateProposal,
 } from './agent-proposals.ts';
+
+let tempDir: string;
+
+beforeEach(async () => {
+  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'awesome-slide-agent-proposals-'));
+});
+
+afterEach(async () => {
+  await fs.rm(tempDir, { recursive: true, force: true });
+});
 
 describe('Agent Edit Proposals', () => {
   it('normalizes partial proposals with sensible defaults', () => {
@@ -302,5 +317,141 @@ describe('Deck Operation Validation (US4)', () => {
     expect(classifyRiskLevel(proposal.operations)).toBe('medium');
     const val = await validateProposal(proposal);
     expect(val.status).toBe('valid');
+  });
+});
+
+describe('Agent Proposal Transactions', () => {
+  async function writeSlide(slideId: string, source: string) {
+    const dir = path.join(tempDir, 'slides', slideId);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, 'index.tsx'), source, 'utf8');
+  }
+
+  it('blocks high-risk apply until explicit confirmation is supplied', async () => {
+    await writeSlide(
+      'intro',
+      "export const meta = { title: 'Intro' };\nexport default [() => <div>Intro</div>];",
+    );
+    const ctx = makeContext({ userCwd: tempDir });
+    const proposal = normalizeProposal({
+      id: 'prop_high',
+      runId: 'run_high',
+      riskLevel: 'high',
+      operations: [
+        {
+          id: 'op_theme',
+          kind: 'apply-theme',
+          target: 'intro',
+          description: 'Apply deck theme',
+          payload: { themeId: 'theme_launch' },
+          requiresConfirmation: true,
+          validationState: 'pending',
+          reversible: true,
+        },
+      ],
+      validation: { status: 'valid', checks: [] },
+    });
+
+    const blocked = await applyAgentProposalTransaction(ctx, proposal);
+    expect(blocked.ok).toBe(false);
+    if (blocked.ok) return;
+    expect(blocked.status).toBe(428);
+    expect(blocked.category).toBe('validation-failure');
+  });
+
+  it('applies selected operations transactionally and rolls back file writes on failure', async () => {
+    const original = 'export default [() => <div>Intro</div>];';
+    await writeSlide('intro', original);
+    const ctx = makeContext({ userCwd: tempDir });
+    const proposal = normalizeProposal({
+      id: 'prop_rollback',
+      runId: 'run_rollback',
+      operations: [
+        {
+          id: 'op_patch',
+          kind: 'patch-slide-source',
+          target: 'intro',
+          description: 'Patch intro',
+          payload: { code: 'export default [() => <div>Patched</div>];' },
+          requiresConfirmation: false,
+          validationState: 'pending',
+          reversible: true,
+        },
+        {
+          id: 'op_missing',
+          kind: 'patch-slide-source',
+          target: 'missing-slide',
+          description: 'Patch missing slide',
+          payload: { code: 'export default [() => <div>Missing</div>];' },
+          requiresConfirmation: false,
+          validationState: 'pending',
+          reversible: true,
+        },
+      ],
+      validation: { status: 'valid', checks: [] },
+    });
+
+    const result = await applyAgentProposalTransaction(ctx, proposal);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.category).toBe('write-failure');
+    await expect(
+      fs.readFile(path.join(tempDir, 'slides', 'intro', 'index.tsx'), 'utf8'),
+    ).resolves.toBe(original);
+  });
+
+  it('detects source fingerprint conflicts before writes', async () => {
+    const original = 'export default [() => <div>Intro</div>];';
+    const changed = 'export default [() => <div>Changed</div>];';
+    await writeSlide('intro', changed);
+    const ctx = makeContext({ userCwd: tempDir });
+    const proposal = normalizeProposal({
+      id: 'prop_conflict',
+      runId: 'run_conflict',
+      fingerprints: { intro: getSourceFingerprint(original) },
+      operations: [
+        {
+          id: 'op_patch',
+          kind: 'patch-slide-source',
+          target: 'intro',
+          description: 'Patch intro',
+          payload: { code: 'export default [() => <div>Patched</div>];' },
+          requiresConfirmation: false,
+          validationState: 'pending',
+          reversible: true,
+        },
+      ],
+      validation: { status: 'valid', checks: [] },
+    });
+
+    const result = await applyAgentProposalTransaction(ctx, proposal, {
+      currentContents: { intro: changed },
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.status).toBe(409);
+    expect(result.category).toBe('patch-conflict');
+  });
+
+  it('rejects unparseable TSX before proposal apply', async () => {
+    const proposal = normalizeProposal({
+      id: 'prop_tsx_parse',
+      operations: [
+        {
+          id: 'op_tsx_parse',
+          kind: 'patch-slide-source',
+          target: 'intro',
+          description: 'Broken TSX',
+          payload: { code: 'export default [() => <div>Broken</span>];' },
+          requiresConfirmation: false,
+          validationState: 'pending',
+          reversible: true,
+        },
+      ],
+    });
+
+    const validation = await validateProposal(proposal);
+    expect(validation.status).toBe('invalid');
+    expect(validation.checks.some((check) => check.kind === 'tsx-parse')).toBe(true);
   });
 });

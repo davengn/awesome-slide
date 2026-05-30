@@ -8,7 +8,10 @@ interface ChatMessageListProps {
   selectedOperationIds: Record<string, string[]>;
   applyingProps: Record<string, boolean>;
   onToggleOperation: (proposalId: string, opId: string) => void;
-  onApplyProposal: (proposalId: string) => void;
+  onApplyProposal: (
+    proposalId: string,
+    confirmation?: { acceptedRiskLevel: 'low' | 'medium' | 'high' },
+  ) => void;
   onRejectProposal: (proposalId: string) => void;
 }
 

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   type AgentChatRouteError,
+  applyProposal,
   getSession,
   listRuns,
   startRun,
@@ -139,6 +140,47 @@ describe('Agent Chat Client - route errors and run listing', () => {
         '/__agent-chat/runs?conversationId=session_slide_intro',
       );
       expect(response.runs[0]?.runId).toBe('run_1');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('sends high-risk confirmation when applying a proposal', async () => {
+    const originalFetch = globalThis.fetch;
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        transactionId: 'tx_1',
+        proposalId: 'prop_1',
+        state: 'applied',
+        writtenFiles: [],
+        refresh: {
+          targets: [],
+          slides: [],
+          decks: [],
+          themes: [],
+          assets: [],
+          sourceVersions: {},
+          managementIndex: false,
+        },
+        auditEntryId: 'audit_1',
+      }),
+    });
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+    try {
+      await applyProposal('prop_1', ['op_1'], { acceptedRiskLevel: 'high' });
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/__agent-chat/proposals/prop_1/apply',
+        expect.objectContaining({
+          body: JSON.stringify({
+            operationIds: ['op_1'],
+            confirmation: { acceptedRiskLevel: 'high' },
+            confirmedHighRisk: true,
+          }),
+        }),
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }

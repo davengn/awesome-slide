@@ -1,5 +1,6 @@
 import path from 'node:path';
 import type { ViteDevServer } from 'vite';
+import type { RefreshPayload } from '../../agent-runtime/file-refresh.ts';
 import { SLIDE_ID_RE } from '../../editing/slide-ops.ts';
 import { GLOBAL_SCOPE } from '../../files/assets.ts';
 import type { ApiContext } from './context.ts';
@@ -9,6 +10,35 @@ const ASSETS_CHANGED_EVENTS = [
   'awesome-slide:assets-changed',
   'open-slide:assets-changed',
 ] as const;
+const SLIDE_CHANGED_EVENTS = ['awesome-slide:slide-changed', 'open-slide:slide-changed'] as const;
+
+export function notifyAgentRefreshTargets(server: ViteDevServer, refresh: RefreshPayload): void {
+  if (refresh.slides.length > 0) {
+    for (const event of SLIDE_CHANGED_EVENTS) {
+      server.ws?.send({ type: 'custom', event, data: { slideIds: refresh.slides } });
+    }
+  }
+
+  if (refresh.managementIndex || refresh.decks.length > 0 || refresh.themes.length > 0) {
+    for (const event of FILES_CHANGED_EVENTS) {
+      server.ws?.send({ type: 'custom', event, data: { refresh } });
+    }
+  }
+
+  const assetSlideIds = new Set(
+    refresh.targets.flatMap((target) =>
+      target.refreshKind === 'asset' && target.slideId ? [target.slideId] : [],
+    ),
+  );
+  if (refresh.assets.some((asset) => asset.startsWith('assets/'))) {
+    assetSlideIds.add(GLOBAL_SCOPE);
+  }
+  for (const slideId of assetSlideIds) {
+    for (const event of ASSETS_CHANGED_EVENTS) {
+      server.ws?.send({ type: 'custom', event, data: { slideId } });
+    }
+  }
+}
 
 // Surface folder-manifest and asset-tree mutations as HMR pings so the
 // editor's panels can refresh without a full reload.

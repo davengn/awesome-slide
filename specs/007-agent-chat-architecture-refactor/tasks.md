@@ -111,23 +111,23 @@
 
 ### Tests for User Story 3
 
-- [ ] T047 [P] [US3] Add structured output parser tests for valid envelopes, invalid prose, unsupported operations, risk levels, and generated-file summaries in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/proposal-output.test.ts`
-- [ ] T048 [US3] Add apply/reject route contract tests for validation, transaction success, rollback failure, conflict, read-only apply blocking, refresh payload, and audit id response in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-chat-api.test.ts`
-- [ ] T049 [P] [US3] Add proposal transaction tests for fingerprints, TSX parseability, mutation guards, high-risk confirmation, and rollback behavior in `/Users/ducduy/Projects/awesome-slide/packages/core/src/editing/agent-proposals.test.ts`
-- [ ] T050 [P] [US3] Add file refresh target tests for written slide, deck, theme, asset, and management-index changes in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/file-refresh.test.ts`
+- [X] T047 [P] [US3] Add structured output parser tests for valid envelopes, invalid prose, unsupported operations, risk levels, and generated-file summaries in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/proposal-output.test.ts`
+- [X] T048 [US3] Add apply/reject route contract tests for validation, transaction success, rollback failure, conflict, read-only apply blocking, refresh payload, and audit id response in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-chat-api.test.ts`
+- [X] T049 [P] [US3] Add proposal transaction tests for fingerprints, TSX parseability, mutation guards, high-risk confirmation, and rollback behavior in `/Users/ducduy/Projects/awesome-slide/packages/core/src/editing/agent-proposals.test.ts`
+- [X] T050 [P] [US3] Add file refresh target tests for written slide, deck, theme, asset, and management-index changes in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/file-refresh.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T051 [US3] Implement structured proposal envelope parsing and generated-file summaries in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/proposal-output.ts`
-- [ ] T052 [US3] Integrate proposal parsing, validation events, and needs-review terminal state into runtime execution in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/index.ts`
-- [ ] T053 [US3] Implement refresh target derivation from source-of-truth file metadata in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/file-refresh.ts`
-- [ ] T054 [US3] Extend proposal validation and transactional apply semantics around existing edit helpers in `/Users/ducduy/Projects/awesome-slide/packages/core/src/editing/agent-proposals.ts`
-- [ ] T055 [US3] Wire proposal apply and reject routes through runtime validation, audit write, and refresh payload responses in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-chat-api.ts`
-- [ ] T056 [US3] Update proposal preview rendering for structured operations, validation status, risk, and source diffs in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/components/agent-chat/ProposalPreview.tsx`
-- [ ] T057 [US3] Update proposal controls for selected operations, high-risk confirmation, apply, reject, conflict, and expired states in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/components/agent-chat/ProposalControls.tsx`
-- [ ] T058 [US3] Update generated-file summary rendering from runtime `file_summary` events in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/components/agent-chat/FilesFromTurn.tsx`
-- [ ] T059 [US3] Integrate apply refresh targets with existing Vite watcher and HMR paths in `/Users/ducduy/Projects/awesome-slide/packages/core/src/vite/routes/watchers.ts`
-- [ ] T060 [US3] Ensure management route metadata stays the source of truth after proposal apply in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/management-api.ts`
+- [X] T051 [US3] Implement structured proposal envelope parsing and generated-file summaries in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/proposal-output.ts`
+- [X] T052 [US3] Integrate proposal parsing, validation events, and needs-review terminal state into runtime execution in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/index.ts`
+- [X] T053 [US3] Implement refresh target derivation from source-of-truth file metadata in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/file-refresh.ts`
+- [X] T054 [US3] Extend proposal validation and transactional apply semantics around existing edit helpers in `/Users/ducduy/Projects/awesome-slide/packages/core/src/editing/agent-proposals.ts`
+- [X] T055 [US3] Wire proposal apply and reject routes through runtime validation, audit write, and refresh payload responses in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-chat-api.ts`
+- [X] T056 [US3] Update proposal preview rendering for structured operations, validation status, risk, and source diffs in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/components/agent-chat/ProposalPreview.tsx`
+- [X] T057 [US3] Update proposal controls for selected operations, high-risk confirmation, apply, reject, conflict, and expired states in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/components/agent-chat/ProposalControls.tsx`
+- [X] T058 [US3] Update generated-file summary rendering from runtime `file_summary` events in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/components/agent-chat/FilesFromTurn.tsx`
+- [X] T059 [US3] Integrate apply refresh targets with existing Vite watcher and HMR paths in `/Users/ducduy/Projects/awesome-slide/packages/core/src/vite/routes/watchers.ts`
+- [X] T060 [US3] Ensure management route metadata stays the source of truth after proposal apply in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/management-api.ts`
 
 **Checkpoint**: User Story 3 is independently functional with proposal preview/apply and source-driven refresh.
 

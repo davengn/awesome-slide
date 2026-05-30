@@ -235,6 +235,19 @@ export interface AgentEditProposal {
   fingerprints?: Record<string, string>;
 }
 
+export interface GeneratedFileSummaryItem {
+  operationId: string;
+  operationKind: OperationKind;
+  path: string;
+  target?: string;
+  summary: string;
+}
+
+export interface GeneratedFileSummary {
+  files: GeneratedFileSummaryItem[];
+  truncated?: boolean;
+}
+
 export type OperationKind =
   | 'patch-slide-source'
   | 'patch-slide-metadata'
@@ -258,7 +271,12 @@ export interface AgentOperation {
 
 export interface PreviewArtifact {
   id: string;
-  kind: 'operation-list' | 'source-diff' | 'rendered-before-after' | 'diagnostics';
+  kind:
+    | 'operation-list'
+    | 'source-diff'
+    | 'rendered-before-after'
+    | 'diagnostics'
+    | 'generated-file-summary';
   operationIds: string[];
   summary: string;
   contentRef?: string;
@@ -281,6 +299,8 @@ export interface ValidationCheck {
     | 'deck-exists'
     | 'source-conflict'
     | 'mutation-guard'
+    | 'read-only-mode'
+    | 'risk-confirmation'
     | 'typecheck';
   status: 'pass' | 'warn' | 'fail' | 'skipped';
   message: string;

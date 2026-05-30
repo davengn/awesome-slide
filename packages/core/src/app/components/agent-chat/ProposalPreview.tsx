@@ -4,7 +4,9 @@ import {
   ChevronDown,
   ChevronUp,
   FileCode,
+  FileText,
   Info,
+  ShieldAlert,
   Sparkles,
   XCircle,
 } from 'lucide-react';
@@ -37,8 +39,21 @@ export const ProposalPreview: React.FC<ProposalPreviewProps> = ({
     <div className="flex flex-col gap-3.5 p-4 bg-neutral-50/50 border-t border-b border-neutral-200/80">
       {/* Validation Status */}
       <div className="flex flex-col gap-1.5">
-        <div className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
-          Validation Report
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
+            Validation Report
+          </div>
+          <div
+            className={cn(
+              'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase',
+              proposal.riskLevel === 'low' && 'border-emerald-100 bg-emerald-50 text-emerald-700',
+              proposal.riskLevel === 'medium' && 'border-amber-100 bg-amber-50 text-amber-700',
+              proposal.riskLevel === 'high' && 'border-red-100 bg-red-50 text-red-700',
+            )}
+          >
+            {proposal.riskLevel === 'high' && <ShieldAlert className="h-3 w-3" />}
+            {proposal.riskLevel} risk
+          </div>
         </div>
         <div
           className={cn(
@@ -251,6 +266,18 @@ export const ProposalPreview: React.FC<ProposalPreviewProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+          );
+        }
+
+        if (artifact.kind === 'generated-file-summary') {
+          return (
+            <div
+              key={artifact.id}
+              className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-[11px] text-neutral-600"
+            >
+              <FileText className="h-4 w-4 shrink-0 text-neutral-500" />
+              <span className="truncate">{artifact.summary}</span>
             </div>
           );
         }

@@ -1,12 +1,14 @@
 import fs from 'node:fs/promises';
 import type { ViteDevServer } from 'vite';
 import type { RuntimeEventInput } from '../agent-runtime/events.ts';
+import { deriveRefreshPayload } from '../agent-runtime/file-refresh.ts';
 import {
   createLocalAgentInvocation,
   isClaudeCodeCli,
   isCodexCli,
   runLocalAgentCli,
 } from '../agent-runtime/local-agents.ts';
+import { containsProposalEnvelope, parseProposalOutput } from '../agent-runtime/proposal-output.ts';
 import { runProviderAdapter } from '../agent-runtime/provider-adapters.ts';
 import { createAgentChatError, redactDiagnostics } from '../app/lib/agent-chat-errors.ts';
 import type {
@@ -23,14 +25,14 @@ import type {
 import type { AgentConnectionConfig, ApiProviderId } from '../app/lib/agent-connection-types.ts';
 import { normalizeCapabilities, resolveActiveConnection } from '../app/lib/agent-connections.ts';
 import {
+  applyAgentProposalTransaction,
   captureFingerprints,
-  normalizeProposal,
   validateProposal,
 } from '../editing/agent-proposals.ts';
-import { patchMetaInSource } from '../editing/meta-source.ts';
 import { appendAuditEntry, readAuditEntries } from '../files/agent-audit.ts';
 import type { ApiContext } from '../vite/routes/context.ts';
 import { json, readBody, resolveSlideEntryPath } from '../vite/routes/context.ts';
+import { notifyAgentRefreshTargets } from '../vite/routes/watchers.ts';
 import {
   abortRun,
   addRunEvent,
@@ -52,6 +54,7 @@ import {
   createUserHomeCredentialStorageAdapter,
   resolveCredentialSecret,
 } from './agent-secrets.ts';
+import { validateRuntimeMutationRequest } from './request-guard.ts';
 
 const SESSION_PROJECT_KEY = 'project_default';
 
@@ -120,6 +123,10 @@ const defaultConnection: AgentConnectionRef = {
 };
 
 export { createLocalAgentInvocation, isClaudeCodeCli, isCodexCli };
+
+function nextRouteId(prefix: string): string {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
 
 function toConnectionAdapterEvent(event: RuntimeEventInput): RawAgentConnectionEvent {
   if (event.type === 'text_delta') {
@@ -238,6 +245,138 @@ async function* runConfiguredConnectionEvents(
   for await (const event of runLocalAgentCli(commandOrPath, connectionConfig, req, ctx.userCwd)) {
     yield toConnectionAdapterEvent(event);
   }
+}
+
+function simulatedProposalEnvelope(type: string): unknown {
+  if (type === 'invalid') {
+    return {
+      kind: 'awesome-slide-proposal',
+      summary: 'Simulated invalid proposal edits',
+      scope: 'slide',
+      operations: [
+        {
+          id: 'op_invalid',
+          kind: 'patch-slide-source',
+          target: 'intro',
+          description: 'Invalid TSX code',
+          payload: { code: 'function Slide() { return <div;\\n}' },
+        },
+      ],
+    };
+  }
+  if (type === 'conflict') {
+    return {
+      kind: 'awesome-slide-proposal',
+      summary: 'Simulated conflicting proposal edits',
+      scope: 'slide',
+      operations: [
+        {
+          id: 'op_conflict',
+          kind: 'patch-slide-source',
+          target: 'intro',
+          description: 'Conflicting edit',
+          payload: {
+            code: 'function Slide() { return <div>Hello</div>; }',
+            originalCode: 'CONFLICT',
+          },
+        },
+      ],
+    };
+  }
+  if (type === 'medium') {
+    return {
+      kind: 'awesome-slide-proposal',
+      summary: 'Simulated slide creation',
+      scope: 'deck',
+      operations: [
+        {
+          id: 'op_medium',
+          kind: 'create-slide',
+          target: 'deck_1',
+          description: 'Create a new slide',
+          payload: { title: 'New Slide', slideId: 'new-slide' },
+        },
+      ],
+    };
+  }
+  if (type === 'high') {
+    return {
+      kind: 'awesome-slide-proposal',
+      summary: 'Simulated high-risk theme change',
+      scope: 'deck',
+      riskLevel: 'high',
+      operations: [
+        {
+          id: 'op_high',
+          kind: 'apply-theme',
+          target: 'intro',
+          description: 'Apply high risk theme',
+          payload: { themeId: 'unsupported-theme', scope: 'deck' },
+          requiresConfirmation: true,
+        },
+      ],
+    };
+  }
+  return {
+    kind: 'awesome-slide-proposal',
+    summary: 'Simulated proposal edits',
+    scope: 'slide',
+    operations: [
+      {
+        id: 'op_low',
+        kind: 'patch-slide-source',
+        target: 'intro',
+        description: 'Update slide title',
+        payload: {
+          code: 'function Slide() {\n  return <div>Welcome to Awesome Slide!</div>;\n}',
+        },
+      },
+    ],
+  };
+}
+
+async function createValidatedProposalFromOutput(
+  ctx: ApiContext,
+  runId: string,
+  output: unknown,
+): Promise<
+  | { ok: true; proposal: AgentEditProposal; fileSummary: unknown }
+  | { ok: false; error: ReturnType<typeof createAgentChatError> }
+> {
+  const parsed = parseProposalOutput(output, { runId });
+  if (!parsed.ok) {
+    const category =
+      parsed.error.category === 'parser-error' ? 'invalid-agent-output' : parsed.error.category;
+    return {
+      ok: false,
+      error: createAgentChatError(
+        category === 'invalid-agent-output' ? category : 'invalid-agent-output',
+        parsed.error.message,
+        parsed.error.diagnostics,
+      ),
+    };
+  }
+
+  const currentContents = await collectCurrentContents(ctx, parsed.proposal.operations);
+  parsed.proposal.fingerprints = captureFingerprints(parsed.proposal.operations, currentContents);
+  parsed.proposal.validation = await validateProposal(parsed.proposal, currentContents);
+  for (const op of parsed.proposal.operations) {
+    const check = parsed.proposal.validation.checks.find(
+      (candidate) => candidate.id === `check_${op.id}` || candidate.id === `conflict_${op.id}`,
+    );
+    op.validationState =
+      check?.status === 'fail'
+        ? check.kind === 'source-conflict'
+          ? 'conflict'
+          : 'invalid'
+        : 'valid';
+  }
+
+  return {
+    ok: true,
+    proposal: parsed.proposal,
+    fileSummary: parsed.fileSummary,
+  };
 }
 
 function sessionIdForSlide(activeSlideId?: string): string {
@@ -437,7 +576,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
           return json(res, 400, { error: 'Prompt must be non-empty.' });
         }
 
-        const runId = `run_${Date.now()}`;
+        const runId = nextRouteId('run');
         const run: AgentChatRun = {
           id: runId,
           sessionId,
@@ -527,116 +666,44 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
             };
 
             const adapterEvents = runAgentConnectionAdapter(runner, runRequest);
+            let assistantText = '';
+            let proposalEmitted = false;
 
             for await (const event of adapterEvents) {
               if (abortController.signal.aborted) break;
 
               if (event.type === 'structured-output') {
-                const payload = event.payload as { type: string };
-                const type = payload.type;
-                const operations: AgentOperation[] = [];
-
-                if (type === 'invalid') {
-                  operations.push({
-                    id: 'op_invalid',
-                    kind: 'patch-slide-source',
-                    target: 'intro',
-                    description: 'Invalid TSX code',
-                    payload: { code: 'function Slide() { return <div;\n}' },
-                    requiresConfirmation: false,
-                    validationState: 'pending',
-                    reversible: true,
-                  });
-                } else if (type === 'conflict') {
-                  operations.push({
-                    id: 'op_conflict',
-                    kind: 'patch-slide-source',
-                    target: 'intro',
-                    description: 'Conflicting edit',
-                    payload: {
-                      code: 'function Slide() { return <div>Hello</div>; }',
-                      originalCode: 'CONFLICT',
-                    },
-                    requiresConfirmation: false,
-                    validationState: 'pending',
-                    reversible: true,
-                  });
-                } else if (type === 'medium') {
-                  operations.push({
-                    id: 'op_medium',
-                    kind: 'create-slide',
-                    target: 'deck_1',
-                    description: 'Create a new slide',
-                    payload: { title: 'New Slide' },
-                    requiresConfirmation: false,
-                    validationState: 'pending',
-                    reversible: true,
-                  });
-                } else if (type === 'high') {
-                  operations.push({
-                    id: 'op_high',
-                    kind: 'apply-theme',
-                    target: 'intro',
-                    description: 'Apply high risk theme',
-                    payload: { themeId: 'unsupported-theme', scope: 'deck' },
-                    requiresConfirmation: true,
-                    validationState: 'pending',
-                    reversible: true,
-                  });
+                const payload = event.payload as { type?: string; output?: unknown };
+                const output = payload.output ?? simulatedProposalEnvelope(payload.type ?? 'low');
+                const parsed = await createValidatedProposalFromOutput(ctx, runId, output);
+                if (parsed.ok) {
+                  addRunEvent(runId, 'file_summary', parsed.fileSummary);
+                  addRunEvent(runId, 'proposal', parsed.proposal);
+                  proposalEmitted = true;
                 } else {
-                  operations.push({
-                    id: 'op_low',
-                    kind: 'patch-slide-source',
-                    target: 'intro',
-                    description: 'Update slide title',
-                    payload: {
-                      code: 'function Slide() {\n  return <div>Welcome to Awesome Slide!</div>;\n}',
-                    },
-                    requiresConfirmation: false,
-                    validationState: 'pending',
-                    reversible: true,
-                  });
+                  addRunEvent(runId, 'failed', parsed.error);
                 }
-
-                const slidePath = resolveSlideEntryPath(ctx, 'intro');
-                const introContent = slidePath
-                  ? await getFileContentOrEmpty(slidePath)
-                  : 'original content';
-                const currentContents: Record<string, string> = { intro: introContent };
-                const fingerprints = captureFingerprints(operations, currentContents);
-
-                const rawProposal: Partial<AgentEditProposal> = {
-                  id: `prop_${Date.now()}`,
-                  runId,
-                  summary: 'Simulated proposal edits',
-                  scope: 'slide',
-                  operations,
-                  fingerprints,
-                };
-
-                const normalized = normalizeProposal(rawProposal);
-                const validation = await validateProposal(normalized, currentContents);
-                normalized.validation = validation;
-
-                for (const op of normalized.operations) {
-                  const check = validation.checks.find(
-                    (c) => c.id === `check_${op.id}` || c.id === `conflict_${op.id}`,
-                  );
-                  if (check) {
-                    op.validationState =
-                      check.status === 'fail'
-                        ? check.kind === 'source-conflict'
-                          ? 'conflict'
-                          : 'invalid'
-                        : 'valid';
+              } else if (event.type === 'token') {
+                const token = typeof event.payload === 'string' ? event.payload : '';
+                assistantText += token;
+                addRunEvent(runId, event.type, event.payload);
+              } else if (event.type === 'completed') {
+                if (
+                  !proposalEmitted &&
+                  assistantText.trim() &&
+                  containsProposalEnvelope(assistantText)
+                ) {
+                  const parsed = await createValidatedProposalFromOutput(ctx, runId, assistantText);
+                  if (parsed.ok) {
+                    addRunEvent(runId, 'file_summary', parsed.fileSummary);
+                    addRunEvent(runId, 'proposal', parsed.proposal);
+                    proposalEmitted = true;
                   } else {
-                    op.validationState = 'valid';
+                    addRunEvent(runId, 'failed', parsed.error);
                   }
+                } else if (!proposalEmitted) {
+                  addRunEvent(runId, event.type, event.payload);
                 }
-
-                addRunEvent(runId, 'proposal', normalized);
-                // After proposal, complete the run
-                addRunEvent(runId, 'completed', null);
               } else if (isAgentChatEventType(event.type)) {
                 addRunEvent(runId, event.type, event.payload);
               } else {
@@ -796,7 +863,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
           });
         }
 
-        const nextRunId = `run_${Date.now()}`;
+        const nextRunId = nextRouteId('run');
         const run: AgentChatRun = {
           id: nextRunId,
           sessionId: oldRun.sessionId,
@@ -895,9 +962,12 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
         const envMode = process.env.AGENT_RUNTIME_MODE || undefined;
         const resolvedMode = (headerMode || envMode || 'interactive') as RuntimeMode;
 
-        if (resolvedMode === 'read-only') {
-          return json(res, 403, { error: 'Apply is blocked in read-only mode.' });
-        }
+        const guard = validateRuntimeMutationRequest(req, {
+          requireJsonBody: true,
+          runtimeMode: resolvedMode,
+          mutation: 'proposal-apply',
+        });
+        if (!guard.ok) return json(res, guard.status, { error: guard.error });
 
         const proposalId = applyMatch[1];
         const proposal = findProposal(proposalId);
@@ -906,63 +976,6 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
         }
 
         const currentContents = await collectCurrentContents(ctx, proposal.operations);
-        const validation = await validateProposal(proposal, currentContents);
-
-        const mergedChecks = [...(proposal.validation?.checks || [])];
-        for (const check of validation.checks) {
-          if (!mergedChecks.some((c) => c.id === check.id)) {
-            mergedChecks.push(check);
-          }
-        }
-
-        let resolvedStatus = validation.status;
-        if (
-          proposal.validation?.status === 'invalid' ||
-          proposal.validation?.status === 'conflict'
-        ) {
-          resolvedStatus = proposal.validation.status;
-        }
-
-        proposal.validation = {
-          status: resolvedStatus,
-          checks: mergedChecks,
-          validatedAt: new Date().toISOString(),
-        };
-
-        for (const op of proposal.operations) {
-          const check = validation.checks.find(
-            (c) => c.id === `check_${op.id}` || c.id === `conflict_${op.id}`,
-          );
-          if (check) {
-            op.validationState =
-              check.status === 'fail'
-                ? check.kind === 'source-conflict'
-                  ? 'conflict'
-                  : 'invalid'
-                : 'valid';
-          } else {
-            op.validationState = 'valid';
-          }
-        }
-
-        if (proposal.validation.status === 'conflict') {
-          const mapped = createAgentChatError('patch-conflict');
-          return json(res, 409, {
-            error: mapped.message,
-            category: mapped.category,
-            recoveryActions: mapped.recoveryActions,
-          });
-        }
-
-        if (proposal.validation.status === 'invalid') {
-          const mapped = createAgentChatError('validation-failure');
-          return json(res, 422, {
-            error: mapped.message,
-            category: mapped.category,
-            recoveryActions: mapped.recoveryActions,
-          });
-        }
-
         const parentRun = getRun(proposal.runId);
         if (parentRun?.state === 'cancelled') {
           const mapped = createAgentChatError('cancelled');
@@ -977,201 +990,41 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
           return json(res, 422, { error: `Proposal is already ${proposal.state}.` });
         }
 
-        const body = (await readBody(req)) as { operationIds?: string[] };
+        const body = (await readBody(req)) as {
+          operationIds?: string[];
+          confirmedHighRisk?: boolean;
+          confirmation?: { acceptedRiskLevel?: string };
+        };
         const operationIds = body?.operationIds || [];
-        const opsToApply = proposal.operations.filter(
-          (op) => operationIds.length === 0 || operationIds.includes(op.id),
-        );
 
-        if (opsToApply.length === 0) {
-          return json(res, 400, { error: 'No valid operations selected to apply.' });
-        }
+        const applyResult = await applyAgentProposalTransaction(ctx, proposal, {
+          operationIds,
+          currentContents,
+          confirmedHighRisk:
+            body.confirmedHighRisk || body.confirmation?.acceptedRiskLevel === 'high',
+        });
 
-        const localBaseUrl = req.headers.host
-          ? `http://${req.headers.host}`
-          : 'http://localhost:5173';
-        const writtenFiles: string[] = [];
-
-        const fileBackups = new Map<string, string>();
-        for (const op of opsToApply) {
-          if (
-            op.kind === 'patch-slide-source' ||
-            op.kind === 'raw-patch' ||
-            op.kind === 'apply-theme' ||
-            op.kind === 'update-speaker-notes'
-          ) {
-            const filePath = resolveSlideEntryPath(ctx, op.target);
-            if (filePath && !fileBackups.has(filePath)) {
-              try {
-                const content = await fs.readFile(filePath, 'utf8');
-                fileBackups.set(filePath, content);
-              } catch {
-                fileBackups.set(filePath, '');
-              }
-            }
+        if (!applyResult.ok) {
+          const mapped = createAgentChatError(
+            applyResult.category,
+            applyResult.message,
+            applyResult.diagnostics,
+          );
+          const errorBody = {
+            error: mapped.message,
+            category: mapped.category,
+            diagnostics: mapped.diagnostics,
+            recoveryActions: mapped.recoveryActions,
+          };
+          if (applyResult.category === 'patch-conflict') {
+            return json(res, 409, errorBody);
           }
-        }
-
-        try {
-          for (const op of opsToApply) {
-            if (op.kind === 'patch-slide-source' || op.kind === 'raw-patch') {
-              const payload = op.payload as { code?: string } | undefined;
-              const code = payload?.code || '';
-              const filePath = resolveSlideEntryPath(ctx, op.target);
-              if (!filePath) {
-                throw new Error(`Invalid slide target: ${op.target}`);
-              }
-              await fs.writeFile(filePath, code, 'utf8');
-              writtenFiles.push(filePath);
-            } else if (op.kind === 'patch-slide-metadata') {
-              const payload = op.payload as { patch?: Record<string, unknown> } | undefined;
-              const patch = payload?.patch || {};
-              const slideId = op.target;
-              if (slideId && patch) {
-                const slideRes = await fetch(
-                  `${localBaseUrl}/__management/slides/${encodeURIComponent(slideId)}/metadata`,
-                  {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', 'x-local-agent': '1' },
-                    body: JSON.stringify(patch),
-                  },
-                ).catch(() => null);
-                if (slideRes?.ok) {
-                  const filePath = resolveSlideEntryPath(ctx, slideId);
-                  writtenFiles.push(filePath || `slides/${slideId}`);
-                  server.ws?.send({ type: 'full-reload' });
-                } else {
-                  throw new Error(`Failed to update metadata for slide: ${slideId}`);
-                }
-              }
-            } else if (op.kind === 'apply-theme') {
-              const payload = op.payload as { themeId?: string } | undefined;
-              const themeId = payload?.themeId;
-              if (themeId) {
-                const filePath = resolveSlideEntryPath(ctx, op.target);
-                if (filePath) {
-                  let source = '';
-                  try {
-                    source = await fs.readFile(filePath, 'utf8');
-                  } catch {
-                    throw new Error('Slide source not found');
-                  }
-                  const updated = patchMetaInSource(source, { theme: themeId });
-                  if (updated) {
-                    await fs.writeFile(filePath, updated, 'utf8');
-                    writtenFiles.push(filePath);
-                    server.ws?.send({ type: 'full-reload' });
-                  } else {
-                    throw new Error('Failed to patch theme in slide source');
-                  }
-                }
-              }
-            } else if (op.kind === 'update-speaker-notes') {
-              const payload = op.payload as { notes?: string } | undefined;
-              const notes = payload?.notes;
-              if (typeof notes === 'string') {
-                const filePath = resolveSlideEntryPath(ctx, op.target);
-                if (!filePath) {
-                  throw new Error(`Invalid slide target: ${op.target}`);
-                }
-                let source = '';
-                try {
-                  source = await fs.readFile(filePath, 'utf8');
-                } catch {
-                  throw new Error('Slide source not found');
-                }
-                const updated = patchMetaInSource(source, { notes });
-                if (!updated) {
-                  throw new Error('Failed to patch speaker notes in source');
-                }
-                await fs.writeFile(filePath, updated, 'utf8');
-                writtenFiles.push(filePath);
-                server.ws?.send({ type: 'full-reload' });
-              }
-            } else if (op.kind === 'update-deck') {
-              const payload = op.payload as { name?: string; description?: string } | undefined;
-              const deckId = op.target;
-              if (deckId && payload) {
-                const deckRes = await fetch(
-                  `${localBaseUrl}/__management/decks/${encodeURIComponent(deckId)}`,
-                  {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'x-local-agent': '1' },
-                    body: JSON.stringify(payload),
-                  },
-                ).catch(() => null);
-                if (deckRes?.ok) {
-                  writtenFiles.push(`decks/${deckId}`);
-                  server.ws?.send({ type: 'full-reload' });
-                } else {
-                  throw new Error(`Failed to update deck: ${deckId}`);
-                }
-              }
-            } else if (op.kind === 'create-slide') {
-              const payload = op.payload as
-                | {
-                    title?: string;
-                    deckId?: string;
-                    folderId?: string;
-                  }
-                | undefined;
-              if (payload?.title) {
-                const newSlideId = `slide_${Date.now()}`;
-                const slideRes = await fetch(`${localBaseUrl}/__management/slides`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', 'x-local-agent': '1' },
-                  body: JSON.stringify({
-                    id: newSlideId,
-                    title: payload.title,
-                    kind: 'blank',
-                    deckId: payload.deckId,
-                    folderId: payload.folderId,
-                  }),
-                }).catch(() => null);
-                if (slideRes?.ok) {
-                  writtenFiles.push(`slides/${newSlideId}`);
-                  server.ws?.send({ type: 'full-reload' });
-                } else {
-                  throw new Error('Failed to create new slide');
-                }
-              }
-            } else if (op.kind === 'reorder-pages') {
-              const payload = op.payload as { slideOrder?: string[]; deckId?: string } | undefined;
-              const deckId = payload?.deckId || op.target;
-              const slideOrder = payload?.slideOrder;
-              if (deckId && Array.isArray(slideOrder)) {
-                const orderRes = await fetch(`${localBaseUrl}/__management/collections/order`, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json', 'x-local-agent': '1' },
-                  body: JSON.stringify({
-                    collection: { type: 'deck', deckId },
-                    slideIds: slideOrder,
-                  }),
-                }).catch(() => null);
-                if (orderRes?.ok) {
-                  writtenFiles.push(`decks/${deckId}/order`);
-                  server.ws?.send({ type: 'full-reload' });
-                } else {
-                  throw new Error(`Failed to reorder deck pages: ${deckId}`);
-                }
-              }
-            }
+          if (applyResult.status === 428) {
+            return json(res, 428, errorBody);
           }
-        } catch (err) {
-          // Rollback file writes
-          for (const [filePath, originalContent] of fileBackups.entries()) {
-            try {
-              if (originalContent === '') {
-                await fs.rm(filePath, { force: true });
-              } else {
-                await fs.writeFile(filePath, originalContent, 'utf8');
-              }
-            } catch {
-              // Ignore rollback errors
-            }
+          if (applyResult.category === 'validation-failure') {
+            return json(res, applyResult.status, errorBody);
           }
-          const raw = err instanceof Error ? err.message : String(err);
-          const mapped = createAgentChatError('write-failure', undefined, raw);
           return json(res, 500, {
             error: mapped.message,
             category: mapped.category,
@@ -1181,23 +1034,38 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
         }
 
         const run = getRun(proposal.runId);
+        const refresh = await deriveRefreshPayload(ctx, applyResult.writtenFiles);
+        notifyAgentRefreshTargets(server, refresh);
         const auditEntry = await appendAuditEntry(ctx.userCwd, {
           prompt: run?.prompt || 'In-app edit',
           contextSummary: proposal.scope,
           proposalSummary: proposal.summary,
-          appliedFiles: writtenFiles,
-          operationKinds: opsToApply.map((op) => op.kind),
+          appliedFiles: applyResult.writtenFiles,
+          operationKinds: proposal.operations
+            .filter((op) => applyResult.selectedOperationIds.includes(op.id))
+            .map((op) => op.kind),
           connection: run?.connection || defaultConnection,
           validationSummary: proposal.validation.status,
         });
 
-        proposal.state =
-          opsToApply.length === proposal.operations.length ? 'applied' : 'partially-applied';
+        if (run && !['completed', 'cancelled', 'failed'].includes(run.state)) {
+          addRunEvent(run.id, 'file_summary', {
+            files: refresh.targets.map((target) => ({
+              path: target.relativePath,
+              target: target.slideId ?? target.deckId,
+              summary: `${target.refreshKind} refreshed`,
+            })),
+          });
+          addRunEvent(run.id, 'completed', null);
+        }
 
         return json(res, 200, {
           ok: true,
-          transactionId: `apply_${Date.now()}`,
-          writtenFiles,
+          transactionId: applyResult.transactionId,
+          proposalId,
+          state: applyResult.state,
+          writtenFiles: applyResult.writtenFiles,
+          refresh,
           auditEntryId: auditEntry.id,
         });
       }
@@ -1205,12 +1073,25 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
       // POST /proposals/:proposalId/reject
       const rejectMatch = pathname.match(/^\/proposals\/([^/]+)\/reject$/);
       if (req.method === 'POST' && rejectMatch) {
+        const headerMode = req.headers['x-runtime-mode'] as string | undefined;
+        const envMode = process.env.AGENT_RUNTIME_MODE || undefined;
+        const resolvedMode = (headerMode || envMode || 'interactive') as RuntimeMode;
+        const guard = validateRuntimeMutationRequest(req, {
+          runtimeMode: resolvedMode,
+          mutation: 'proposal-reject',
+        });
+        if (!guard.ok) return json(res, guard.status, { error: guard.error });
+
         const proposalId = rejectMatch[1];
         const proposal = findProposal(proposalId);
         if (!proposal) {
           return json(res, 404, { error: 'Proposal not found.' });
         }
         proposal.state = 'rejected';
+        const run = getRun(proposal.runId);
+        if (run && !['completed', 'cancelled', 'failed'].includes(run.state)) {
+          addRunEvent(run.id, 'completed', null);
+        }
         return json(res, 200, {
           ok: true,
           proposalId,

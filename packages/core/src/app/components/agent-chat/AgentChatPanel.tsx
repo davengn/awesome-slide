@@ -498,22 +498,29 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
     });
   };
 
-  const handleApplyProposal = async (proposalId: string) => {
+  const handleApplyProposal = async (
+    proposalId: string,
+    confirmation?: { acceptedRiskLevel: 'low' | 'medium' | 'high' },
+  ) => {
     const ops = selectedOperationIds[proposalId] || [];
     setApplyingProps((prev) => ({ ...prev, [proposalId]: true }));
     try {
-      const res = await applyProposal(proposalId, ops);
+      const res = await applyProposal(proposalId, ops, confirmation);
       if (res.ok) {
         dispatch({
           type: 'APPLY_PROPOSAL',
           payload: {
             proposalId,
-            state: ops.length === res.writtenFiles?.length ? 'applied' : 'partially-applied',
+            state: res.state,
           },
         });
 
-        // T100: Replace full page reload after apply with scoped slide/management refresh recovery and visible transaction feedback
-        setAppliedFeedback('Changes applied successfully!');
+        const refreshCount = res.refresh?.targets.length ?? 0;
+        setAppliedFeedback(
+          refreshCount > 0
+            ? `Changes applied. ${refreshCount} source target${refreshCount === 1 ? '' : 's'} refreshed.`
+            : 'Changes applied successfully.',
+        );
         setTimeout(() => {
           setAppliedFeedback(null);
         }, 3000);

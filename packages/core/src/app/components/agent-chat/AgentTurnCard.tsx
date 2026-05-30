@@ -1,6 +1,11 @@
 import { AlertCircle, Loader2 } from 'lucide-react';
 import type React from 'react';
-import type { AgentChatMessage, AgentEditProposal, RunState } from '../../lib/agent-chat-types.ts';
+import type {
+  AgentChatMessage,
+  AgentEditProposal,
+  GeneratedFileSummary,
+  RunState,
+} from '../../lib/agent-chat-types.ts';
 import { cn } from '../../lib/utils.ts';
 import { FilesFromTurn } from './FilesFromTurn.tsx';
 import { ProposalControls } from './ProposalControls.tsx';
@@ -12,7 +17,10 @@ interface AgentTurnCardProps {
   selectedOperationIds: Record<string, string[]>;
   applyingProps: Record<string, boolean>;
   onToggleOperation: (proposalId: string, opId: string) => void;
-  onApplyProposal: (proposalId: string) => void;
+  onApplyProposal: (
+    proposalId: string,
+    confirmation?: { acceptedRiskLevel: 'low' | 'medium' | 'high' },
+  ) => void;
   onRejectProposal: (proposalId: string) => void;
 }
 
@@ -78,7 +86,7 @@ export const AgentTurnCard: React.FC<AgentTurnCardProps> = ({
                     proposal={proposal}
                     selectedOperationIds={selOps}
                     isApplying={isApplying}
-                    onApply={() => onApplyProposal(pId)}
+                    onApply={(confirmation) => onApplyProposal(pId, confirmation)}
                     onReject={() => onRejectProposal(pId)}
                   />
                 </div>
@@ -109,14 +117,7 @@ export const AgentTurnCard: React.FC<AgentTurnCardProps> = ({
             );
           }
           if (part.type === 'file-summary') {
-            return (
-              <div
-                key={partKey}
-                className="text-[10px] font-mono bg-emerald-50/60 border border-emerald-100/70 text-emerald-800 rounded-lg px-2.5 py-1.5"
-              >
-                {part.text ?? 'Generated files'}
-              </div>
-            );
+            return <FilesFromTurn key={partKey} summary={part.data as GeneratedFileSummary} />;
           }
           return null;
         })}

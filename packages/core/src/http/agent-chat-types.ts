@@ -1,3 +1,4 @@
+import type { RefreshPayload } from '../agent-runtime/file-refresh.ts';
 import type {
   AgentChatContext,
   AgentChatSession,
@@ -52,6 +53,7 @@ export interface RetryRunResponse {
 
 export interface ApplyProposalRequest {
   operationIds?: string[];
+  confirmedHighRisk?: boolean;
   confirmation?: {
     acceptedRiskLevel: 'low' | 'medium' | 'high';
   };
@@ -60,7 +62,10 @@ export interface ApplyProposalRequest {
 export interface ApplyProposalResponse {
   ok: boolean;
   transactionId: string;
+  proposalId: string;
+  state: 'applied' | 'partially-applied';
   writtenFiles: string[];
+  refresh: RefreshPayload;
   auditEntryId: string;
 }
 

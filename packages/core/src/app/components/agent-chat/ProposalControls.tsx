@@ -9,7 +9,7 @@ interface ProposalControlsProps {
   proposal: AgentEditProposal;
   selectedOperationIds: string[];
   isApplying: boolean;
-  onApply: () => void;
+  onApply: (confirmation?: { acceptedRiskLevel: 'low' | 'medium' | 'high' }) => void;
   onReject: () => void;
 }
 
@@ -27,7 +27,12 @@ export const ProposalControls: React.FC<ProposalControlsProps> = ({
     proposal.riskLevel === 'high' || proposal.operations.some((op) => op.requiresConfirmation);
   const validationStatus = proposal.validation.status;
   const isCappedOrConflict = validationStatus === 'conflict' || validationStatus === 'invalid';
-  const isAppliedOrRejected = proposal.state === 'applied' || proposal.state === 'rejected';
+  const isAppliedOrRejected =
+    proposal.state === 'applied' ||
+    proposal.state === 'partially-applied' ||
+    proposal.state === 'rejected' ||
+    proposal.state === 'expired' ||
+    proposal.state === 'conflict';
 
   const canApply =
     !isCappedOrConflict &&
@@ -40,7 +45,10 @@ export const ProposalControls: React.FC<ProposalControlsProps> = ({
     return (
       <div className="p-4 border-t border-neutral-200 bg-neutral-50 flex items-center justify-center text-xs font-semibold text-neutral-500">
         {proposal.state === 'applied' && '✓ Proposal Applied'}
+        {proposal.state === 'partially-applied' && '✓ Selected Changes Applied'}
         {proposal.state === 'rejected' && '✕ Proposal Rejected'}
+        {proposal.state === 'expired' && 'Proposal Expired'}
+        {proposal.state === 'conflict' && 'Proposal Conflict'}
       </div>
     );
   }
@@ -60,7 +68,7 @@ export const ProposalControls: React.FC<ProposalControlsProps> = ({
 
   const handleConfirmDouble = () => {
     setShowDoubleConfirm(false);
-    onApply();
+    onApply({ acceptedRiskLevel: 'high' });
   };
 
   return (

@@ -279,11 +279,13 @@ describe('Agent Chat State Reducer', () => {
 
   it('should handle APPLY_PROPOSAL action', () => {
     const session = createInitialSession();
+    session.currentRunId = 'run_prop';
     session.messages = [
       {
         id: 'msg_assistant',
         sessionId: session.id,
         role: 'assistant',
+        runId: 'run_prop',
         proposalId: 'prop_123',
         content: [
           {
@@ -303,17 +305,20 @@ describe('Agent Chat State Reducer', () => {
     });
 
     expect(nextSession.messages[0].state).toBe('completed');
+    expect(nextSession.currentRunId).toBeUndefined();
     const summaryPart = nextSession.messages[0].content[0];
     expect((summaryPart.data as AgentEditProposal).state).toBe('applied');
   });
 
   it('should handle REJECT_PROPOSAL action', () => {
     const session = createInitialSession();
+    session.currentRunId = 'run_prop';
     session.messages = [
       {
         id: 'msg_assistant',
         sessionId: session.id,
         role: 'assistant',
+        runId: 'run_prop',
         proposalId: 'prop_123',
         content: [
           {
@@ -333,6 +338,7 @@ describe('Agent Chat State Reducer', () => {
     });
 
     expect(nextSession.messages[0].state).toBe('completed');
+    expect(nextSession.currentRunId).toBeUndefined();
     const summaryPart = nextSession.messages[0].content[0];
     expect((summaryPart.data as AgentEditProposal).state).toBe('rejected');
   });

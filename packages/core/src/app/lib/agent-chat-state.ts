@@ -184,8 +184,10 @@ export function agentChatReducer(
 
     case 'APPLY_PROPOSAL': {
       const { proposalId, state: nextState } = action.payload;
+      let appliedRunId: string | undefined;
       const messages = state.messages.map((msg) => {
         if (msg.proposalId === proposalId) {
+          appliedRunId = msg.runId;
           const content = msg.content.map((part) => {
             if (part.type === 'proposal-summary' && part.data) {
               const prop = part.data as AgentEditProposal;
@@ -206,6 +208,8 @@ export function agentChatReducer(
       });
       return {
         ...state,
+        currentRunId:
+          appliedRunId && state.currentRunId === appliedRunId ? undefined : state.currentRunId,
         messages,
         updatedAt: now,
       };
@@ -213,8 +217,10 @@ export function agentChatReducer(
 
     case 'REJECT_PROPOSAL': {
       const { proposalId } = action.payload;
+      let rejectedRunId: string | undefined;
       const messages = state.messages.map((msg) => {
         if (msg.proposalId === proposalId) {
+          rejectedRunId = msg.runId;
           const content = msg.content.map((part) => {
             if (part.type === 'proposal-summary' && part.data) {
               const prop = part.data as AgentEditProposal;
@@ -235,6 +241,8 @@ export function agentChatReducer(
       });
       return {
         ...state,
+        currentRunId:
+          rejectedRunId && state.currentRunId === rejectedRunId ? undefined : state.currentRunId,
         messages,
         updatedAt: now,
       };
