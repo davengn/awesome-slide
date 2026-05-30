@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateMutationRequest } from './request-guard.ts';
+import { validateMutationRequest, validateRuntimeMutationRequest } from './request-guard.ts';
 
 describe('validateMutationRequest', () => {
   function makeReq(
@@ -90,5 +90,75 @@ describe('validateMutationRequest', () => {
       'content-type': 'application/json',
     });
     expect(validateMutationRequest(req, { requireJsonBody: true })).toEqual({ ok: true });
+  });
+
+  it('blocks runtime mutations in read-only mode', () => {
+    const req = makeReq({
+      host: 'localhost:5173',
+      origin: 'http://localhost:5173',
+      'content-type': 'application/json',
+    });
+
+    expect(
+      validateRuntimeMutationRequest(req, {
+        runtimeMode: 'read-only',
+        mutation: 'chat-run-create',
+        requireJsonBody: true,
+      }),
+    ).toEqual({
+      ok: false,
+      status: 403,
+      error: 'Chat run creation is unavailable in read-only mode',
+    });
+    expect(
+      validateRuntimeMutationRequest(req, {
+        runtimeMode: 'read-only',
+        mutation: 'local-agent-scan',
+      }),
+    ).toEqual({
+      ok: false,
+      status: 403,
+      error: 'Local agent scanning is unavailable in read-only mode',
+    });
+    expect(
+      validateRuntimeMutationRequest(req, {
+        runtimeMode: 'read-only',
+        mutation: 'credential-write',
+      }),
+    ).toEqual({
+      ok: false,
+      status: 403,
+      error: 'Credential writes are unavailable in read-only mode',
+    });
+    expect(
+      validateRuntimeMutationRequest(req, {
+        runtimeMode: 'read-only',
+        mutation: 'proposal-apply',
+      }),
+    ).toEqual({
+      ok: false,
+      status: 403,
+      error: 'Proposal apply is unavailable in read-only mode',
+    });
+  });
+
+  it('delegates runtime mutation checks to same-origin validation in interactive mode', () => {
+    const req = makeReq({
+      host: 'localhost:5173',
+      origin: 'http://evil.example',
+      'content-type': 'application/json',
+    });
+
+    expect(
+      validateRuntimeMutationRequest(req, {
+        runtimeMode: 'interactive',
+        mutation: 'proposal-apply',
+        requireJsonBody: true,
+      }),
+    ).toEqual({
+      ok: false,
+      status: 403,
+      error: 'origin mismatch',
+    });
   });
 });

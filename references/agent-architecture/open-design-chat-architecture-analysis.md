@@ -7,7 +7,8 @@ Awesome Slide refactor.
 
 ## Architecture Summary
 
-Open Design is split into three main layers:
+Open Design is split into three main layers
+(every reference codes path start with: `/Users/ducduy/Projects/open-design`):
 
 - `apps/web`: React UI for projects, chat, settings, file workspace, previews,
   and local browser config.
@@ -111,7 +112,7 @@ definitions plus local profile definitions. Representative runtime definitions:
   - Uses `promptInputFormat: 'stream-json'`.
   - Keeps stdin open so Open Design can later write `tool_result` JSONL lines.
   - Supports `.mcp.json` injection via `externalMcpInjection:
-    'claude-mcp-json'`.
+'claude-mcp-json'`.
 - Codex: `apps/daemon/src/runtimes/defs/codex.ts`
   - Runs `codex exec --json`.
   - Uses stdin prompt delivery.
@@ -562,4 +563,3 @@ The following source patterns are likely reusable for future Awesome Slide work:
 - Use host-mediated tool-result submission for interactive mid-turn choices.
 - Keep srcDoc/URL-load preview selection explicit and source-driven.
 - Keep error classification structured enough for UI retry/auth actions.
-

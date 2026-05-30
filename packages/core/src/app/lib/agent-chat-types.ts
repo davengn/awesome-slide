@@ -1,14 +1,23 @@
+import type {
+  RuntimeMode as AgentRuntimeMode,
+  RuntimeConnectionSnapshot,
+  RuntimeEvent,
+  RuntimeEventType,
+} from '../../agent-runtime/contracts.ts';
 import type { ConnectionCapabilities } from './agent-connection-types.ts';
 import type { DeckId, FolderId, SlideId } from './sdk.ts';
 
-export type RuntimeMode = 'interactive' | 'read-only';
+export type RuntimeMode = AgentRuntimeMode;
 
 export interface AgentConnectionRef {
   connectionId: string;
   displayName: string;
-  type: 'local-agent' | 'manual-agent' | 'api-provider';
+  type: RuntimeConnectionSnapshot['type'];
+  provider?: string;
   modelOrAgent: string;
-  status: 'ready' | 'needs-setup' | 'testing' | 'degraded' | 'failed' | 'offline';
+  modelId?: string;
+  reasoningEffort?: string;
+  status: RuntimeConnectionSnapshot['status'];
   capabilities?: ConnectionCapabilities;
 }
 
@@ -179,6 +188,7 @@ export interface AgentChatRun {
 }
 
 export type EventType =
+  | RuntimeEventType
   | 'queued'
   | 'token'
   | 'progress'
@@ -192,8 +202,9 @@ export interface AgentChatEvent {
   sequence: number;
   runId: string;
   type: EventType;
-  payload: unknown;
+  payload: RuntimeEvent['payload'];
   createdAt: string;
+  source?: RuntimeEvent['source'];
 }
 
 export type ProposalState =

@@ -49,5 +49,13 @@ Filter to one package: `pnpm core <script>` / `pnpm cli <script>`.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/008-agent-chat-playwright-e2e/plan.md`
+`specs/007-agent-chat-architecture-refactor/plan.md`
 <!-- SPECKIT END -->
+
+## Active Technologies
+- TypeScript 5.9 strict mode, Node.js >=18, React 18. (007-agent-chat-architecture-refactor)
+- Existing pnpm/Turbo monorepo, `@awesome-slide/core`, Vite dev-server middleware, React Router, Tailwind CSS, shadcn/ui primitives, lucide-react icons, existing slide/file/management helpers, bundled `packages/core/skills`, current 005/006 UI components, and the 008 Playwright E2E fixture. No new runtime dependency is planned. (007-agent-chat-architecture-refactor)
+- Local ignored project storage under `.awesome-slide/agent-chat/` for conversations, messages, run event summaries, proposals, and audit entries; existing `.awesome-slide/agent-connections/settings.json` for non-secret connection settings; environment-variable or existing safe credential references for provider secrets. Browser local storage is only for UI preferences and bounded compatibility state. (007-agent-chat-architecture-refactor)
+
+## Recent Changes
+- 007-agent-chat-architecture-refactor: Planned Open Design-style runtime refactor for agent chat, connection execution, replayable events, prompt assembly, proposals, and E2E fixture isolation.
