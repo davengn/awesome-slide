@@ -265,7 +265,7 @@ export const meta = {
   theme: 'bright-sans',
   title: 'Skills & Sub Agents',
   status: 'draft',
-  createdAt: '2026-05-30T04:32:44.333Z'
+  createdAt: '2026-05-30T04:32:44.333Z',
 };
 
 export default [Cover, Content, Closer];

@@ -15,10 +15,7 @@
         "toolCalls": true,
         "localFileContext": true,
         "writeCapable": true,
-        "supportedModalities": [
-          "text",
-          "image"
-        ],
+        "supportedModalities": ["text", "image"],
         "maxContextBytes": 262144
       },
       "status": {
@@ -45,10 +42,7 @@
         "toolCalls": true,
         "localFileContext": true,
         "writeCapable": true,
-        "supportedModalities": [
-          "text",
-          "image"
-        ],
+        "supportedModalities": ["text", "image"],
         "maxContextBytes": 262144
       },
       "status": {

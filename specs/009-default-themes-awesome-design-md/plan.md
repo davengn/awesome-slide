@@ -1,8 +1,8 @@
 # Implementation Plan: Default Slide Themes From theme-design-md
 
-**Branch**: `codex/008-default-themes-awesome-design-md-plan` | **Date**: 2026-05-30 | **Spec**: [spec.md](./spec.md)
+**Branch**: `codex/009-default-themes-awesome-design-md-plan` | **Date**: 2026-05-30 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `/specs/008-default-themes-awesome-design-md/spec.md`
+**Input**: Feature specification from `/specs/009-default-themes-awesome-design-md/spec.md`
 
 ## Summary
 
@@ -47,7 +47,7 @@ Build a bundled default theme pipeline for Awesome Slide using the local `refere
 ### Documentation (this feature)
 
 ```text
-specs/008-default-themes-awesome-design-md/
+specs/009-default-themes-awesome-design-md/
 |-- spec.md
 |-- plan.md
 |-- research.md
@@ -108,7 +108,7 @@ packages/cli/
 `-- <patch-changeset>.md
 ```
 
-**Structure Decision**: Implement as a `packages/core` runtime capability because the theme registry, gallery, slide creation, agent context, and Vite virtual modules live there. Use `references/theme-design-md` only as maintainer/import input. Update `packages/cli/template` only if documentation or scaffold guidance must mention bundled defaults. Documentation and contracts live under `specs/008-default-themes-awesome-design-md/`.
+**Structure Decision**: Implement as a `packages/core` runtime capability because the theme registry, gallery, slide creation, agent context, and Vite virtual modules live there. Use `references/theme-design-md` only as maintainer/import input. Update `packages/cli/template` only if documentation or scaffold guidance must mention bundled defaults. Documentation and contracts live under `specs/009-default-themes-awesome-design-md/`.
 
 ## Phase 0 Research Output
 
@@ -137,7 +137,7 @@ Design artifacts are complete:
 - [contracts/theme-import-contract.md](./contracts/theme-import-contract.md): maintainer import command behavior, inputs, outputs, diagnostics, and deterministic update requirements.
 - [contracts/theme-gallery-application-contract.md](./contracts/theme-gallery-application-contract.md): runtime registry, gallery, slide creation, apply-theme, and agent context behavior.
 - [quickstart.md](./quickstart.md): validation loop for import, gallery, creation, apply flow, agent context, update reporting, package-size review, and final gates.
-- Renumbering note: this feature now lives under `specs/008-default-themes-awesome-design-md/`.
+- Renumbering note: this feature now lives under `specs/009-default-themes-awesome-design-md/`.
 
 ## Resolved Planning Assumptions
 

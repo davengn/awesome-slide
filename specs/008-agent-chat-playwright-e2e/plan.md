@@ -1,8 +1,8 @@
 # Implementation Plan: Playwright E2E Coverage for Agent Connections and Chat Slide Generation
 
-**Branch**: `codex/007-agent-chat-playwright-e2e-plan` | **Date**: 2026-05-30 | **Spec**: [spec.md](./spec.md)
+**Branch**: `codex/008-agent-chat-playwright-e2e-plan` | **Date**: 2026-05-30 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `/specs/007-agent-chat-playwright-e2e/spec.md`
+**Input**: Feature specification from `/specs/008-agent-chat-playwright-e2e/spec.md`
 
 ## Summary
 
@@ -47,7 +47,7 @@ Add a root Playwright E2E harness for Awesome Slide that runs the demo app again
 ### Documentation (this feature)
 
 ```text
-specs/007-agent-chat-playwright-e2e/
+specs/008-agent-chat-playwright-e2e/
 |-- spec.md
 |-- plan.md
 |-- research.md
