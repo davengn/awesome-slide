@@ -1,5 +1,6 @@
 import { Check, Eye, EyeOff, Loader2, ShieldAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { testAgentCredentials } from '@/lib/agent-connection-client';
 import type { ProviderRegistryEntry } from '@/lib/agent-connection-types';
 import { cn } from '@/lib/utils';
 
@@ -27,12 +28,14 @@ export function ByokProviderForm({ initialFocus, providers, onActivate }: ByokPr
   const [envVarName, setEnvVarName] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testStatus, setTestStatus] = useState<{ state: string; message?: string } | null>(null);
+  const [storageWarning, setStorageWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const selectedProvider = apiProviders.find((p) => p.id === providerId);
 
-  // Set default model when provider changes
   useEffect(() => {
     if (selectedProvider) {
       const defaultModel = selectedProvider.defaultModels?.[0] ?? '';
@@ -45,10 +48,61 @@ export function ByokProviderForm({ initialFocus, providers, onActivate }: ByokPr
     }
   }, [selectedProvider]);
 
+  const handleTest = async () => {
+    setError(null);
+    setSuccess(false);
+    setTestStatus(null);
+    setStorageWarning(null);
+
+    const activeModel = isCustomModel ? customModelId.trim() : modelId;
+    if (!activeModel) {
+      setError('Model identifier is required.');
+      return;
+    }
+
+    if (authType === 'key' && !apiKey.trim()) {
+      setError('API Key is required.');
+      return;
+    }
+
+    if (authType === 'env' && !envVarName.trim()) {
+      setError('Environment variable name is required.');
+      return;
+    }
+
+    setTesting(true);
+
+    try {
+      const res = await testAgentCredentials({
+        provider: providerId,
+        apiKey: authType === 'key' ? apiKey.trim() : undefined,
+        envVarName: authType === 'env' ? envVarName.trim() : undefined,
+        modelId: activeModel,
+      });
+
+      setTestStatus(res.status);
+      if (res.status.state === 'failed') {
+        if (res.status.category === 'secure-storage-unavailable') {
+          setStorageWarning(
+            'Secure storage is unavailable on this platform/configuration. Raw API keys cannot be saved locally.',
+          );
+        } else {
+          setError(res.status.message || 'Verification failed.');
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setTesting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(false);
+    setTestStatus(null);
+    setStorageWarning(null);
 
     const activeModel = isCustomModel ? customModelId.trim() : modelId;
     if (!activeModel) {
@@ -80,8 +134,14 @@ export function ByokProviderForm({ initialFocus, providers, onActivate }: ByokPr
       setSuccess(true);
       setApiKey('');
       setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+    } catch (err: any) {
+      if (err?.category === 'secure-storage-unavailable') {
+        setStorageWarning(
+          'Secure storage is unavailable on this platform/configuration. Raw API keys cannot be saved locally.',
+        );
+      } else {
+        setError(err instanceof Error ? err.message : String(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -100,7 +160,6 @@ export function ByokProviderForm({ initialFocus, providers, onActivate }: ByokPr
       </div>
 
       <div className="grid gap-3">
-        {/* Provider Select */}
         <label className="grid gap-1.5 text-[12px] font-medium text-foreground">
           <span>Provider</span>
           <select
@@ -120,7 +179,6 @@ export function ByokProviderForm({ initialFocus, providers, onActivate }: ByokPr
           </select>
         </label>
 
-        {/* Model Select */}
         <div className="grid gap-1.5 text-[12px] font-medium text-foreground">
           <span>Model</span>
           <div className="grid gap-2">
@@ -166,7 +224,6 @@ export function ByokProviderForm({ initialFocus, providers, onActivate }: ByokPr
           </div>
         </div>
 
-        {/* Auth Type Toggle */}
         <div className="grid gap-1.5 text-[12px] font-medium text-foreground">
           <span>Authentication</span>
           <div className="grid grid-cols-2 rounded-[7px] bg-muted p-0.5">
@@ -203,7 +260,6 @@ export function ByokProviderForm({ initialFocus, providers, onActivate }: ByokPr
           </div>
         </div>
 
-        {/* API Key Input */}
         {authType === 'key' && (
           <label className="grid gap-1.5 text-[12px] font-medium text-foreground">
             <span>API Key</span>
@@ -229,7 +285,6 @@ export function ByokProviderForm({ initialFocus, providers, onActivate }: ByokPr
           </label>
         )}
 
-        {/* Env Var Name Input */}
         {authType === 'env' && (
           <label className="grid gap-1.5 text-[12px] font-medium text-foreground">
             <span>Environment Variable Name</span>
@@ -254,6 +309,13 @@ export function ByokProviderForm({ initialFocus, providers, onActivate }: ByokPr
         </div>
       )}
 
+      {storageWarning && (
+        <div className="flex items-start gap-1.5 text-[12px] text-yellow-600" role="alert">
+          <ShieldAlert className="mt-0.5 size-3.5 shrink-0" />
+          <span>{storageWarning}</span>
+        </div>
+      )}
+
       {success && (
         <div className="flex items-start gap-1.5 text-[12px] text-green-600" role="alert">
           <Check className="mt-0.5 size-3.5 shrink-0" />
@@ -261,10 +323,36 @@ export function ByokProviderForm({ initialFocus, providers, onActivate }: ByokPr
         </div>
       )}
 
+      {testStatus && testStatus.state === 'ready' && (
+        <div
+          className="flex flex-col gap-1.5 rounded-[7px] border border-green-200 bg-green-50/20 p-3 text-[12.5px] text-green-700"
+          role="alert"
+        >
+          <div className="flex items-start gap-1.5 font-medium">
+            <Check className="mt-0.5 size-3.5 shrink-0" />
+            <span>Connection verified successfully.</span>
+          </div>
+          {testStatus.message && (
+            <pre className="mt-1 max-h-32 overflow-y-auto rounded-[5px] border border-green-200 bg-green-50/50 p-2 font-mono text-[11px] whitespace-pre-wrap text-green-800">
+              {testStatus.message}
+            </pre>
+          )}
+        </div>
+      )}
+
       <div className="flex justify-end gap-2">
         <button
+          type="button"
+          disabled={loading || testing}
+          onClick={handleTest}
+          className="inline-flex h-9 items-center justify-center rounded-[7px] border border-hairline bg-background px-4 text-[12.5px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+        >
+          {testing && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
+          Test Connection
+        </button>
+        <button
           type="submit"
-          disabled={loading}
+          disabled={loading || testing}
           className="inline-flex h-9 items-center justify-center rounded-[7px] bg-brand px-4 text-[12.5px] font-semibold text-brand-foreground shadow-edge outline-none hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-ring/35 disabled:opacity-50"
         >
           {loading && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}

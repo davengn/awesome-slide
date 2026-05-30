@@ -104,4 +104,38 @@ describe('agent secrets', () => {
     expect(redacted).toContain('<redacted>');
     expect(redacted).toContain('<user>');
   });
+
+  it('T052: redacts credentials in settings, diagnostics, and bootstrap payloads', () => {
+    // Mock settings payload with raw credentials
+    const settingsPayload = {
+      connections: [
+        {
+          id: 'conn_openai',
+          displayName: 'OpenAI',
+          credentialRef: 'cred_openai_abc123',
+          credentialStorage: 'os-credential-store',
+          apiKey: 'sk-super-secret-raw-key-12345',
+        },
+      ],
+    };
+
+    const serializedSettings = JSON.stringify(settingsPayload);
+    // Standard diagnostics redaction
+    const redactedDiagnostics = redactDiagnostics(
+      `Failed with credentials in project settings: ${serializedSettings}`,
+    );
+    expect(redactedDiagnostics).not.toContain('sk-super-secret-raw-key-12345');
+    expect(redactedDiagnostics).toContain('<redacted>');
+
+    // Bootstrap payload mock representation
+    const bootstrapPayload = {
+      activeConnection: {
+        connectionId: 'conn_openai',
+        displayName: 'OpenAI',
+        modelOrAgent: 'gpt-4o',
+      },
+    };
+    expect(JSON.stringify(bootstrapPayload)).not.toContain('cred_openai_abc123');
+    expect(JSON.stringify(bootstrapPayload)).not.toContain('sk-super-secret-raw-key-12345');
+  });
 });

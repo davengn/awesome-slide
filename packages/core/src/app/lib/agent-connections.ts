@@ -201,6 +201,7 @@ export function isLocalAgentProviderId(
 
 export function toActiveConnectionSnapshot(
   connection: AgentConnectionConfig,
+  isProjectDefault?: boolean,
 ): ActiveConnectionSnapshot {
   const provider = getProviderEntry(connection.provider);
   const activeType: ActiveConnectionSnapshot['type'] =
@@ -229,6 +230,7 @@ export function toActiveConnectionSnapshot(
     status: connection.status.state,
     capabilities: normalizeCapabilities(connection.capabilities),
     settingsTarget: 'execution-model',
+    isProjectDefault,
   };
 }
 
@@ -259,11 +261,14 @@ export function createSafeBootstrapSnapshot(settings: AgentConnectionSettings): 
   connections: ActiveConnectionSnapshot[];
   firstRunSetup: { shouldShow: boolean; dismissedAt: string | null };
 } {
+  const active = resolveActiveConnection(settings);
   return {
-    activeConnection: resolveActiveConnection(settings)
-      ? toActiveConnectionSnapshot(resolveActiveConnection(settings) as AgentConnectionConfig)
+    activeConnection: active
+      ? toActiveConnectionSnapshot(active, settings.projectDefaultConnectionId === active.id)
       : null,
-    connections: settings.connections.map(toActiveConnectionSnapshot),
+    connections: settings.connections.map((c) =>
+      toActiveConnectionSnapshot(c, settings.projectDefaultConnectionId === c.id),
+    ),
     firstRunSetup: {
       shouldShow: shouldShowFirstRunSetup(settings),
       dismissedAt: settings.firstRunSetup.dismissedAt ?? null,

@@ -11,7 +11,6 @@ type LocalAgentCardProps = {
 
 export function LocalAgentCard({ candidate, selected, onClick }: LocalAgentCardProps) {
   const isInstalled = candidate.status === 'installed';
-  const isNotInstalled = candidate.status === 'not-installed';
   const isIncompatible = candidate.status === 'incompatible';
   const needsManualPath = candidate.status === 'needs-manual-path';
 
@@ -29,14 +28,17 @@ export function LocalAgentCard({ candidate, selected, onClick }: LocalAgentCardP
           ? 'Approved dir'
           : 'Project metadata';
 
+  const isDisabled = !isInstalled || candidate.compatibility?.status === 'incompatible';
+
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={isDisabled}
       className={cn(
-        'grid min-h-[66px] w-full grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-3 rounded-[8px] border bg-background px-3 py-2 text-left transition-all duration-200 outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/35',
+        'grid min-h-[66px] w-full grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-3 rounded-[8px] border bg-background px-3 py-2 text-left transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring/35',
         selected ? 'border-brand/70 shadow-edge bg-muted/20' : 'border-hairline',
-        isNotInstalled && 'opacity-65',
+        isDisabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40',
       )}
     >
       <span className="inline-flex size-9 items-center justify-center rounded-[8px] bg-muted">

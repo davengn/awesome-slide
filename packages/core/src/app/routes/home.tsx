@@ -57,15 +57,14 @@ export function Home() {
   const [firstRunError, setFirstRunError] = useState<string | null>(null);
   const [firstRunDismissPending, setFirstRunDismissPending] = useState(false);
   const [activeScanId, setActiveScanId] = useState<string | null>(null);
-  const [agentOpen, setAgentOpen] = useState(() => {
-    return (
-      typeof window !== 'undefined' && !!new URLSearchParams(window.location.search).get('prompt')
-    );
-  });
-  const seedPrompt =
-    typeof window !== 'undefined'
+  const [seedPrompt] = useState(() => {
+    return typeof window !== 'undefined'
       ? new URLSearchParams(window.location.search).get('prompt') || undefined
       : undefined;
+  });
+  const [agentOpen, setAgentOpen] = useState(() => {
+    return !!seedPrompt;
+  });
 
   useEffect(() => {
     const promptParam = searchParams.get('prompt');
@@ -550,7 +549,8 @@ export function Home() {
         onCreate={management.createSlide}
         onCreated={(response) => {
           if (response.next.type === 'agent-chat') {
-            navigate(`/s/${response.next.seedSlideId}`);
+            const params = new URLSearchParams({ prompt: response.next.prompt });
+            navigate(`/s/${response.next.seedSlideId}?${params.toString()}`);
           } else {
             navigate(`/s/${response.next.slideId}`);
           }

@@ -40,6 +40,26 @@ describe('agent connection helpers', () => {
   });
 
   it('maps connection error categories to concrete recovery actions', () => {
+    const categories: Array<AgentConnectionConfig['status']['category'] & {}> = [
+      'missing-executable',
+      'invalid-path',
+      'scan-denied',
+      'secure-storage-unavailable',
+      'authentication-failed',
+      'quota-rate-limit',
+      'unsupported-model',
+      'incompatible-protocol',
+      'provider-offline',
+      'timeout',
+      'unknown',
+    ];
+    for (const cat of categories) {
+      if (cat) {
+        const actions = mapErrorCategoryToRecoveryActions(cat);
+        expect(actions).toBeDefined();
+        expect(actions.length).toBeGreaterThan(0);
+      }
+    }
     expect(mapErrorCategoryToRecoveryActions('missing-executable')).toEqual([
       'rescan',
       'edit-path',

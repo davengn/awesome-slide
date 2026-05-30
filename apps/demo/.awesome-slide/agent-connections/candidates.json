@@ -1,0 +1,77 @@
+[
+  {
+    "id": "cmd_claude-code_claude",
+    "provider": "claude-code",
+    "displayName": "Claude Code",
+    "command": "claude",
+    "pathLabel": "claude",
+    "source": "path",
+    "version": "2.1.118",
+    "status": "installed",
+    "compatibility": {
+      "status": "compatible",
+      "message": "Claude Code detected."
+    },
+    "lastSeenAt": "2026-05-30T04:19:27.257Z"
+  },
+  {
+    "id": "cmd_codex_codex",
+    "provider": "codex",
+    "displayName": "Codex CLI",
+    "command": "codex",
+    "pathLabel": "codex",
+    "source": "path",
+    "version": "0.130.0",
+    "status": "installed",
+    "compatibility": {
+      "status": "compatible",
+      "message": "Codex CLI detected."
+    },
+    "lastSeenAt": "2026-05-30T04:19:27.350Z"
+  },
+  {
+    "id": "cmd_gemini-cli_gemini",
+    "provider": "gemini-cli",
+    "displayName": "Gemini CLI",
+    "command": "gemini",
+    "pathLabel": "gemini",
+    "source": "path",
+    "status": "not-installed",
+    "lastSeenAt": "2026-05-30T04:19:27.353Z"
+  },
+  {
+    "id": "cmd_opencode_opencode",
+    "provider": "opencode",
+    "displayName": "OpenCode",
+    "command": "opencode",
+    "pathLabel": "opencode",
+    "source": "path",
+    "status": "not-installed",
+    "lastSeenAt": "2026-05-30T04:19:27.355Z"
+  },
+  {
+    "id": "cmd_cursor-agent_cursor-agent",
+    "provider": "cursor-agent",
+    "displayName": "Cursor Agent",
+    "command": "cursor-agent",
+    "pathLabel": "cursor-agent",
+    "source": "path",
+    "status": "not-installed",
+    "lastSeenAt": "2026-05-30T04:19:27.357Z"
+  },
+  {
+    "id": "cmd_github-copilot-cli_gh",
+    "provider": "github-copilot-cli",
+    "displayName": "GitHub Copilot CLI",
+    "command": "gh",
+    "pathLabel": "gh",
+    "source": "path",
+    "version": "2.65.0",
+    "status": "installed",
+    "compatibility": {
+      "status": "compatible",
+      "message": "GitHub Copilot CLI detected."
+    },
+    "lastSeenAt": "2026-05-30T04:19:27.480Z"
+  }
+]

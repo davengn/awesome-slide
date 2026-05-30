@@ -129,7 +129,7 @@ describe('Agent Chat Storage & Retention', () => {
     expect(loaded?.messages[0].content[0].text).toBe('Hi');
   });
 
-  it('recovers interrupted active runs when loading persisted sessions', () => {
+  it('recovers interrupted active runs without persisting a visible failure', () => {
     const session: AgentChatSession = {
       id: 'session_1',
       projectKey: 'proj_abc',
@@ -163,7 +163,91 @@ describe('Agent Chat Storage & Retention', () => {
     const recovered = recoverInterruptedRun(session);
 
     expect(recovered.currentRunId).toBeUndefined();
-    expect(recovered.messages[1].state).toBe('failed');
-    expect(recovered.messages[1].error?.category).toBe('timeout');
+    expect(recovered.messages).toHaveLength(1);
+    expect(recovered.messages[0].role).toBe('user');
+  });
+
+  it('keeps partial text from interrupted runs without showing a stale recovery error', () => {
+    const session: AgentChatSession = {
+      id: 'session_1',
+      projectKey: 'proj_abc',
+      origin: 'slide-workspace',
+      currentRunId: 'run_1',
+      messages: [
+        {
+          id: 'msg_u',
+          sessionId: 'session_1',
+          role: 'user',
+          content: [{ type: 'text', text: 'Improve this slide' }],
+          runId: 'run_1',
+          state: 'completed',
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: 'msg_a',
+          sessionId: 'session_1',
+          role: 'assistant',
+          content: [
+            { type: 'progress', text: 'Analyzing slide layout...' },
+            { type: 'text', text: 'Partial response' },
+          ],
+          runId: 'run_1',
+          state: 'streaming',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      contextPreferences: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const recovered = recoverInterruptedRun(session);
+
+    expect(recovered.currentRunId).toBeUndefined();
+    expect(recovered.messages).toHaveLength(2);
+    expect(recovered.messages[1].state).toBe('cancelled');
+    expect(recovered.messages[1].error).toBeUndefined();
+    expect(recovered.messages[1].content).toEqual([{ type: 'text', text: 'Partial response' }]);
+  });
+
+  it('removes legacy interrupted-run recovery errors on load', () => {
+    const session: AgentChatSession = {
+      id: 'session_1',
+      projectKey: 'proj_abc',
+      origin: 'slide-workspace',
+      messages: [
+        {
+          id: 'msg_u',
+          sessionId: 'session_1',
+          role: 'user',
+          content: [{ type: 'text', text: 'Improve this slide' }],
+          runId: 'run_1',
+          state: 'completed',
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: 'msg_a',
+          sessionId: 'session_1',
+          role: 'assistant',
+          content: [],
+          runId: 'run_1',
+          state: 'failed',
+          createdAt: new Date().toISOString(),
+          error: {
+            category: 'timeout',
+            message: 'The previous agent run was interrupted before it completed.',
+            recoveryActions: ['retry'],
+          },
+        },
+      ],
+      contextPreferences: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const recovered = recoverInterruptedRun(session);
+
+    expect(recovered.messages).toHaveLength(1);
+    expect(recovered.messages[0].role).toBe('user');
   });
 });

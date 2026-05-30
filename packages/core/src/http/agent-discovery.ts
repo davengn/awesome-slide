@@ -1,4 +1,4 @@
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type {
@@ -25,7 +25,7 @@ export interface CommandLookup {
 const defaultCommandLookup: CommandLookup = {
   lookup: async (command: string) => {
     return new Promise((resolve) => {
-      exec(`"${command}" --version`, { timeout: 1000 }, (error, stdout, stderr) => {
+      execFile(command, ['--version'], { timeout: 1000, shell: false }, (error, stdout, stderr) => {
         if (error) {
           resolve({ found: false });
         } else {
@@ -193,7 +193,7 @@ async function probeCommandOrExecutable(
       return resolve({ ok: false, error: 'Command or path is empty' });
     }
 
-    exec(`"${trimmed}" --version`, { timeout: 1000 }, (error, stdout, stderr) => {
+    execFile(trimmed, ['--version'], { timeout: 1000, shell: false }, (error, stdout, stderr) => {
       const combined = `${stdout}\n${stderr}`.trim();
       const redactedCombined = redactDiagnostics(combined);
 

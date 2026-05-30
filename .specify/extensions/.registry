@@ -33,24 +33,6 @@
       "enabled": true,
       "priority": 10,
       "registered_commands": {
-        "agy": [
-          "speckit.review.run",
-          "speckit.review.code",
-          "speckit.review.comments",
-          "speckit.review.tests",
-          "speckit.review.errors",
-          "speckit.review.types",
-          "speckit.review.simplify"
-        ],
-        "claude": [
-          "speckit.review.run",
-          "speckit.review.code",
-          "speckit.review.comments",
-          "speckit.review.tests",
-          "speckit.review.errors",
-          "speckit.review.types",
-          "speckit.review.simplify"
-        ],
         "codex": [
           "speckit.review.run",
           "speckit.review.code",
@@ -61,8 +43,16 @@
           "speckit.review.simplify"
         ]
       },
-      "registered_skills": [],
-      "installed_at": "2026-05-29T09:22:13.239162+00:00"
+      "registered_skills": [
+        "speckit-review-run",
+        "speckit-review-code",
+        "speckit-review-comments",
+        "speckit-review-tests",
+        "speckit-review-errors",
+        "speckit-review-types",
+        "speckit-review-simplify"
+      ],
+      "installed_at": "2026-05-30T02:52:10.805027+00:00"
     }
   }
 }

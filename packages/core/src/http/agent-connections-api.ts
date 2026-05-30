@@ -15,6 +15,7 @@ import type {
   ApiProviderCredential,
   ApiProviderId,
   ConnectionErrorCategory,
+  ConnectionStatus,
   CreateAgentConnectionRequest,
   DismissFirstRunRequest,
   LocalAgentCandidate,
@@ -33,6 +34,9 @@ import {
 } from '../app/lib/agent-connections.ts';
 import type { ApiContext } from '../vite/routes/context.ts';
 import { json, readBody } from '../vite/routes/context.ts';
+import type { LocalAgentConfig } from './agent-chat-api.ts';
+import { createLocalAgentInvocation } from './agent-chat-api.ts';
+import type { StartAgentConnectionRunRequest } from './agent-connection-adapters.ts';
 import {
   addApprovedDirectory,
   discoverLocalAgentCandidates,
@@ -158,6 +162,7 @@ function sanitizeConnectionForClient(
     credentialRef: _credentialRef,
     credentialStorage: _credentialStorage,
     credentialDisplayHint: _credentialDisplayHint,
+    manualPathRef: _manualPathRef,
     ...safeConnection
   } = connection;
   const credential = credentialDisplayHint(connection);
@@ -198,12 +203,278 @@ function closeScanStream(scanId: string) {
   session.clients = [];
 }
 
+async function testProviderCredentials(
+  provider: string,
+  apiKey: string,
+  modelId?: string,
+): Promise<ConnectionStatus> {
+  const timeoutSignal = AbortSignal.timeout(15000);
+  try {
+    let testOk = false;
+    let errorMsg = '';
+    let errorCategory: ConnectionErrorCategory = 'unknown';
+    let responseText = '';
+
+    if (provider === 'openai') {
+      const model = modelId || 'gpt-4o-mini';
+      const probeRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: 'Respond with exactly: ok' }],
+          max_tokens: 4,
+        }),
+        signal: timeoutSignal,
+      });
+      if (probeRes.ok) {
+        testOk = true;
+        const data = await probeRes.json().catch(() => ({}));
+        responseText = data.choices?.[0]?.message?.content || '';
+      } else {
+        const body = await probeRes.text().catch(() => '');
+        errorMsg = `OpenAI API returned status ${probeRes.status}: ${body}`;
+        if (probeRes.status === 401) errorCategory = 'authentication-failed';
+        else if (probeRes.status === 429) errorCategory = 'quota-rate-limit';
+        else if (probeRes.status === 404) errorCategory = 'unsupported-model';
+      }
+    } else if (provider === 'anthropic') {
+      const model = modelId || 'claude-3-5-haiku-latest';
+      const probeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: 'Respond with exactly: ok' }],
+          max_tokens: 4,
+        }),
+        signal: timeoutSignal,
+      });
+      if (probeRes.ok) {
+        testOk = true;
+        const data = await probeRes.json().catch(() => ({}));
+        responseText = data.content?.[0]?.text || '';
+      } else {
+        const body = await probeRes.text().catch(() => '');
+        errorMsg = `Anthropic API returned status ${probeRes.status}: ${body}`;
+        if (probeRes.status === 401) errorCategory = 'authentication-failed';
+        else if (probeRes.status === 429) errorCategory = 'quota-rate-limit';
+        else if (probeRes.status === 404) errorCategory = 'unsupported-model';
+      }
+    } else if (provider === 'google') {
+      const model = modelId || 'gemini-2.0-flash-lite';
+      const probeRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Respond with exactly: ok' }] }],
+            generationConfig: { maxOutputTokens: 4 },
+          }),
+          signal: timeoutSignal,
+        },
+      );
+      if (probeRes.ok) {
+        testOk = true;
+        const data = await probeRes.json().catch(() => ({}));
+        responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      } else {
+        const body = await probeRes.text().catch(() => '');
+        errorMsg = `Google API returned status ${probeRes.status}: ${body}`;
+        if (probeRes.status === 400 || probeRes.status === 403)
+          errorCategory = 'authentication-failed';
+        else if (probeRes.status === 429) errorCategory = 'quota-rate-limit';
+        else if (probeRes.status === 404) errorCategory = 'unsupported-model';
+      }
+    } else if (provider === 'openrouter') {
+      const model = modelId || 'openai/gpt-4o-mini';
+      const probeRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: 'Respond with exactly: ok' }],
+          max_tokens: 4,
+        }),
+        signal: timeoutSignal,
+      });
+      if (probeRes.ok) {
+        testOk = true;
+        const data = await probeRes.json().catch(() => ({}));
+        responseText = data.choices?.[0]?.message?.content || '';
+      } else {
+        const body = await probeRes.text().catch(() => '');
+        errorMsg = `OpenRouter API returned status ${probeRes.status}: ${body}`;
+        if (probeRes.status === 401) errorCategory = 'authentication-failed';
+      }
+    } else if (provider === 'deepseek') {
+      const model = modelId || 'deepseek-chat';
+      const probeRes = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: 'Respond with exactly: ok' }],
+          max_tokens: 4,
+        }),
+        signal: timeoutSignal,
+      });
+      if (probeRes.ok) {
+        testOk = true;
+        const data = await probeRes.json().catch(() => ({}));
+        responseText = data.choices?.[0]?.message?.content || '';
+      } else {
+        const body = await probeRes.text().catch(() => '');
+        errorMsg = `DeepSeek API returned status ${probeRes.status}: ${body}`;
+        if (probeRes.status === 401) errorCategory = 'authentication-failed';
+        else if (probeRes.status === 429) errorCategory = 'quota-rate-limit';
+      }
+    } else {
+      testOk = true;
+      responseText = 'ok';
+    }
+
+    if (testOk) {
+      return createConnectionStatus('ready', {
+        message: `Prompt: "Respond with exactly: ok"\nResponse: "${responseText.trim()}"`,
+        checkedAt: new Date().toISOString(),
+      });
+    }
+    return createConnectionStatus('failed', {
+      category: errorCategory,
+      message: errorMsg,
+      checkedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    const raw = err instanceof Error ? err.message : String(err);
+    const isTimeout = err instanceof Error && err.name === 'TimeoutError';
+    return createConnectionStatus('failed', {
+      category: isTimeout ? 'timeout' : 'provider-offline',
+      message: isTimeout ? 'Test request timed out.' : `Network request failed: ${raw}`,
+      checkedAt: new Date().toISOString(),
+    });
+  }
+}
+
+async function testLocalAgentCredentials(
+  commandOrPath: string,
+  connectionConfig: LocalAgentConfig | undefined,
+  cwd: string,
+): Promise<ConnectionStatus> {
+  const timeoutSignal = AbortSignal.timeout(10000);
+  try {
+    const { spawn } = await import('node:child_process');
+
+    const testReq: StartAgentConnectionRunRequest = {
+      runId: 'test_run',
+      prompt: 'Respond with exactly: ok',
+      context: { project: {} },
+      workflows: [],
+      connectionId: 'test_connection',
+      capabilities: { ...DEFAULT_CONNECTION_CAPABILITIES, streaming: true, cancellation: true },
+      signal: timeoutSignal,
+    };
+
+    const invocation = createLocalAgentInvocation(commandOrPath, connectionConfig, testReq, cwd);
+
+    return await new Promise<ConnectionStatus>((resolve) => {
+      const child = spawn(commandOrPath, invocation.args, {
+        cwd,
+        shell: false,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout.on('data', (chunk: Buffer) => {
+        stdout += chunk.toString();
+      });
+
+      child.stderr.on('data', (chunk: Buffer) => {
+        stderr += chunk.toString();
+      });
+
+      child.once('error', (err) => {
+        resolve(
+          createConnectionStatus('failed', {
+            category: 'provider-offline',
+            message: `Failed to spawn local agent process: ${err.message}`,
+            checkedAt: new Date().toISOString(),
+          }),
+        );
+      });
+
+      child.once('close', (code) => {
+        if (code === 0) {
+          const out = stdout.trim() || stderr.trim();
+          resolve(
+            createConnectionStatus('ready', {
+              message: `Prompt: "Respond with exactly: ok"\nResponse: "${out}"`,
+              checkedAt: new Date().toISOString(),
+            }),
+          );
+        } else {
+          resolve(
+            createConnectionStatus('failed', {
+              category: 'incompatible-protocol',
+              message: `Local agent exited with code ${code}. Output: ${stdout.trim() || stderr.trim()}`,
+              checkedAt: new Date().toISOString(),
+            }),
+          );
+        }
+      });
+
+      // Write stdin and close
+      child.stdin.write(invocation.input);
+      child.stdin.end();
+
+      timeoutSignal.addEventListener('abort', () => {
+        child.kill();
+        resolve(
+          createConnectionStatus('failed', {
+            category: 'timeout',
+            message: 'Local agent connection test timed out (10s).',
+            checkedAt: new Date().toISOString(),
+          }),
+        );
+      });
+    });
+  } catch (err) {
+    const raw = err instanceof Error ? err.message : String(err);
+    const isTimeout = err instanceof Error && err.name === 'TimeoutError';
+    return createConnectionStatus('failed', {
+      category: isTimeout ? 'timeout' : 'provider-offline',
+      message: isTimeout ? 'Test prompt timed out.' : `Execution failed: ${raw}`,
+      checkedAt: new Date().toISOString(),
+    });
+  }
+}
+
 export function registerAgentConnectionRoutes(server: ViteDevServer, ctx: ApiContext): void {
   server.middlewares.use('/__agent-connections', async (req, res, next) => {
     const urlObj = new URL(req.url || '', `http://${req.headers.host || 'localhost'}`);
     const pathname = urlObj.pathname;
 
     try {
+      if (runtimeMode() === 'read-only' && req.method !== 'GET') {
+        return json(res, 403, { error: 'Mutations are blocked in read-only mode.' });
+      }
+
       if (req.method === 'GET' && pathname === '/bootstrap') {
         const settings = await readAgentConnectionSettingsForProject(ctx);
         return json(res, 200, bootstrapResponse(settings));
@@ -400,6 +671,35 @@ export function registerAgentConnectionRoutes(server: ViteDevServer, ctx: ApiCon
         return json(res, 200, { validation, manualPath });
       }
 
+      if (req.method === 'POST' && pathname === '/test-credentials') {
+        const guard = validateMutationRequest(req, { requireJsonBody: true });
+        if (!guard.ok) return json(res, guard.status, { error: guard.error });
+
+        const body = (await readBody(req)) as {
+          provider: string;
+          apiKey?: string;
+          envVarName?: string;
+          modelId?: string;
+        };
+
+        let apiKey = body.apiKey;
+        if (body.envVarName) {
+          apiKey = process.env[body.envVarName];
+        }
+
+        if (!apiKey) {
+          return json(res, 200, {
+            status: createConnectionStatus('failed', {
+              category: 'secure-storage-unavailable',
+              message: 'API key is missing.',
+            }),
+          });
+        }
+
+        const status = await testProviderCredentials(body.provider, apiKey, body.modelId);
+        return json(res, 200, { status });
+      }
+
       if (req.method === 'POST' && pathname.endsWith('/test')) {
         const parts = pathname.split('/');
         if (parts.length === 3) {
@@ -437,98 +737,50 @@ export function registerAgentConnectionRoutes(server: ViteDevServer, ctx: ApiCon
               return json(res, 200, { status: connection.status });
             }
 
-            try {
-              let testOk = false;
-              let errorMsg = '';
-              let errorCategory: ConnectionErrorCategory = 'unknown';
-
-              if (connection.provider === 'openai') {
-                const probeRes = await fetch('https://api.openai.com/v1/models', {
-                  headers: { Authorization: `Bearer ${apiKey}` },
-                  signal: AbortSignal.timeout(3000),
-                });
-                if (probeRes.status === 200) {
-                  testOk = true;
-                } else {
-                  errorMsg = `OpenAI API returned status ${probeRes.status}`;
-                  if (probeRes.status === 401) errorCategory = 'authentication-failed';
-                  else if (probeRes.status === 429) errorCategory = 'quota-rate-limit';
-                }
-              } else if (connection.provider === 'anthropic') {
-                const probeRes = await fetch('https://api.anthropic.com/v1/models', {
-                  headers: {
-                    'x-api-key': apiKey,
-                    'anthropic-version': '2023-06-01',
-                  },
-                  signal: AbortSignal.timeout(3000),
-                });
-                if (probeRes.status === 200) {
-                  testOk = true;
-                } else {
-                  errorMsg = `Anthropic API returned status ${probeRes.status}`;
-                  if (probeRes.status === 401) errorCategory = 'authentication-failed';
-                  else if (probeRes.status === 429) errorCategory = 'quota-rate-limit';
-                }
-              } else if (connection.provider === 'google') {
-                const probeRes = await fetch(
-                  `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
-                  {
-                    signal: AbortSignal.timeout(3000),
-                  },
-                );
-                if (probeRes.status === 200) {
-                  testOk = true;
-                } else {
-                  errorMsg = `Google API returned status ${probeRes.status}`;
-                  if (probeRes.status === 400 || probeRes.status === 403)
-                    errorCategory = 'authentication-failed';
-                  else if (probeRes.status === 429) errorCategory = 'quota-rate-limit';
-                }
-              } else if (connection.provider === 'openrouter') {
-                const probeRes = await fetch('https://openrouter.ai/api/v1/models', {
-                  headers: { Authorization: `Bearer ${apiKey}` },
-                  signal: AbortSignal.timeout(3000),
-                });
-                if (probeRes.status === 200) {
-                  testOk = true;
-                } else {
-                  errorMsg = `OpenRouter API returned status ${probeRes.status}`;
-                  if (probeRes.status === 401) errorCategory = 'authentication-failed';
-                }
-              } else {
-                testOk = true;
-              }
-
-              if (testOk) {
-                connection.status = createConnectionStatus('ready', {
-                  checkedAt: new Date().toISOString(),
-                });
-              } else {
-                connection.status = createConnectionStatus('failed', {
-                  category: errorCategory,
-                  message: errorMsg,
-                  checkedAt: new Date().toISOString(),
-                });
-              }
-            } catch (err) {
-              const raw = err instanceof Error ? err.message : String(err);
-              const isTimeout = err instanceof Error && err.name === 'TimeoutError';
-              connection.status = createConnectionStatus('failed', {
-                category: isTimeout ? 'timeout' : 'provider-offline',
-                message: isTimeout ? 'Test request timed out.' : `Network request failed: ${raw}`,
-                checkedAt: new Date().toISOString(),
-              });
-            }
-
+            connection.status = await testProviderCredentials(
+              connection.provider,
+              apiKey,
+              connection.modelId,
+            );
             connection.lastTestedAt = new Date().toISOString();
             await writeAgentConnectionSettingsForProject(ctx, settings);
             return json(res, 200, { status: connection.status });
           }
 
           // Local CLI
-          connection.status = createConnectionStatus('ready', {
-            checkedAt: new Date().toISOString(),
-          });
+          const pathOrCommand =
+            connection.type === 'manual-agent-path'
+              ? connection.manualPathRef
+              : connection.agentCommandAlias;
+
+          if (!pathOrCommand) {
+            connection.status = createConnectionStatus('failed', {
+              category: 'missing-executable',
+              message: 'Connection executable or command is missing.',
+              checkedAt: new Date().toISOString(),
+            });
+          } else {
+            let kind: ManualAgentPath['kind'] = 'command';
+            if (connection.type === 'manual-agent-path') {
+              const hasSeparator = pathOrCommand.includes('/') || pathOrCommand.includes('\\');
+              kind = hasSeparator ? 'executable' : 'command';
+            }
+            const validation = await validateManualAgentPath(pathOrCommand, kind);
+            if (validation.status === 'pass' || validation.status === 'warn') {
+              connection.status = await testLocalAgentCredentials(
+                pathOrCommand,
+                connection,
+                ctx.userCwd,
+              );
+            } else {
+              connection.status = createConnectionStatus('failed', {
+                category: kind === 'executable' ? 'invalid-path' : 'missing-executable',
+                message: validation.message || 'Validation failed.',
+                diagnostics: validation.diagnostics,
+                checkedAt: new Date().toISOString(),
+              });
+            }
+          }
           connection.lastTestedAt = new Date().toISOString();
           await writeAgentConnectionSettingsForProject(ctx, settings);
           return json(res, 200, { status: connection.status });
@@ -632,6 +884,12 @@ export function registerAgentConnectionRoutes(server: ViteDevServer, ctx: ApiCon
           if (!candidate) {
             return json(res, 400, { error: 'Candidate not found.' });
           }
+          if (
+            candidate.status !== 'installed' ||
+            candidate.compatibility?.status === 'incompatible'
+          ) {
+            return json(res, 400, { error: 'Candidate is not installed or is incompatible.' });
+          }
           config = {
             id,
             displayName: body.displayName || candidate.displayName,
@@ -649,7 +907,7 @@ export function registerAgentConnectionRoutes(server: ViteDevServer, ctx: ApiCon
         } else if (body.source === 'manual-path') {
           config = {
             id,
-            displayName: body.displayName || 'Manual Agent',
+            displayName: redactDiagnostics(body.displayName || 'Manual Agent'),
             type: 'manual-agent-path',
             provider: body.provider,
             scope: body.scope || 'session',

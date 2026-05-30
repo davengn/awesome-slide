@@ -1,4 +1,4 @@
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -12,7 +12,7 @@ import {
 
 vi.mock('node:child_process', () => {
   return {
-    exec: vi.fn(),
+    execFile: vi.fn(),
   };
 });
 
@@ -58,14 +58,15 @@ describe('agent discovery', () => {
   });
 
   it('runs command/executable and handles pass, incompatible protocol, timeout, and redaction', async () => {
-    const mockedExec = vi.mocked(exec);
+    const mockedExecFile = vi.mocked(execFile);
 
     // Case 1: Pass with version
-    mockedExec.mockImplementationOnce((_cmd, opts, callback) => {
-      const cb =
-        typeof opts === 'function'
-          ? (opts as (error: Error | null, stdout: string, stderr: string) => void)
-          : (callback as unknown as (error: Error | null, stdout: string, stderr: string) => void);
+    mockedExecFile.mockImplementationOnce((_cmd, _args, _opts, callback) => {
+      const cb = callback as unknown as (
+        error: Error | null,
+        stdout: string,
+        stderr: string,
+      ) => void;
       cb?.(null, 'codex-cli version v1.2.3\n', '');
       return null as unknown as import('node:child_process').ChildProcess;
     });
@@ -74,11 +75,12 @@ describe('agent discovery', () => {
     expect(result.version).toBe('1.2.3');
 
     // Case 2: Incompatible protocol
-    mockedExec.mockImplementationOnce((_cmd, opts, callback) => {
-      const cb =
-        typeof opts === 'function'
-          ? (opts as (error: Error | null, stdout: string, stderr: string) => void)
-          : (callback as unknown as (error: Error | null, stdout: string, stderr: string) => void);
+    mockedExecFile.mockImplementationOnce((_cmd, _args, _opts, callback) => {
+      const cb = callback as unknown as (
+        error: Error | null,
+        stdout: string,
+        stderr: string,
+      ) => void;
       cb?.(null, 'unknown protocol format version 0.1\n', '');
       return null as unknown as import('node:child_process').ChildProcess;
     });
@@ -87,11 +89,12 @@ describe('agent discovery', () => {
     expect(resultIncompat.message).toContain('Incompatible agent protocol');
 
     // Case 3: Timeout
-    mockedExec.mockImplementationOnce((_cmd, opts, callback) => {
-      const cb =
-        typeof opts === 'function'
-          ? (opts as (error: Error | null, stdout: string, stderr: string) => void)
-          : (callback as unknown as (error: Error | null, stdout: string, stderr: string) => void);
+    mockedExecFile.mockImplementationOnce((_cmd, _args, _opts, callback) => {
+      const cb = callback as unknown as (
+        error: Error | null,
+        stdout: string,
+        stderr: string,
+      ) => void;
       const err = new Error('Execution timed out') as Error & { signal?: string };
       err.signal = 'SIGTERM';
       cb?.(err, '', '');
@@ -102,11 +105,12 @@ describe('agent discovery', () => {
     expect(resultTimeout.message).toContain('Validation timed out');
 
     // Case 4: Redacted output
-    mockedExec.mockImplementationOnce((_cmd, opts, callback) => {
-      const cb =
-        typeof opts === 'function'
-          ? (opts as (error: Error | null, stdout: string, stderr: string) => void)
-          : (callback as unknown as (error: Error | null, stdout: string, stderr: string) => void);
+    mockedExecFile.mockImplementationOnce((_cmd, _args, _opts, callback) => {
+      const cb = callback as unknown as (
+        error: Error | null,
+        stdout: string,
+        stderr: string,
+      ) => void;
       cb?.(null, 'Connected to secret key: sk-abc123xyz789\n', '');
       return null as unknown as import('node:child_process').ChildProcess;
     });

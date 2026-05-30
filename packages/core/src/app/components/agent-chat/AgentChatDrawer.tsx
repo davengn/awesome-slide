@@ -27,6 +27,7 @@ export const AgentChatDrawer: React.FC<AgentChatDrawerProps> = ({
   onOpenSettings,
 }) => {
   if (!isOpen) return null;
+  const sessionKey = slideId ?? collection?.deckId ?? collection?.folderId ?? 'management';
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -45,6 +46,7 @@ export const AgentChatDrawer: React.FC<AgentChatDrawerProps> = ({
         )}
       >
         <AgentChatPanel
+          key={sessionKey}
           onClose={onClose}
           slideId={slideId}
           slideContext={slideContext}

@@ -226,6 +226,7 @@ export interface ActiveConnectionSnapshot {
   status: ConnectionStatusState;
   capabilities: ConnectionCapabilities;
   settingsTarget: 'execution-model';
+  isProjectDefault?: boolean;
 }
 
 export interface AgentConnectionSettings {

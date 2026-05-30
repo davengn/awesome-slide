@@ -204,4 +204,96 @@ describe('agent connection UI state', () => {
     expect(state.byokForm.apiKey).toBe('sk-ant-key');
     expect(state.byokForm.showKey).toBe(true);
   });
+
+  it('handles Local CLI candidate states, selected states, scan progress, cancel, and manual path transitions', () => {
+    let state = createInitialAgentConnectionUiState();
+
+    state = agentConnectionReducer(state, {
+      type: 'SET_AVAILABLE_CONNECTIONS',
+      payload: [
+        {
+          connectionId: 'conn_test',
+          displayName: 'Test CLI',
+          type: 'local-agent',
+          provider: 'claude-code',
+          modelOrAgent: 'claude',
+          status: 'ready',
+          capabilities: {
+            streaming: true,
+            cancellation: true,
+            structuredProposals: true,
+            toolCalls: true,
+            localFileContext: true,
+            writeCapable: true,
+            supportedModalities: ['text'],
+          },
+          settingsTarget: 'execution-model',
+        },
+      ],
+    });
+    expect(state.quickSwitcher.availableConnections.length).toBe(1);
+    expect(state.quickSwitcher.availableConnections[0].connectionId).toBe('conn_test');
+
+    state = agentConnectionReducer(state, {
+      type: 'SELECT_CONNECTION',
+      payload: { connectionId: 'conn_test', mode: 'local-cli' },
+    });
+    expect(state.settingsModal.selectedConnectionId).toBe('conn_test');
+    expect(state.quickSwitcher.selectedConnectionId).toBe('conn_test');
+    expect(state.quickSwitcher.activeMode).toBe('local-cli');
+
+    state = agentConnectionReducer(state, { type: 'START_SCAN' });
+    expect(state.settingsModal.scanState).toBe('scanning');
+
+    state = agentConnectionReducer(state, { type: 'CANCEL_SCAN' });
+    expect(state.settingsModal.scanState).toBe('cancelled');
+
+    state = agentConnectionReducer(state, { type: 'SET_MANUAL_PATH_KIND', payload: 'executable' });
+    expect(state.manualPath.kind).toBe('executable');
+
+    state = agentConnectionReducer(state, {
+      type: 'SET_MANUAL_PATH_INPUT',
+      payload: '/usr/local/bin/claude',
+    });
+    expect(state.manualPath.input).toBe('/usr/local/bin/claude');
+
+    state = agentConnectionReducer(state, {
+      type: 'SET_MANUAL_PATH_VALIDATION',
+      payload: { status: 'pass', message: 'Ready to use.' },
+    });
+    expect(state.manualPath.validation?.status).toBe('pass');
+    expect(state.manualPath.validation?.message).toBe('Ready to use.');
+  });
+
+  it('T051: handles BYOK form state transitions and edge cases', () => {
+    let state = createInitialAgentConnectionUiState();
+
+    state = agentConnectionReducer(state, {
+      type: 'SET_BYOK_FIELD',
+      payload: {
+        providerId: 'google',
+        modelId: 'gemini-2.5-pro',
+        apiKey: 'sk-google-key',
+        showKey: false,
+        storageWarning: 'fallback warning active',
+      },
+    });
+    expect(state.byokForm.providerId).toBe('google');
+    expect(state.byokForm.modelId).toBe('gemini-2.5-pro');
+    expect(state.byokForm.apiKey).toBe('sk-google-key');
+    expect(state.byokForm.showKey).toBe(false);
+    expect(state.byokForm.storageWarning).toBe('fallback warning active');
+
+    state = agentConnectionReducer(state, {
+      type: 'SET_VALIDATION_ERROR',
+      payload: { field: 'apiKey', message: 'API key is required' },
+    });
+    expect(state.settingsModal.validationErrors.apiKey).toBe('API key is required');
+
+    state = agentConnectionReducer(state, {
+      type: 'CLEAR_VALIDATION_ERROR',
+      payload: { field: 'apiKey' },
+    });
+    expect(state.settingsModal.validationErrors.apiKey).toBeUndefined();
+  });
 });

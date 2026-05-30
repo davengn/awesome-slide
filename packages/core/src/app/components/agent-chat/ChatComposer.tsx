@@ -19,6 +19,7 @@ interface ChatComposerProps {
   onRetry?: () => void;
   isRunActive: boolean;
   canRetry: boolean;
+  cancellationCapable?: boolean;
   placeholder?: string;
   value?: string;
   onChange?: (val: string) => void;
@@ -33,6 +34,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
   onRetry,
   isRunActive,
   canRetry,
+  cancellationCapable = true,
   placeholder = 'Describe the design you want — paste or drop images, or @ a file...',
   value,
   onChange,
@@ -196,7 +198,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
 
           {/* Right: Send / Cancel Action */}
           <div>
-            {isRunActive ? (
+            {isRunActive && cancellationCapable ? (
               <Button
                 type="button"
                 onClick={onCancel}
@@ -205,6 +207,10 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
                 <X className="h-3.5 w-3.5 stroke-[2.5]" />
                 <span>Cancel</span>
               </Button>
+            ) : isRunActive ? (
+              <div className="flex items-center gap-1.5 px-4 py-1.5 text-neutral-400 text-xs font-medium">
+                <span>Running...</span>
+              </div>
             ) : (
               <Button
                 type="button"

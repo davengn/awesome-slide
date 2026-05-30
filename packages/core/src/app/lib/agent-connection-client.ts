@@ -20,13 +20,24 @@ import type {
 async function parseJsonResponse<T>(res: Response, fallback: string): Promise<T> {
   if (!res.ok) {
     let message = fallback;
+    let category: string | undefined;
+    let recoveryActions: string[] | undefined;
     try {
-      const body = (await res.json()) as { error?: string };
+      const body = (await res.json()) as {
+        error?: string;
+        category?: string;
+        recoveryActions?: string[];
+      };
       message = body.error ?? message;
+      category = body.category;
+      recoveryActions = body.recoveryActions;
     } catch {
       message = `${fallback}: ${res.statusText}`;
     }
-    throw new Error(message);
+    const err = new Error(message) as any;
+    err.category = category;
+    err.recoveryActions = recoveryActions;
+    throw err;
   }
   return res.json() as Promise<T>;
 }
@@ -121,6 +132,15 @@ export async function setActiveAgentConnection(
 
 export async function testAgentConnection(connectionId: string): Promise<TestConnectionResponse> {
   return postJson(`/__agent-connections/${encodeURIComponent(connectionId)}/test`);
+}
+
+export async function testAgentCredentials(request: {
+  provider: string;
+  apiKey?: string;
+  envVarName?: string;
+  modelId?: string;
+}): Promise<TestConnectionResponse> {
+  return postJson('/__agent-connections/test-credentials', request);
 }
 
 export async function deleteAgentConnection(

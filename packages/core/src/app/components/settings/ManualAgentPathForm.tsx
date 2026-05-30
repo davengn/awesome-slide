@@ -17,6 +17,41 @@ export function ManualAgentPathForm({ initialFocus, onActivate }: ManualAgentPat
   const [manualPath, setManualPath] = useState<ManualAgentPath | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const isBrowseSupported =
+    typeof window !== 'undefined' &&
+    ('showOpenFilePicker' in window || 'showDirectoryPicker' in window);
+
+  const handleBrowse = async () => {
+    try {
+      setError(null);
+      if (kind === 'project-path') {
+        if ('showDirectoryPicker' in window) {
+          const handle = await (window as any).showDirectoryPicker();
+          setInput(handle.name);
+          setValidation(null);
+          setManualPath(null);
+        } else {
+          throw new Error('Directory picker not supported in this browser.');
+        }
+      } else {
+        if ('showOpenFilePicker' in window) {
+          const [handle] = await (window as any).showOpenFilePicker();
+          const file = await handle.getFile();
+          setInput(file.name);
+          setValidation(null);
+          setManualPath(null);
+        } else {
+          throw new Error('File picker not supported in this browser.');
+        }
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   const handleValidate = async () => {
     if (!input.trim()) {
       setError('Path or command is required.');
@@ -97,6 +132,16 @@ export function ManualAgentPathForm({ initialFocus, onActivate }: ManualAgentPat
               }
               className="h-9 flex-1 rounded-[7px] border border-hairline bg-background px-3 text-[12.5px] outline-none placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-ring/35"
             />
+            {isBrowseSupported && (
+              <button
+                type="button"
+                onClick={handleBrowse}
+                className="inline-flex h-9 items-center justify-center rounded-[7px] border border-hairline bg-background px-3 text-[12.5px] font-medium text-foreground hover:bg-muted"
+                aria-label="Browse files"
+              >
+                Browse…
+              </button>
+            )}
             <button
               type="button"
               onClick={handleValidate}
@@ -157,17 +202,16 @@ export function ManualAgentPathForm({ initialFocus, onActivate }: ManualAgentPat
         </div>
       )}
 
-      {isSaveable && (
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={handleSave}
-            className="inline-flex h-9 items-center justify-center rounded-[7px] bg-brand px-4 text-[12.5px] font-semibold text-brand-foreground shadow-edge outline-none hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-ring/35"
-          >
-            Activate Connection
-          </button>
-        </div>
-      )}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!isSaveable}
+          className="inline-flex h-9 items-center justify-center rounded-[7px] bg-brand px-4 text-[12.5px] font-semibold text-brand-foreground shadow-edge outline-none hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-ring/35 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Activate Connection
+        </button>
+      </div>
     </div>
   );
 }

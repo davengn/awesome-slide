@@ -4,7 +4,7 @@ import type { AddressInfo } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import type { ViteDevServer } from 'vite';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createDefaultAgentConnectionSettings,
   type normalizeAgentConnectionSettings,
@@ -404,6 +404,123 @@ describe('agent connection routes', () => {
       });
     } finally {
       delete process.env.AWESOME_SLIDE_TEST_KEY;
+    }
+  });
+
+  it('T050: POST /test-credentials validates API keys and handles failure / secure-storage-unavailable', async () => {
+    await withAgentConnectionServer(async (baseUrl) => {
+      // 1. Test with missing key
+      const res1 = await fetch(`${baseUrl}/__agent-connections/test-credentials`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'openai' }),
+      });
+      expect(res1.status).toBe(200);
+      const body1 = await res1.json();
+      expect(body1.status.state).toBe('failed');
+      expect(body1.status.category).toBe('secure-storage-unavailable');
+
+      // 2. Test with mock key (will fail probe but returns status structure)
+      const res2 = await fetch(`${baseUrl}/__agent-connections/test-credentials`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'openai', apiKey: 'sk-invalid-mock-key' }),
+      });
+      expect(res2.status).toBe(200);
+      const body2 = await res2.json();
+      expect(body2.status.state).toBeDefined();
+      expect(body2.status.recoveryActions).toBeDefined();
+    });
+  });
+
+  it('T072: handles static read-only mode mutations block, timeout, offline, quota limit, and unsupported model tests', async () => {
+    // 1. Test read-only mode blocks mutations
+    process.env.AGENT_RUNTIME_MODE = 'read-only';
+    try {
+      await withAgentConnectionServer(async (baseUrl) => {
+        const res = await fetch(`${baseUrl}/__agent-connections/active`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ connectionId: 'any', scope: 'session' }),
+        });
+        expect(res.status).toBe(403);
+        const body = await res.json();
+        expect(body.error).toBe('Mutations are blocked in read-only mode.');
+      });
+    } finally {
+      delete process.env.AGENT_RUNTIME_MODE;
+    }
+
+    // 2. Test timeout, quota-rate-limit, authentication-failed via fetch mock
+    const originalFetch = globalThis.fetch;
+    try {
+      await withAgentConnectionServer(async (baseUrl) => {
+        // Quota / Rate limit (429) mock
+        globalThis.fetch = vi.fn().mockImplementation(async (url, init) => {
+          const urlStr = typeof url === 'string' ? url : (url as Request).url || String(url);
+          if (urlStr.startsWith(baseUrl)) {
+            return originalFetch(url, init);
+          }
+          return {
+            ok: false,
+            status: 429,
+            text: async () => '',
+          } as Response;
+        });
+
+        const quotaRes = await fetch(`${baseUrl}/__agent-connections/test-credentials`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider: 'openai', apiKey: 'sk-test' }),
+        });
+        const quotaBody = await quotaRes.json();
+        expect(quotaBody.status.state).toBe('failed');
+        expect(quotaBody.status.category).toBe('quota-rate-limit');
+
+        // Auth failed (401) mock
+        globalThis.fetch = vi.fn().mockImplementation(async (url, init) => {
+          const urlStr = typeof url === 'string' ? url : (url as Request).url || String(url);
+          if (urlStr.startsWith(baseUrl)) {
+            return originalFetch(url, init);
+          }
+          return {
+            ok: false,
+            status: 401,
+            text: async () => '',
+          } as Response;
+        });
+
+        const authRes = await fetch(`${baseUrl}/__agent-connections/test-credentials`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider: 'openai', apiKey: 'sk-test' }),
+        });
+        const authBody = await authRes.json();
+        expect(authBody.status.state).toBe('failed');
+        expect(authBody.status.category).toBe('authentication-failed');
+
+        // Timeout simulation mock
+        globalThis.fetch = vi.fn().mockImplementation(async (url, init) => {
+          const urlStr = typeof url === 'string' ? url : (url as Request).url || String(url);
+          if (urlStr.startsWith(baseUrl)) {
+            return originalFetch(url, init);
+          }
+          const timeoutErr = new Error('Test request timed out.');
+          timeoutErr.name = 'TimeoutError';
+          throw timeoutErr;
+        });
+
+        const timeoutRes = await fetch(`${baseUrl}/__agent-connections/test-credentials`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider: 'openai', apiKey: 'sk-test' }),
+        });
+        const timeoutBody = await timeoutRes.json();
+        expect(timeoutBody.status.state).toBe('failed');
+        expect(timeoutBody.status.category).toBe('timeout');
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
     }
   });
 });

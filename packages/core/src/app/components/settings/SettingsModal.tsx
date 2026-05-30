@@ -173,8 +173,8 @@ export function SettingsModal({
       await createAgentConnection({
         source: 'manual-path',
         provider: manualPath.provider || 'codex',
-        manualPathId: manualPath.id,
-        displayName: manualPath.input,
+        manualPathId: manualPath.input,
+        displayName: manualPath.pathLabel || 'Manual Agent',
         scope: 'project-default',
       });
       refreshSettings();
@@ -224,9 +224,12 @@ export function SettingsModal({
     }
   };
 
-  const handleSetActiveConnection = async (connectionId: string) => {
+  const handleSetActiveConnection = async (
+    connectionId: string,
+    scope?: 'session' | 'project-default',
+  ) => {
     try {
-      await setActiveAgentConnection({ connectionId, scope: 'project-default' });
+      await setActiveAgentConnection({ connectionId, scope: scope ?? 'project-default' });
       refreshSettings();
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : String(err));
@@ -340,6 +343,7 @@ export function SettingsModal({
                 candidates={settings?.candidates ?? []}
                 approvedDirectories={settings?.scanPreference?.approvedDirectories ?? []}
                 activeConnectionId={settings?.activeConnectionId}
+                projectDefaultConnectionId={settings?.projectDefaultConnectionId}
                 validationErrors={validationErrors}
                 executionTabLabel={SETTINGS_MODAL_ACCESSIBILITY_CONTRACT.executionTabLabel}
                 onExecutionTabChange={onExecutionTabChange}

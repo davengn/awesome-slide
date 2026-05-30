@@ -103,12 +103,12 @@
 
 - [x] T039 [P] [US2] Add scan start, scan event, scan cancel, approved directory, and rescan route tests in `packages/core/src/http/agent-connections-api.test.ts`
 - [x] T040 [P] [US2] Add manual path validation tests for executable, command, project path, missing path, incompatible protocol, timeout, and redacted stdout/stderr in `packages/core/src/http/agent-discovery.test.ts`
-- [ ] T041 [P] [US2] Add Local CLI state tests for candidate states, selected state, scan progress, cancel, add directory, browse capability available/unavailable, and manual path form transitions in `packages/core/src/app/lib/agent-connection-state.test.ts`
+- [x] T041 [P] [US2] Add Local CLI state tests for candidate states, selected state, scan progress, cancel, add directory, browse capability available/unavailable, and manual path form transitions in `packages/core/src/app/lib/agent-connection-state.test.ts`
 
 ### Implementation for User Story 2
 
 - [x] T042 [P] [US2] Create compact local agent cards with icon, display name, version, source label, installed/not-installed/incompatible/needs-manual-path state, selected state, and accessible names in `packages/core/src/app/components/settings/LocalAgentCard.tsx`
-- [ ] T043 [P] [US2] Create manual path form fields, optional browse action shown only when runtime support exists, direct-entry fallback, kind selector, validate action, accessible errors, validation summary, and disabled activation state in `packages/core/src/app/components/settings/ManualAgentPathForm.tsx`
+- [x] T043 [P] [US2] Create manual path form fields, optional browse action shown only when runtime support exists, direct-entry fallback, kind selector, validate action, accessible errors, validation summary, and disabled activation state in `packages/core/src/app/components/settings/ManualAgentPathForm.tsx`
 - [x] T044 [US2] Implement bounded scan start, event stream, cancel, and candidate persistence for `POST /__agent-connections/scan`, `GET /__agent-connections/scan/:scanId/events`, and `POST /__agent-connections/scan/:scanId/cancel` in `packages/core/src/http/agent-connections-api.ts`
 - [x] T045 [US2] Implement manual path validation for `POST /__agent-connections/manual-path/validate` with existence checks, runnable command checks, version/protocol timeout, compatibility report, and redacted diagnostics in `packages/core/src/http/agent-connections-api.ts`
 - [x] T046 [US2] Add user-approved scan directory add/remove behavior and no full-disk validation guards in `packages/core/src/http/agent-discovery.ts`
@@ -128,17 +128,17 @@
 
 ### Tests for User Story 3
 
-- [ ] T050 [P] [US3] Add BYOK credential create, minimal auth test, optional model-list handling, unsupported-model normalization, masked display, secure-storage-unavailable, and no raw key route tests in `packages/core/src/http/agent-connections-api.test.ts`
-- [ ] T051 [P] [US3] Add BYOK form state tests for provider/model selection, manual model ID fallback, key show/hide, paste, validation error, storage warning, save, and delete confirmation in `packages/core/src/app/lib/agent-connection-state.test.ts`
-- [ ] T052 [P] [US3] Add credential redaction regression tests for project settings, diagnostics, browser bootstrap payloads, and chat bootstrap payloads in `packages/core/src/http/agent-secrets.test.ts`
+- [x] T050 [P] [US3] Add BYOK credential create, minimal auth test, optional model-list handling, unsupported-model normalization, masked display, secure-storage-unavailable, and no raw key route tests in `packages/core/src/http/agent-connections-api.test.ts`
+- [x] T051 [P] [US3] Add BYOK form state tests for provider/model selection, manual model ID fallback, key show/hide, paste, validation error, storage warning, save, and delete confirmation in `packages/core/src/app/lib/agent-connection-state.test.ts`
+- [x] T052 [P] [US3] Add credential redaction regression tests for project settings, diagnostics, browser bootstrap payloads, and chat bootstrap payloads in `packages/core/src/http/agent-secrets.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T053 [P] [US3] Create BYOK provider select, model select/model ID field, API key input, show/hide control, storage mode indicator, Test action, and Save action in `packages/core/src/app/components/settings/ByokProviderForm.tsx`
+- [x] T053 [P] [US3] Create BYOK provider select, model select/model ID field, API key input, show/hide control, storage mode indicator, Test action, and Save action in `packages/core/src/app/components/settings/ByokProviderForm.tsx`
 - [x] T054 [US3] Implement provider and model registry metadata for API key providers without provider-specific coupling to 005 in `packages/core/src/app/lib/agent-connections.ts`
-- [ ] T055 [US3] Implement BYOK credential storage, credential reference serialization, masked display hints, OS credential storage plus environment variable reference fallback warnings, `secure-storage-unavailable`, and raw key exclusion in `packages/core/src/http/agent-secrets.ts`
-- [ ] T056 [US3] Implement BYOK connection creation and cheap privacy-conscious provider test behavior for credential presence, minimal auth, optional model listing, manual model ID fallback, and normalized unsupported-model results in `packages/core/src/http/agent-connections-api.ts`
-- [ ] T057 [US3] Wire BYOK tab state, validation errors, masked saved credentials, storage warnings, and provider test feedback into `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
+- [x] T055 [US3] Implement BYOK credential storage, credential reference serialization, masked display hints, OS credential storage plus environment variable reference fallback warnings, `secure-storage-unavailable`, and raw key exclusion in `packages/core/src/http/agent-secrets.ts`
+- [x] T056 [US3] Implement BYOK connection creation and cheap privacy-conscious provider test behavior for credential presence, minimal auth, optional model listing, manual model ID fallback, and normalized unsupported-model results in `packages/core/src/http/agent-connections-api.ts`
+- [x] T057 [US3] Wire BYOK tab state, validation errors, masked saved credentials, storage warnings, and provider test feedback into `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
 - [x] T058 [US3] Implement delete connection and optional credential deletion for `DELETE /__agent-connections/:connectionId` in `packages/core/src/http/agent-connections-api.ts`
 - [x] T059 [US3] Add destructive credential removal confirmation UI with affected provider and credential hint in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
 
@@ -154,19 +154,19 @@
 
 ### Tests for User Story 4
 
-- [ ] T060 [P] [US4] Add active connection selection, quick model/reasoning preference, project default, invalid persisted choice, and reload persistence route tests in `packages/core/src/http/agent-connections-api.test.ts`
-- [ ] T061 [P] [US4] Add agent chat session bootstrap tests for ready, needs-setup, degraded, failed, offline, settings modal target metadata, and slide-page quick switcher active snapshot parity in `packages/core/src/http/agent-chat-api.test.ts`
-- [ ] T062 [P] [US4] Add adapter request tests proving 005 supplies prompt context and bundled workflow instructions while 006 resolves quick switcher model/reasoning preferences, credentials, capabilities, streaming, and cancellation in `packages/core/src/http/agent-connection-adapters.test.ts`
+- [x] T060 [P] [US4] Add active connection selection, quick model/reasoning preference, project default, invalid persisted choice, and reload persistence route tests in `packages/core/src/http/agent-connections-api.test.ts`
+- [x] T061 [P] [US4] Add agent chat session bootstrap tests for ready, needs-setup, degraded, failed, offline, settings modal target metadata, and slide-page quick switcher active snapshot parity in `packages/core/src/http/agent-chat-api.test.ts`
+- [x] T062 [P] [US4] Add adapter request tests proving 005 supplies prompt context and bundled workflow instructions while 006 resolves quick switcher model/reasoning preferences, credentials, capabilities, streaming, and cancellation in `packages/core/src/http/agent-connection-adapters.test.ts`
 
 ### Implementation for User Story 4
 
-- [ ] T063 [US4] Implement `POST /__agent-connections/active` with session scope, project default scope, model/reasoning preference updates, safe status refresh, and invalid active connection detection in `packages/core/src/http/agent-connections-api.ts`
-- [ ] T064 [US4] Render configured connection list, selected state, active badge, project default control, last tested time, and fast reversible switching in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx` and `packages/core/src/app/components/settings/QuickConnectionSwitcher.tsx`
+- [x] T063 [US4] Implement `POST /__agent-connections/active` with session scope, project default scope, model/reasoning preference updates, safe status refresh, and invalid active connection detection in `packages/core/src/http/agent-connections-api.ts`
+- [x] T064 [US4] Render configured connection list, selected state, active badge, project default control, last tested time, and fast reversible switching in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx` and `packages/core/src/app/components/settings/QuickConnectionSwitcher.tsx`
 - [x] T065 [US4] Expose active connection bootstrap metadata, model preference, reasoning preference, available model/reasoning options, status, capabilities, and `settingsModalTarget: "execution-model"` to slide-page and 005-safe consumers in `packages/core/src/app/lib/agent-connections.ts`
-- [ ] T066 [US4] Update agent chat session bootstrap to read 006 active connection metadata and no-connection/degraded/failed/offline recovery targets in `packages/core/src/http/agent-chat-api.ts`
+- [x] T066 [US4] Update agent chat session bootstrap to read 006 active connection metadata and no-connection/degraded/failed/offline recovery targets in `packages/core/src/http/agent-chat-api.ts`
 - [x] T067 [US4] Update agent chat panel recovery controls to open the shared settings modal to `Execution & model` instead of relying only on `/settings/connections` copy in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
-- [ ] T068 [US4] Route 005 adapter run startup through the active connection adapter while preserving 005 prompt context, `packages/core/skills` workflow selection, proposal parsing, proposal validation, preview/apply, and audit ownership in `packages/core/src/http/agent-chat-api.ts`
-- [ ] T069 [US4] Wire `QuickConnectionSwitcher` into the slide page top-right toolbar, keep the settings gear as the rightmost control beside Present/Share actions, and ensure connection capability flags enable or degrade 005 controls in `packages/core/src/app/routes/slide.tsx` and `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
+- [x] T068 [US4] Route 005 adapter run startup through the active connection adapter while preserving 005 prompt context, `packages/core/skills` workflow selection, proposal parsing, proposal validation, preview/apply, and audit ownership in `packages/core/src/http/agent-chat-api.ts`
+- [x] T069 [US4] Wire `QuickConnectionSwitcher` into the slide page top-right toolbar, keep the settings gear as the rightmost control beside Present/Share actions, and ensure connection capability flags enable or degrade 005 controls in `packages/core/src/app/routes/slide.tsx` and `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
 
 **Checkpoint**: User Story 4 is fully functional and testable independently.
 
@@ -180,20 +180,20 @@
 
 ### Tests for User Story 5
 
-- [ ] T070 [P] [US5] Add error category to recovery action tests for all 006 categories in `packages/core/src/app/lib/agent-connections.test.ts`
-- [ ] T071 [P] [US5] Add diagnostics redaction tests for command output, env values, API keys, hidden paths, and copied diagnostics in `packages/core/src/http/agent-secrets.test.ts`
-- [ ] T072 [P] [US5] Add static/read-only mode, timeout, offline, provider quota, unsupported model, and retry/test route tests in `packages/core/src/http/agent-connections-api.test.ts`
-- [ ] T073 [P] [US5] Add modal state tests for long diagnostics, disabled states, scan cancellation progress, and non-blocking modal interactions in `packages/core/src/app/lib/agent-connection-state.test.ts`
+- [x] T070 [P] [US5] Add error category to recovery action tests for all 006 categories in `packages/core/src/app/lib/agent-connections.test.ts`
+- [x] T071 [P] [US5] Add diagnostics redaction tests for command output, env values, API keys, hidden paths, and copied diagnostics in `packages/core/src/http/agent-secrets.test.ts`
+- [x] T072 [P] [US5] Add static/read-only mode, timeout, offline, provider quota, unsupported model, and retry/test route tests in `packages/core/src/http/agent-connections-api.test.ts`
+- [x] T073 [P] [US5] Add modal state tests for long diagnostics, disabled states, scan cancellation progress, and non-blocking modal interactions in `packages/core/src/app/lib/agent-connection-state.test.ts`
 
 ### Implementation for User Story 5
 
-- [ ] T074 [US5] Normalize missing executable, invalid path, scan denied, secure storage unavailable, authentication failed, quota/rate limit, unsupported model, incompatible protocol, provider offline, timeout, and unknown errors in `packages/core/src/app/lib/agent-connections.ts`
-- [ ] T075 [US5] Apply server-side diagnostics redaction to every route response, scan event, test result, adapter event, and error response in `packages/core/src/http/agent-connections-api.ts`
-- [ ] T076 [US5] Implement non-blocking testing and scan cancellation state so the modal remains keyboard responsive during long operations in `packages/core/src/app/lib/agent-connection-state.ts`
-- [ ] T077 [US5] Render categorized status, recovery actions, diagnostics copy, retry, test again, rescan, edit path, choose model, use BYOK, and delete credential controls in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
-- [ ] T078 [US5] Add static/read-only bootstrap behavior that shows status and setup help while blocking local validation and credential writes in `packages/core/src/http/agent-connections-api.ts`
-- [ ] T079 [US5] Ensure adapter cancellation aborts local processes or provider requests where supported and stops browser event forwarding where unsupported in `packages/core/src/http/agent-connection-adapters.ts`
-- [ ] T080 [US5] Document credential handling, scan boundaries, fallback modes, and recovery categories in `specs/006-agent-model-connections/quickstart.md`
+- [x] T074 [US5] Normalize missing executable, invalid path, scan denied, secure storage unavailable, authentication failed, quota/rate limit, unsupported model, incompatible protocol, provider offline, timeout, and unknown errors in `packages/core/src/app/lib/agent-connections.ts`
+- [x] T075 [US5] Apply server-side diagnostics redaction to every route response, scan event, test result, adapter event, and error response in `packages/core/src/http/agent-connections-api.ts`
+- [x] T076 [US5] Implement non-blocking testing and scan cancellation state so the modal remains keyboard responsive during long operations in `packages/core/src/app/lib/agent-connection-state.ts`
+- [x] T077 [US5] Render categorized status, recovery actions, diagnostics copy, retry, test again, rescan, edit path, choose model, use BYOK, and delete credential controls in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
+- [x] T078 [US5] Add static/read-only bootstrap behavior that shows status and setup help while blocking local validation and credential writes in `packages/core/src/http/agent-connections-api.ts`
+- [x] T079 [US5] Ensure adapter cancellation aborts local processes or provider requests where supported and stops browser event forwarding where unsupported in `packages/core/src/http/agent-connection-adapters.ts`
+- [x] T080 [US5] Document credential handling, scan boundaries, fallback modes, and recovery categories in `specs/006-agent-model-connections/quickstart.md`
 
 **Checkpoint**: User Story 5 is fully functional and testable independently.
 
@@ -207,16 +207,16 @@
 
 ### Tests for User Story 6
 
-- [ ] T081 [P] [US6] Add multi-connection settings persistence tests for session active, project default, stale removal, and safe project-shared metadata in `packages/core/src/app/lib/agent-connection-storage.test.ts`
-- [ ] T082 [P] [US6] Add configured connection list state tests for switching, project default, stale status, remove, and preserved BYOK/manual settings in `packages/core/src/app/lib/agent-connection-state.test.ts`
-- [ ] T083 [P] [US6] Add route tests for removing active/default connections and returning a safe needs-setup snapshot in `packages/core/src/http/agent-connections-api.test.ts`
+- [x] T081 [P] [US6] Add multi-connection settings persistence tests for session active, project default, stale removal, and safe project-shared metadata in `packages/core/src/app/lib/agent-connection-storage.test.ts`
+- [x] T082 [P] [US6] Add configured connection list state tests for switching, project default, stale status, remove, and preserved BYOK/manual settings in `packages/core/src/app/lib/agent-connection-state.test.ts`
+- [x] T083 [P] [US6] Add route tests for removing active/default connections and returning a safe needs-setup snapshot in `packages/core/src/http/agent-connections-api.test.ts`
 
 ### Implementation for User Story 6
 
-- [ ] T084 [US6] Implement connection list ordering, stale connection marking, removal of active/default references, and safe fallback state in `packages/core/src/app/lib/agent-connection-storage.ts`
-- [ ] T085 [US6] Render multiple configured connections with type, status, scope, source, model or agent, last tested time, remove action, and project default control in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
-- [ ] T086 [US6] Ensure removing a connection deletes credentials only when explicitly confirmed and preserves non-secret history where appropriate in `packages/core/src/http/agent-connections-api.ts`
-- [ ] T087 [US6] Ensure switching connections from the full settings modal or slide-page quick switcher refreshes 005 chat bootstrap state without clearing existing chat messages or storing credential values in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
+- [x] T084 [US6] Implement connection list ordering, stale connection marking, removal of active/default references, and safe fallback state in `packages/core/src/app/lib/agent-connection-storage.ts`
+- [x] T085 [US6] Render multiple configured connections with type, status, scope, source, model or agent, last tested time, remove action, and project default control in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx`
+- [x] T086 [US6] Ensure removing a connection deletes credentials only when explicitly confirmed and preserves non-secret history where appropriate in `packages/core/src/http/agent-connections-api.ts`
+- [x] T087 [US6] Ensure switching connections from the full settings modal or slide-page quick switcher refreshes 005 chat bootstrap state without clearing existing chat messages or storing credential values in `packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
 
 **Checkpoint**: User Story 6 is fully functional and testable independently.
 
@@ -226,15 +226,15 @@
 
 **Purpose**: Visual quality, accessibility, documentation, package discipline, and final verification across all delivered stories.
 
-- [ ] T088 [P] Review the settings modal and quick switcher against `$ui-ux-pro-max` guidance for labels, contrast, error announcements, keyboard navigation, and no color-only state communication in `packages/core/src/app/components/settings/SettingsModal.tsx` and `packages/core/src/app/components/settings/QuickConnectionSwitcher.tsx`
-- [ ] T089 [P] Review the settings modal and quick switcher against `$frontend-design` guidance for dense developer-tool hierarchy, stable dimensions, no marketing hero patterns, no decorative gradients, and no layout-shifting hover states in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx` and `packages/core/src/app/components/settings/QuickConnectionSwitcher.tsx`
-- [ ] T090 [P] Verify modal, first-run setup, and slide-page quick switcher behavior at 375px, 768px, 1024px, and 1440px against `specs/006-agent-model-connections/quickstart.md`
-- [ ] T091 [P] Update implementation notes if storage locations, credential fallback behavior, provider support, or scan boundaries differ from the plan in `specs/006-agent-model-connections/quickstart.md`
-- [ ] T092 Run `pnpm check` from `D:\Projects\awesome-slide`
-- [ ] T093 Run `pnpm typecheck` from `D:\Projects\awesome-slide`
-- [ ] T094 Run `pnpm test` from `D:\Projects\awesome-slide`
-- [ ] T095 Run `pnpm build` from `D:\Projects\awesome-slide`
-- [ ] T096 Add a patch changeset for `@awesome-slide/core` in `.changeset/`
+- [x] T088 [P] Review the settings modal and quick switcher against `$ui-ux-pro-max` guidance for labels, contrast, error announcements, keyboard navigation, and no color-only state communication in `packages/core/src/app/components/settings/SettingsModal.tsx` and `packages/core/src/app/components/settings/QuickConnectionSwitcher.tsx`
+- [x] T089 [P] Review the settings modal and quick switcher against `$frontend-design` guidance for dense developer-tool hierarchy, stable dimensions, no marketing hero patterns, no decorative gradients, and no layout-shifting hover states in `packages/core/src/app/components/settings/ExecutionModelSettings.tsx` and `packages/core/src/app/components/settings/QuickConnectionSwitcher.tsx`
+- [x] T090 [P] Verify modal, first-run setup, and slide-page quick switcher behavior at 375px, 768px, 1024px, and 1440px against `specs/006-agent-model-connections/quickstart.md`
+- [x] T091 [P] Update implementation notes if storage locations, credential fallback behavior, provider support, or scan boundaries differ from the plan in `specs/006-agent-model-connections/quickstart.md`
+- [x] T092 Run `pnpm check` from `D:\Projects\awesome-slide`
+- [x] T093 Run `pnpm typecheck` from `D:\Projects\awesome-slide`
+- [x] T094 Run `pnpm test` from `D:\Projects\awesome-slide`
+- [x] T095 Run `pnpm build` from `D:\Projects\awesome-slide`
+- [x] T096 Add a patch changeset for `@awesome-slide/core` in `.changeset/`
 
 ---
 

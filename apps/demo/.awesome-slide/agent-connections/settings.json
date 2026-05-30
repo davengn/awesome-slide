@@ -1,11 +1,75 @@
 {
   "projectId": "demo",
-  "connections": [],
+  "connections": [
+    {
+      "id": "conn_1780110216193",
+      "displayName": "Codex CLI",
+      "type": "auto-scanned-local-agent",
+      "provider": "codex",
+      "scope": "project-default",
+      "agentCommandAlias": "codex",
+      "capabilities": {
+        "streaming": true,
+        "cancellation": true,
+        "structuredProposals": true,
+        "toolCalls": true,
+        "localFileContext": true,
+        "writeCapable": true,
+        "supportedModalities": [
+          "text",
+          "image"
+        ],
+        "maxContextBytes": 262144
+      },
+      "status": {
+        "state": "ready",
+        "message": "Command accepted and passed validation.",
+        "recoveryActions": [],
+        "checkedAt": "2026-05-30T04:09:00.704Z"
+      },
+      "lastTestedAt": "2026-05-30T04:09:00.704Z",
+      "createdAt": "2026-05-30T03:03:36.193Z",
+      "updatedAt": "2026-05-30T03:03:36.193Z"
+    },
+    {
+      "id": "conn_1780114144489",
+      "displayName": "Claude Code",
+      "type": "auto-scanned-local-agent",
+      "provider": "claude-code",
+      "scope": "project-default",
+      "agentCommandAlias": "claude",
+      "capabilities": {
+        "streaming": true,
+        "cancellation": true,
+        "structuredProposals": true,
+        "toolCalls": true,
+        "localFileContext": true,
+        "writeCapable": true,
+        "supportedModalities": [
+          "text",
+          "image"
+        ],
+        "maxContextBytes": 262144
+      },
+      "status": {
+        "state": "ready",
+        "message": "Command accepted and passed validation.",
+        "recoveryActions": [],
+        "checkedAt": "2026-05-30T04:19:30.215Z"
+      },
+      "lastTestedAt": "2026-05-30T04:19:30.215Z",
+      "createdAt": "2026-05-30T04:09:04.489Z",
+      "updatedAt": "2026-05-30T04:19:23.898Z"
+    }
+  ],
+  "activeConnectionId": "conn_1780114144489",
+  "projectDefaultConnectionId": "conn_1780114144489",
   "scanPreference": {
-    "enabled": false,
+    "enabled": true,
     "approvedDirectories": [],
     "includePathCommands": true,
-    "includeKnownInstallLocations": true
+    "includeKnownInstallLocations": true,
+    "lastScanAt": "2026-05-30T04:19:27.173Z"
   },
   "firstRunSetup": {
     "hasSeenPrompt": true,
@@ -13,5 +77,5 @@
     "dismissReason": "do-later",
     "lastPromptedProjectId": "demo"
   },
-  "updatedAt": "2026-05-29T07:47:47.036Z"
+  "updatedAt": "2026-05-30T04:19:23.898Z"
 }

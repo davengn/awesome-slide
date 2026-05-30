@@ -79,9 +79,59 @@ const findCommentAnchor = (line: number): HTMLElement | null => {
   );
 };
 
+function createContextPreferences(
+  collection?: { folderId?: string; deckId?: string; slideIds?: string[] },
+  hasSlide = false,
+): AgentChatSession['contextPreferences'] {
+  return [
+    {
+      id: 'ctx-slide',
+      kind: 'current-slide',
+      enabled: hasSlide && !collection?.deckId,
+      required: hasSlide && !collection?.deckId,
+      label: 'Current Slide',
+    },
+    {
+      id: 'ctx-elements',
+      kind: 'selected-elements',
+      enabled: hasSlide,
+      required: false,
+      label: 'Selected Elements',
+    },
+    {
+      id: 'ctx-theme',
+      kind: 'theme',
+      enabled: true,
+      required: false,
+      label: 'Theme',
+    },
+    {
+      id: 'ctx-notes',
+      kind: 'speaker-notes',
+      enabled: hasSlide,
+      required: false,
+      label: 'Speaker Notes',
+    },
+    {
+      id: 'ctx-deck',
+      kind: 'deck',
+      enabled: !!collection?.deckId,
+      required: !!collection?.deckId,
+      label: 'Deck',
+    },
+    {
+      id: 'ctx-folder',
+      kind: 'folder',
+      enabled: !!collection?.folderId,
+      required: false,
+      label: 'Folder',
+    },
+  ];
+}
+
 export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
   onClose,
-  slideId: _slideId,
+  slideId,
   slideContext,
   selectedElements,
   notes,
@@ -103,72 +153,40 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
 
   const [session, dispatch] = useReducer(agentChatReducer, null as unknown as AgentChatSession);
   const streamAbortRef = useRef<(() => void) | null>(null);
+  const sessionSlideId = slideId ?? slideContext?.id;
 
-  // Load session details from API & LocalStorage
   useEffect(() => {
     let isMounted = true;
-    getSession()
+    getSession({ slideId: sessionSlideId })
       .then((data) => {
         if (!isMounted) return;
         setActiveConnection(data.activeConnection);
         setRuntimeMode(data.runtime.mode);
         setSettingsRoute(data.runtime.settingsRoute);
+        setSelectedOperationIds({});
+        setApplyingProps({});
+        setInlineError(undefined);
+        setAppliedFeedback(null);
+        setComposerPrompt(seedPrompt ?? '');
 
-        // Load or bootstrap local session
-        const projectKey = 'proj_default';
-        const localSess = loadSession(data.session.id, projectKey);
+        const localSess = loadSession(data.session.id, data.session.projectKey);
 
-        const initializedSession: AgentChatSession = localSess || {
-          ...data.session,
-          projectKey,
-          messages: [],
-          contextPreferences: [
-            {
-              id: 'ctx-slide',
-              kind: 'current-slide',
-              enabled: !collection?.deckId,
-              required: !collection?.deckId,
-              label: 'Current Slide',
-            },
-            {
-              id: 'ctx-elements',
-              kind: 'selected-elements',
-              enabled: true,
-              required: false,
-              label: 'Selected Elements',
-            },
-            {
-              id: 'ctx-theme',
-              kind: 'theme',
-              enabled: true,
-              required: false,
-              label: 'Theme',
-            },
-            {
-              id: 'ctx-notes',
-              kind: 'speaker-notes',
-              enabled: true,
-              required: false,
-              label: 'Speaker Notes',
-            },
-            {
-              id: 'ctx-deck',
-              kind: 'deck',
-              enabled: !!collection?.deckId,
-              required: !!collection?.deckId,
-              label: 'Deck',
-            },
-            {
-              id: 'ctx-folder',
-              kind: 'folder',
-              enabled: !!collection?.folderId,
-              required: false,
-              label: 'Folder',
-            },
-          ],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
+        const initializedSession: AgentChatSession = localSess
+          ? {
+              ...localSess,
+              projectKey: data.session.projectKey,
+              origin: data.session.origin,
+              activeSlideId: data.session.activeSlideId,
+              activeDeckId: data.session.activeDeckId,
+            }
+          : {
+              ...data.session,
+              contextPreferences: createContextPreferences(
+                collection,
+                !!data.session.activeSlideId,
+              ),
+              messages: [],
+            };
 
         dispatch({
           type: 'SET_SESSION',
@@ -185,21 +203,13 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
         streamAbortRef.current();
       }
     };
-  }, [collection?.deckId, collection?.folderId]);
+  }, [collection, seedPrompt, sessionSlideId]);
 
-  // Keep storage synchronized
   useEffect(() => {
     if (session) {
       saveSession(session);
     }
   }, [session]);
-
-  // Seed prompt from query param/prop
-  useEffect(() => {
-    if (session && seedPrompt) {
-      setComposerPrompt(seedPrompt);
-    }
-  }, [session, seedPrompt]);
 
   useEffect(() => {
     if (!session?.currentRunId || streamAbortRef.current) {
@@ -536,7 +546,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
 
   return (
     <aside
-      className="relative w-[440px] h-full border-l border-neutral-200 bg-white flex flex-col shadow-lg z-50 select-none"
+      className="relative w-[440px] h-full border-l border-neutral-200 bg-white flex flex-col shadow-lg z-50"
       aria-label="Agent Chat Panel"
     >
       {/* Header */}
@@ -883,6 +893,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
               onRetry={handleRetryRun}
               isRunActive={isRunActive}
               canRetry={canRetry}
+              cancellationCapable={activeConnection?.capabilities?.cancellation}
               value={composerPrompt}
               onChange={setComposerPrompt}
               inlineError={inlineError}

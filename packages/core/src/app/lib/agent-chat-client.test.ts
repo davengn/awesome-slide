@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { streamRunEvents } from './agent-chat-client.ts';
+import { getSession, streamRunEvents } from './agent-chat-client.ts';
 import type { AgentChatEvent } from './agent-chat-types.ts';
 
 describe('Agent Chat Client - streamRunEvents', () => {
@@ -82,5 +82,43 @@ describe('Agent Chat Client - streamRunEvents', () => {
 
     expect(mockEventSourceInstance.close).toHaveBeenCalled();
     expect(onError).toHaveBeenCalled();
+  });
+});
+
+describe('Agent Chat Client - getSession', () => {
+  it('passes the active slide id when bootstrapping a slide chat session', async () => {
+    const originalFetch = globalThis.fetch;
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        session: {
+          id: 'session_slide_intro',
+          projectKey: 'project_default',
+          origin: 'slide-workspace',
+          activeSlideId: 'intro',
+          messages: [],
+          contextPreferences: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        activeConnection: {
+          connectionId: 'none',
+          displayName: 'No Connection',
+          type: 'local-agent',
+          modelOrAgent: 'None',
+          status: 'needs-setup',
+        },
+        runtime: { mode: 'interactive', settingsRoute: '/settings/connections' },
+        suggestedActions: [],
+      }),
+    });
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+    try {
+      await getSession({ slideId: 'intro' });
+      expect(mockFetch).toHaveBeenCalledWith('/__agent-chat/session?slideId=intro');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

@@ -308,7 +308,7 @@ export function redactDiagnostics(input: string): string {
   redacted = redacted.replace(/(^|[\s=:"'])\.[^\\/\s]+/g, '$1.<hidden>');
   redacted = redacted.replace(/\bBearer\s+[a-zA-Z0-9_\-./~+\\*=]{8,}/gi, 'Bearer <redacted>');
   redacted = redacted.replace(
-    /(api[-_]?key|token|auth|password|secret|key)\s*[:=]\s*["']?[a-zA-Z0-9_\-./~+\\*=]{8,}["']?/gi,
+    /(?:["']?(api[-_]?key|token|auth|password|secret|key)["']?)\s*[:=]\s*["']?[a-zA-Z0-9_\-./~+\\*=]{8,}["']?/gi,
     '$1=<redacted>',
   );
   redacted = redacted.replace(

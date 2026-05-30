@@ -161,6 +161,11 @@ export function QuickConnectionSwitcher({
                             <ProviderIcon providerId={conn.provider} className="size-3.5" />
                           </span>
                           <span className="truncate text-[12px]">{conn.displayName}</span>
+                          {conn.isProjectDefault && (
+                            <span className="text-[9.5px] text-muted-foreground font-normal shrink-0">
+                              (Default)
+                            </span>
+                          )}
                         </div>
                         {isSelected && <Check className="size-3.5 shrink-0" />}
                       </button>
@@ -176,11 +181,53 @@ export function QuickConnectionSwitcher({
           ) : (
             <div className="grid gap-3">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">
-                Model Settings
+                API Connection
               </span>
+              {connections.filter((c) => c.type === 'api-provider').length > 0 ? (
+                <div className="grid gap-1">
+                  {connections
+                    .filter((c) => c.type === 'api-provider')
+                    .map((conn) => {
+                      const isSelected = activeConnection?.connectionId === conn.connectionId;
+                      return (
+                        <button
+                          key={conn.connectionId}
+                          type="button"
+                          onClick={() => onSetActiveConnection(conn.connectionId)}
+                          className={cn(
+                            'w-full flex items-center justify-between gap-2.5 px-2 py-2 rounded-[7px] text-left border transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring/35',
+                            isSelected
+                              ? 'bg-brand/10 border-brand/40 text-brand font-semibold'
+                              : 'bg-transparent border-transparent text-foreground hover:bg-muted/50 hover:border-border/30',
+                          )}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="inline-flex size-6 items-center justify-center rounded-[5px] bg-muted/60">
+                              <ProviderIcon providerId={conn.provider} className="size-3.5" />
+                            </span>
+                            <span className="truncate text-[12px]">{conn.displayName}</span>
+                            {conn.isProjectDefault && (
+                              <span className="text-[9.5px] text-muted-foreground font-normal shrink-0">
+                                (Default)
+                              </span>
+                            )}
+                          </div>
+                          {isSelected && <Check className="size-3.5 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                </div>
+              ) : (
+                <div className="py-4 text-center text-[12px] text-muted-foreground italic">
+                  No API connections configured.
+                </div>
+              )}
 
-              {activeConnection && activeConnection.type === 'api-provider' ? (
-                <div className="grid gap-2.5 px-1">
+              {activeConnection && activeConnection.type === 'api-provider' && (
+                <div className="grid gap-2.5 px-1 pt-2.5 border-t border-border/40">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Active Connection Settings
+                  </span>
                   {/* Model ID Dropdown */}
                   {activeConnection.availableModels && (
                     <label className="grid gap-1 text-[11px] font-medium text-muted-foreground">
@@ -228,10 +275,6 @@ export function QuickConnectionSwitcher({
                       </select>
                     </label>
                   )}
-                </div>
-              ) : (
-                <div className="py-4 text-center text-[12px] text-muted-foreground italic">
-                  No API connection active.
                 </div>
               )}
             </div>

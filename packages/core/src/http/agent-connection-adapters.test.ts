@@ -81,4 +81,42 @@ describe('agent connection adapters', () => {
     expect(JSON.stringify(normalized[1].payload)).not.toContain('abcdef123456');
     expect(JSON.stringify(normalized[1].payload)).toContain('<user>');
   });
+
+  it('T062: proves 005 supplies context and workflows while 006 resolves capabilities', async () => {
+    const controller = new AbortController();
+    const runRequest = {
+      runId: 'run_test_t062',
+      prompt: 'Hello',
+      context: { project: { name: 'My Test Project' } },
+      workflows: [{ id: 'wf1', contentHash: 'hash_wf1', instructions: 'step1' }],
+      connectionId: 'conn_test_062',
+      modelId: 'gpt-model',
+      reasoningEffort: 'low',
+      capabilities: normalizeCapabilities({ streaming: true, cancellation: true }),
+      signal: controller.signal,
+    };
+
+    let receivedRequest: any = null;
+    const runner = async function* (req: any) {
+      receivedRequest = req;
+      yield { type: 'progress' as const, payload: 'processing' };
+    };
+
+    const normalized = [];
+    for await (const event of runAgentConnectionAdapter(runner, runRequest)) {
+      normalized.push(event);
+    }
+
+    expect(normalized[0].type).toBe('progress');
+    expect(receivedRequest).toBeDefined();
+    expect(receivedRequest.prompt).toBe('Hello');
+    expect(receivedRequest.context.project.name).toBe('My Test Project');
+    expect(receivedRequest.workflows).toEqual([
+      { id: 'wf1', contentHash: 'hash_wf1', instructions: 'step1' },
+    ]);
+    expect(receivedRequest.modelId).toBe('gpt-model');
+    expect(receivedRequest.reasoningEffort).toBe('low');
+    expect(receivedRequest.capabilities.streaming).toBe(true);
+    expect(receivedRequest.capabilities.cancellation).toBe(true);
+  });
 });

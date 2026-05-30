@@ -13,7 +13,11 @@ interface RunEntry {
   listeners: Set<(event: AgentChatEvent) => void>;
   lastHeartbeatAt?: string;
   watchdogTimer?: NodeJS.Timeout;
+  watchdogTimeoutMs: number;
 }
+
+export const DEFAULT_RUN_WATCHDOG_TIMEOUT_MS = 300000;
+export const LOCAL_AGENT_RUN_WATCHDOG_TIMEOUT_MS = 30 * 60 * 1000;
 
 const activeRuns = new Map<string, RunEntry>();
 const EVENT_STATE_MAP: Partial<Record<AgentChatEvent['type'], RunState>> = {
@@ -34,7 +38,7 @@ export function getRunEvents(runId: string): AgentChatEvent[] {
   return activeRuns.get(runId)?.events || [];
 }
 
-export function startRunWatchdog(runId: string, timeoutMs = 30000): void {
+export function startRunWatchdog(runId: string, timeoutMs?: number): void {
   const entry = activeRuns.get(runId);
   if (!entry) return;
 
@@ -50,15 +54,20 @@ export function startRunWatchdog(runId: string, timeoutMs = 30000): void {
     const errorPayload = createAgentChatError('timeout', 'Run timed out (watchdog).');
     addRunEvent(runId, 'failed', errorPayload);
     currentEntry.abortController.abort();
-  }, timeoutMs);
+  }, timeoutMs ?? entry.watchdogTimeoutMs);
 }
 
-export function registerRun(run: AgentChatRun, abortController: AbortController): void {
+export function registerRun(
+  run: AgentChatRun,
+  abortController: AbortController,
+  opts: { watchdogTimeoutMs?: number } = {},
+): void {
   activeRuns.set(run.id, {
     run,
     events: [],
     abortController,
     listeners: new Set(),
+    watchdogTimeoutMs: opts.watchdogTimeoutMs ?? DEFAULT_RUN_WATCHDOG_TIMEOUT_MS,
   });
   startRunWatchdog(run.id);
 }

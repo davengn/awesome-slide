@@ -89,15 +89,22 @@ export function Slide() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { slide, error } = useSlideModule(slideId);
   const [playMode, setPlayMode] = useState<'window' | 'fullscreen' | null>(null);
-
-  const seedPrompt =
-    typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('prompt') || undefined
-      : undefined;
+  const [seedPromptState, setSeedPromptState] = useState<{
+    slideId: string;
+    prompt: string;
+  } | null>(() => {
+    const prompt =
+      typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('prompt') || undefined
+        : undefined;
+    return prompt ? { slideId, prompt } : null;
+  });
+  const seedPrompt = seedPromptState?.slideId === slideId ? seedPromptState.prompt : undefined;
 
   useEffect(() => {
     const promptParam = searchParams.get('prompt');
     if (promptParam) {
+      setSeedPromptState({ slideId, prompt: promptParam });
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
@@ -107,7 +114,7 @@ export function Slide() {
         { replace: true },
       );
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, slideId]);
 
   const t = useLocale();
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -849,6 +856,7 @@ function SlideWorkspace({
                 {agentChatOpen && (
                   <div className="hidden md:block shrink-0 h-full">
                     <AgentChatPanel
+                      key={slideId}
                       onClose={() => setAgentChatOpen(false)}
                       slideId={slideId}
                       slideContext={currentSlideContext}
