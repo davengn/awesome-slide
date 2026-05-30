@@ -66,4 +66,32 @@ describe('agent-runtime storage', () => {
     expect(eventsRaw).not.toContain('abcdefghijk');
     expect(eventsRaw).not.toContain('/Users/ducduy');
   });
+
+  it('returns null for missing records and rejects malformed runtime state', async () => {
+    const storage = createAgentRuntimeStorage({ storageRoot: path.join(tmpDir, 'store') });
+
+    expect(await storage.readRun('missing_run')).toBeNull();
+
+    await fs.mkdir(storage.paths.runs, { recursive: true });
+    await fs.writeFile(path.join(storage.paths.runs, 'run_bad.json'), '{bad json', 'utf8');
+
+    await expect(storage.readRun('run_bad')).rejects.toThrow();
+  });
+
+  it('preserves concurrent event appends for one run', async () => {
+    const storage = createAgentRuntimeStorage({ storageRoot: path.join(tmpDir, 'store') });
+    const events = Array.from({ length: 12 }, (_, index) =>
+      createTestEvent({
+        sequence: index + 1,
+        type: index === 11 ? 'completed' : 'progress',
+        payload: `event-${index + 1}`,
+      }),
+    );
+
+    await Promise.all(events.map((event) => storage.appendRunEvent('run_test', event)));
+
+    expect((await storage.listRunEvents('run_test')).map((event) => event.sequence)).toEqual(
+      events.map((event) => event.sequence),
+    );
+  });
 });

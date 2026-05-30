@@ -118,7 +118,12 @@ export interface AgentChatError {
   diagnostics?: string;
 }
 
-export type MessagePartType = 'text' | 'progress' | 'proposal-summary' | 'diagnostic';
+export type MessagePartType =
+  | 'text'
+  | 'progress'
+  | 'proposal-summary'
+  | 'diagnostic'
+  | 'file-summary';
 
 export interface MessagePart {
   type: MessagePartType;
@@ -160,6 +165,7 @@ export interface AgentChatSession {
   messages: AgentChatMessage[];
   contextPreferences: ContextPreference[];
   currentRunId?: string;
+  eventCursors?: Record<string, number>;
   createdAt: string;
   updatedAt: string;
 }

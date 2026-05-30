@@ -65,9 +65,21 @@ function trimArrayByBytes<T>(items: T[], maxBytes: number): T[] {
 async function readJson<T>(filePath: string): Promise<T | null> {
   try {
     return JSON.parse(await fs.readFile(filePath, 'utf8')) as T;
-  } catch {
-    return null;
+  } catch (error) {
+    if (isNotFoundError(error)) {
+      return null;
+    }
+    throw error;
   }
+}
+
+function isNotFoundError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: string }).code === 'ENOENT'
+  );
 }
 
 async function writeJson(filePath: string, value: unknown): Promise<void> {
@@ -94,6 +106,30 @@ export function createAgentRuntimeStorage(
     proposals: path.join(storageRoot, 'proposals'),
     audit: path.join(storageRoot, 'audit'),
   };
+  const eventAppendQueues = new Map<string, Promise<void>>();
+
+  async function enqueueEventAppend<T>(runId: string, append: () => Promise<T>): Promise<T> {
+    const previous = eventAppendQueues.get(runId) ?? Promise.resolve();
+    let release: (() => void) | undefined;
+    const current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const queued = previous.then(
+      () => current,
+      () => current,
+    );
+    eventAppendQueues.set(runId, queued);
+
+    try {
+      await previous.catch(() => undefined);
+      return await append();
+    } finally {
+      release?.();
+      if (eventAppendQueues.get(runId) === queued) {
+        eventAppendQueues.delete(runId);
+      }
+    }
+  }
 
   return {
     storageRoot,
@@ -117,11 +153,13 @@ export function createAgentRuntimeStorage(
     },
     readRun: (runId) => readJson<RuntimeRun>(path.join(paths.runs, `${safeId(runId)}.json`)),
     appendRunEvent: async (runId, event) => {
-      const filePath = path.join(paths.events, `${safeId(runId)}.json`);
-      const events = (await readJson<RuntimeEvent[]>(filePath)) ?? [];
-      const bounded = trimArrayByBytes([...events, event].slice(-maxEvents), maxBytes);
-      await writeJson(filePath, bounded);
-      return bounded;
+      return enqueueEventAppend(runId, async () => {
+        const filePath = path.join(paths.events, `${safeId(runId)}.json`);
+        const events = (await readJson<RuntimeEvent[]>(filePath)) ?? [];
+        const bounded = trimArrayByBytes([...events, event].slice(-maxEvents), maxBytes);
+        await writeJson(filePath, bounded);
+        return bounded;
+      });
     },
     listRunEvents: async (runId) =>
       (await readJson<RuntimeEvent[]>(path.join(paths.events, `${safeId(runId)}.json`))) ?? [],
@@ -145,8 +183,11 @@ export function createAgentRuntimeStorage(
           .filter((summary): summary is RuntimeAuditSummary => Boolean(summary))
           .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
           .slice(0, limit);
-      } catch {
-        return [];
+      } catch (error) {
+        if (isNotFoundError(error)) {
+          return [];
+        }
+        throw error;
       }
     },
   };

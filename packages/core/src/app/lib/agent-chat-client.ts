@@ -10,6 +10,53 @@ import type {
 } from '../../http/agent-chat-types.ts';
 import type { AgentChatContext, AgentChatEvent, ContextPreference } from './agent-chat-types.ts';
 
+export class AgentChatRouteError extends Error {
+  readonly status: number;
+  readonly category?: string;
+  readonly recoveryActions?: string[];
+  readonly diagnostics?: string;
+
+  constructor(
+    message: string,
+    opts: {
+      status: number;
+      category?: string;
+      recoveryActions?: string[];
+      diagnostics?: string;
+    },
+  ) {
+    super(message);
+    this.name = 'AgentChatRouteError';
+    this.status = opts.status;
+    this.category = opts.category;
+    this.recoveryActions = opts.recoveryActions;
+    this.diagnostics = opts.diagnostics;
+  }
+}
+
+async function parseRouteResponse<T>(res: Response, fallback: string): Promise<T> {
+  if (res.ok) {
+    return res.json();
+  }
+
+  let body: {
+    error?: string;
+    category?: string;
+    recoveryActions?: string[];
+    diagnostics?: string;
+  } = {};
+  try {
+    body = await res.json();
+  } catch {}
+
+  throw new AgentChatRouteError(body.error ?? fallback, {
+    status: res.status,
+    category: body.category,
+    recoveryActions: body.recoveryActions,
+    diagnostics: body.diagnostics,
+  });
+}
+
 export async function getSession(options: { slideId?: string } = {}): Promise<GetSessionResponse> {
   const params = new URLSearchParams();
   if (options.slideId) {
@@ -17,10 +64,7 @@ export async function getSession(options: { slideId?: string } = {}): Promise<Ge
   }
   const query = params.toString();
   const res = await fetch(query ? `/__agent-chat/session?${query}` : '/__agent-chat/session');
-  if (!res.ok) {
-    throw new Error(`Failed to get session: ${res.statusText}`);
-  }
-  return res.json();
+  return parseRouteResponse(res, `Failed to get session: ${res.statusText}`);
 }
 
 export async function startRun(
@@ -42,20 +86,14 @@ export async function startRun(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    throw new Error(`Failed to start run: ${res.statusText}`);
-  }
-  return res.json();
+  return parseRouteResponse(res, `Failed to start run: ${res.statusText}`);
 }
 
 export async function cancelRun(runId: string): Promise<CancelRunResponse> {
   const res = await fetch(`/__agent-chat/runs/${runId}/cancel`, {
     method: 'POST',
   });
-  if (!res.ok) {
-    throw new Error(`Failed to cancel run: ${res.statusText}`);
-  }
-  return res.json();
+  return parseRouteResponse(res, `Failed to cancel run: ${res.statusText}`);
 }
 
 export async function retryRun(
@@ -67,10 +105,26 @@ export async function retryRun(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ context }),
   });
-  if (!res.ok) {
-    throw new Error(`Failed to retry run: ${res.statusText}`);
+  return parseRouteResponse(res, `Failed to retry run: ${res.statusText}`);
+}
+
+export async function listRuns(conversationId?: string): Promise<{
+  runs: Array<{
+    runId: string;
+    conversationId: string;
+    state: string;
+    lastSequence: number;
+    startedAt: string;
+    finishedAt?: string;
+  }>;
+}> {
+  const params = new URLSearchParams();
+  if (conversationId) {
+    params.set('conversationId', conversationId);
   }
-  return res.json();
+  const query = params.toString();
+  const res = await fetch(query ? `/__agent-chat/runs?${query}` : '/__agent-chat/runs');
+  return parseRouteResponse(res, `Failed to list runs: ${res.statusText}`);
 }
 
 export async function applyProposal(
@@ -87,28 +141,30 @@ export async function applyProposal(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    throw new Error(`Failed to apply proposal: ${res.statusText}`);
-  }
-  return res.json();
+  return parseRouteResponse(res, `Failed to apply proposal: ${res.statusText}`);
 }
 
 export async function rejectProposal(proposalId: string): Promise<RejectProposalResponse> {
   const res = await fetch(`/__agent-chat/proposals/${proposalId}/reject`, {
     method: 'POST',
   });
-  if (!res.ok) {
-    throw new Error(`Failed to reject proposal: ${res.statusText}`);
-  }
-  return res.json();
+  return parseRouteResponse(res, `Failed to reject proposal: ${res.statusText}`);
 }
 
 export function streamRunEvents(
   runId: string,
   onEvent: (event: AgentChatEvent) => void,
   onError?: (err: Error) => void,
+  opts: { afterSequence?: number } = {},
 ): { abort: () => void } {
-  const eventSource = new EventSource(`/__agent-chat/runs/${runId}/events`);
+  const params = new URLSearchParams();
+  if (opts.afterSequence && opts.afterSequence > 0) {
+    params.set('after', String(opts.afterSequence));
+  }
+  const query = params.toString();
+  const eventSource = new EventSource(
+    query ? `/__agent-chat/runs/${runId}/events?${query}` : `/__agent-chat/runs/${runId}/events`,
+  );
   let closedIntentionally = false;
 
   eventSource.onmessage = (event) => {

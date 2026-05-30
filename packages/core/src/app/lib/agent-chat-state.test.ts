@@ -94,6 +94,29 @@ describe('Agent Chat State Reducer', () => {
     expect(assistantMsg.content[0].text).toBe('Hello World');
   });
 
+  it('handles runtime text deltas and ignores duplicate replay events', () => {
+    let session = createInitialSession();
+    session = agentChatReducer(session, {
+      type: 'START_RUN',
+      payload: { runId: 'run_1', prompt: 'Prompt' },
+    });
+
+    const event: AgentChatEvent = {
+      sequence: 4,
+      runId: 'run_1',
+      type: 'text_delta',
+      payload: { text: 'Runtime text' },
+      createdAt: new Date().toISOString(),
+      source: 'local-agent',
+    };
+
+    session = agentChatReducer(session, { type: 'RECEIVE_EVENT', payload: event });
+    session = agentChatReducer(session, { type: 'RECEIVE_EVENT', payload: event });
+
+    expect(session.eventCursors?.run_1).toBe(4);
+    expect(session.messages[1].content[0].text).toBe('Runtime text');
+  });
+
   it('should transition to needs-review on proposal event', () => {
     let session = createInitialSession();
     session = agentChatReducer(session, {
@@ -198,6 +221,33 @@ describe('Agent Chat State Reducer', () => {
     const assistantMsg = nextSession.messages[1];
     expect(assistantMsg.state).toBe('failed');
     expect(assistantMsg.error?.category).toBe('timeout');
+  });
+
+  it('releases composer state after blocked-connection failures without removing user prompt', () => {
+    let session = createInitialSession();
+    session = agentChatReducer(session, {
+      type: 'START_RUN',
+      payload: { runId: 'run_blocked', prompt: 'Preserve this prompt' },
+    });
+
+    session = agentChatReducer(session, {
+      type: 'RECEIVE_EVENT',
+      payload: {
+        sequence: 1,
+        runId: 'run_blocked',
+        type: 'failed',
+        payload: {
+          category: 'connection-unavailable',
+          message: 'No connection.',
+          recoveryActions: ['change-connection'],
+        },
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    expect(session.currentRunId).toBeUndefined();
+    expect(session.messages[0].content[0].text).toBe('Preserve this prompt');
+    expect(session.messages[1].state).toBe('failed');
   });
 
   it('should initialize the session with SET_SESSION', () => {

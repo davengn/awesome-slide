@@ -2,7 +2,7 @@ import os from 'node:os';
 import type { RuntimeEvent } from './contracts.ts';
 
 const SECRET_KEY_PATTERN =
-  /(?:api[-_]?key|token|auth|authorization|password|secret|credential|bearer)/i;
+  /(?:api[-_]?key|token|auth|authorization|password|secret|credential|bearer|\bkey\b)/i;
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -29,7 +29,7 @@ function redactSecretText(value: string): string {
   redacted = redacted.replace(/\bBearer\s+[A-Za-z0-9_\-./~+*=]{8,}/gi, 'Bearer <redacted>');
   redacted = redacted.replace(/\bsk-[A-Za-z0-9_-]{8,}/g, '<redacted-key>');
   redacted = redacted.replace(
-    /(?:["']?(api[-_]?key|token|auth|authorization|password|secret|credential)["']?)\s*[:=]\s*["']?[^"'\s,}]{8,}["']?/gi,
+    /(?:["']?(api[-_]?key|token|auth|authorization|password|secret|credential|key)["']?)\s*[:=]\s*["']?[^"'\s,}]{8,}["']?/gi,
     '$1=<redacted>',
   );
   redacted = redacted.replace(

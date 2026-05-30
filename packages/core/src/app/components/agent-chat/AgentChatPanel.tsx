@@ -178,9 +178,11 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
               origin: data.session.origin,
               activeSlideId: data.session.activeSlideId,
               activeDeckId: data.session.activeDeckId,
+              currentRunId: data.conversation?.activeRunId ?? localSess.currentRunId,
             }
           : {
               ...data.session,
+              currentRunId: data.conversation?.activeRunId ?? data.session.currentRunId,
               contextPreferences: createContextPreferences(
                 collection,
                 !!data.session.activeSlideId,
@@ -215,23 +217,39 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({
     if (!session?.currentRunId || streamAbortRef.current) {
       return;
     }
-    const orphanedRun = session.messages.some(
+    const reattachableRun = session.messages.some(
       (message) =>
         message.runId === session.currentRunId &&
         message.role === 'assistant' &&
         ['queued', 'loading', 'streaming'].includes(message.state),
     );
-    if (!orphanedRun) {
+    if (!reattachableRun) {
       return;
     }
-    dispatch({
-      type: 'RECEIVE_EVENT',
-      payload: createRunFailureEvent(
-        session.currentRunId,
-        'The agent response stream disconnected before it completed.',
-      ),
-    });
-  }, [session?.currentRunId, session?.messages]);
+    const runId = session.currentRunId;
+    const { abort } = streamRunEvents(
+      runId,
+      (event) => {
+        dispatch({ type: 'RECEIVE_EVENT', payload: event });
+        if (['completed', 'failed', 'cancelled', 'proposal'].includes(event.type)) {
+          streamAbortRef.current = null;
+        }
+      },
+      (err) => {
+        dispatch({
+          type: 'RECEIVE_EVENT',
+          payload: createRunFailureEvent(
+            runId,
+            'The agent response stream disconnected before it completed.',
+            err.message,
+          ),
+        });
+        streamAbortRef.current = null;
+      },
+      { afterSequence: session.eventCursors?.[runId] ?? 0 },
+    );
+    streamAbortRef.current = abort;
+  }, [session?.currentRunId, session?.messages, session?.eventCursors]);
 
   const handleToggleContext = (id: string) => {
     if (!session) return;

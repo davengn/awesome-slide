@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getSession, streamRunEvents } from './agent-chat-client.ts';
+import {
+  type AgentChatRouteError,
+  getSession,
+  listRuns,
+  startRun,
+  streamRunEvents,
+} from './agent-chat-client.ts';
 import type { AgentChatEvent } from './agent-chat-types.ts';
 
 describe('Agent Chat Client - streamRunEvents', () => {
@@ -52,6 +58,15 @@ describe('Agent Chat Client - streamRunEvents', () => {
     expect(mockEventSourceInstance.close).toHaveBeenCalled();
   });
 
+  it('uses replay cursors when subscribing to runtime events', () => {
+    const onEvent = vi.fn();
+    const onError = vi.fn();
+
+    streamRunEvents('run_test_1', onEvent, onError, { afterSequence: 7 });
+
+    expect(global.EventSource).toHaveBeenCalledWith('/__agent-chat/runs/run_test_1/events?after=7');
+  });
+
   it('closes EventSource automatically on terminal completed event (T083)', () => {
     const onEvent = vi.fn();
     const onError = vi.fn();
@@ -82,6 +97,51 @@ describe('Agent Chat Client - streamRunEvents', () => {
 
     expect(mockEventSourceInstance.close).toHaveBeenCalled();
     expect(onError).toHaveBeenCalled();
+  });
+});
+
+describe('Agent Chat Client - route errors and run listing', () => {
+  it('preserves categorized blocked connection failures', async () => {
+    const originalFetch = globalThis.fetch;
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+      json: async () => ({
+        error: 'No active agent connection is configured.',
+        category: 'connection-unavailable',
+        recoveryActions: ['change-connection'],
+      }),
+    });
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+    try {
+      await expect(startRun('session_1', 'Keep my prompt')).rejects.toMatchObject({
+        status: 503,
+        category: 'connection-unavailable',
+      } satisfies Partial<AgentChatRouteError>);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('lists active runs for reattach', async () => {
+    const originalFetch = globalThis.fetch;
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ runs: [{ runId: 'run_1', lastSequence: 3 }] }),
+    });
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+    try {
+      const response = await listRuns('session_slide_intro');
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/__agent-chat/runs?conversationId=session_slide_intro',
+      );
+      expect(response.runs[0]?.runId).toBe('run_1');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });
 

@@ -10,6 +10,12 @@ import type {
 
 export interface GetSessionResponse {
   session: AgentChatSession;
+  conversation?: {
+    conversationId: string;
+    activeRunId: string | null;
+    activeSlideId?: string;
+    messages: AgentChatSession['messages'];
+  };
   activeConnection: AgentConnectionRef;
   runtime: {
     mode: RuntimeMode;

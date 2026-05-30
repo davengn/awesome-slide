@@ -1,5 +1,13 @@
 import fs from 'node:fs/promises';
 import type { ViteDevServer } from 'vite';
+import type { RuntimeEventInput } from '../agent-runtime/events.ts';
+import {
+  createLocalAgentInvocation,
+  isClaudeCodeCli,
+  isCodexCli,
+  runLocalAgentCli,
+} from '../agent-runtime/local-agents.ts';
+import { runProviderAdapter } from '../agent-runtime/provider-adapters.ts';
 import { createAgentChatError, redactDiagnostics } from '../app/lib/agent-chat-errors.ts';
 import type {
   AgentChatContext,
@@ -12,7 +20,7 @@ import type {
   AgentOperation,
   RuntimeMode,
 } from '../app/lib/agent-chat-types.ts';
-import type { ApiProviderId } from '../app/lib/agent-connection-types.ts';
+import type { AgentConnectionConfig, ApiProviderId } from '../app/lib/agent-connection-types.ts';
 import { normalizeCapabilities, resolveActiveConnection } from '../app/lib/agent-connections.ts';
 import {
   captureFingerprints,
@@ -29,11 +37,13 @@ import {
   findProposal,
   getRun,
   LOCAL_AGENT_RUN_WATCHDOG_TIMEOUT_MS,
+  listRunSummaries,
   registerRun,
   subscribeRunEvents,
 } from './agent-chat-runs.ts';
 import type {
   AgentConnectionRunner,
+  RawAgentConnectionEvent,
   StartAgentConnectionRunRequest,
 } from './agent-connection-adapters.ts';
 import { runAgentConnectionAdapter } from './agent-connection-adapters.ts';
@@ -109,6 +119,127 @@ const defaultConnection: AgentConnectionRef = {
   status: 'needs-setup',
 };
 
+export { createLocalAgentInvocation, isClaudeCodeCli, isCodexCli };
+
+function toConnectionAdapterEvent(event: RuntimeEventInput): RawAgentConnectionEvent {
+  if (event.type === 'text_delta') {
+    const payload = event.payload as { text?: string } | string | undefined;
+    return {
+      type: 'token',
+      payload: typeof payload === 'string' ? payload : (payload?.text ?? ''),
+    };
+  }
+  if (event.type === 'tool_call') {
+    return { type: 'tool-call', payload: event.payload };
+  }
+  if (event.type === 'error') {
+    return { type: 'failed', payload: event.payload };
+  }
+  if (event.type === 'started') {
+    return { type: 'progress', payload: 'Agent run started.' };
+  }
+  if (event.type === 'file_summary' || event.type === 'thinking_delta') {
+    return { type: 'diagnostic', payload: event.payload };
+  }
+  if (
+    event.type === 'completed' ||
+    event.type === 'cancelled' ||
+    event.type === 'failed' ||
+    event.type === 'progress' ||
+    event.type === 'diagnostic'
+  ) {
+    return { type: event.type, payload: event.payload };
+  }
+  if (event.type === 'queued') {
+    return { type: 'progress', payload: 'Run queued.' };
+  }
+  return { type: 'diagnostic', payload: event.payload };
+}
+
+async function resolveConnectionApiKey(connectionConfig: AgentConnectionConfig): Promise<string> {
+  const adapter = createUserHomeCredentialStorageAdapter();
+  let apiKey: string | null = null;
+  if (connectionConfig.credentialRef) {
+    const storage =
+      connectionConfig.credentialStorage ??
+      (connectionConfig.credentialRef.startsWith('env:')
+        ? 'environment-variable'
+        : 'os-credential-store');
+    apiKey = await resolveCredentialSecret(
+      {
+        ref: connectionConfig.credentialRef,
+        provider: connectionConfig.provider as ApiProviderId,
+        storage,
+        displayHint: '',
+        createdAt: '',
+      },
+      adapter,
+    );
+  }
+
+  if (!apiKey) {
+    throw new Error('API key is missing or secure storage is unavailable.');
+  }
+
+  return apiKey;
+}
+
+async function* runConfiguredConnectionEvents(
+  ctx: ApiContext,
+  activeConnection: AgentConnectionRef,
+  connectionConfig: AgentConnectionConfig | undefined,
+  req: StartAgentConnectionRunRequest,
+): AsyncIterable<RawAgentConnectionEvent> {
+  if (!connectionConfig) {
+    if (req.prompt === 'slow prompt' || req.prompt.startsWith('slow-')) {
+      yield { type: 'progress', payload: 'Slow operation started...' };
+      await new Promise((resolve, reject) => {
+        const timer = setTimeout(resolve, 5000);
+        req.signal.addEventListener('abort', () => {
+          clearTimeout(timer);
+          reject(new Error('aborted'));
+        });
+      });
+      return;
+    }
+    yield { type: 'progress', payload: 'Analyzing slide layout...' };
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    yield { type: 'token', payload: 'Here are the suggested edits for your slide:' };
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    yield { type: 'completed', payload: null };
+    return;
+  }
+
+  if (activeConnection.type === 'api-provider') {
+    const apiKey = await resolveConnectionApiKey(connectionConfig);
+    for await (const event of runProviderAdapter({
+      runId: req.runId,
+      provider: connectionConfig.provider as ApiProviderId,
+      apiKey,
+      prompt: req.prompt,
+      systemInstructions: req.workflows.map((workflow) => workflow.instructions).join('\n\n'),
+      modelId: connectionConfig.modelId,
+      signal: req.signal,
+    })) {
+      yield toConnectionAdapterEvent(event);
+    }
+    return;
+  }
+
+  const commandOrPath =
+    connectionConfig.type === 'manual-agent-path'
+      ? connectionConfig.manualPathRef
+      : connectionConfig.agentCommandAlias;
+
+  if (!commandOrPath) {
+    throw new Error('Local CLI command or path is not configured.');
+  }
+
+  for await (const event of runLocalAgentCli(commandOrPath, connectionConfig, req, ctx.userCwd)) {
+    yield toConnectionAdapterEvent(event);
+  }
+}
+
 function sessionIdForSlide(activeSlideId?: string): string {
   if (!activeSlideId) {
     return 'session_management';
@@ -144,151 +275,6 @@ function createSession(activeSlideId?: string): AgentChatSession {
     createdAt: now,
     updatedAt: now,
   };
-}
-
-export type LocalAgentConfig = {
-  provider?: string;
-  type?: string;
-  agentCommandAlias?: string;
-  manualPathRef?: string;
-};
-
-function commandBasename(commandOrPath: string): string | undefined {
-  return commandOrPath.toLowerCase().replace(/\\/g, '/').split('/').pop();
-}
-
-export function isCodexCli(commandOrPath: string, connectionConfig?: LocalAgentConfig): boolean {
-  if (connectionConfig?.provider === 'codex') {
-    return true;
-  }
-  const basename = commandBasename(commandOrPath);
-  return basename === 'codex' || basename === 'codex.cmd' || basename === 'codex.exe';
-}
-
-export function isClaudeCodeCli(
-  commandOrPath: string,
-  connectionConfig?: LocalAgentConfig,
-): boolean {
-  if (connectionConfig?.provider === 'claude-code') {
-    return true;
-  }
-  const basename = commandBasename(commandOrPath);
-  return basename === 'claude' || basename === 'claude.cmd' || basename === 'claude.exe';
-}
-
-function buildLocalAgentPrompt(req: StartAgentConnectionRunRequest): string {
-  return [
-    req.prompt,
-    '',
-    'You are running from Awesome Slide agent chat. Use this context when it is relevant.',
-    '<awesome-slide-context>',
-    JSON.stringify({ context: req.context, workflows: req.workflows }, null, 2),
-    '</awesome-slide-context>',
-  ].join('\n');
-}
-
-export function createLocalAgentInvocation(
-  commandOrPath: string,
-  connectionConfig: LocalAgentConfig | undefined,
-  req: StartAgentConnectionRunRequest,
-  cwd: string,
-): { args: string[]; input: string } {
-  const input = buildLocalAgentPrompt(req);
-  if (isCodexCli(commandOrPath, connectionConfig)) {
-    const args = [
-      'exec',
-      '--cd',
-      cwd,
-      '--sandbox',
-      'workspace-write',
-      '--ask-for-approval',
-      'never',
-      '--color',
-      'never',
-    ];
-    if (req.modelId) {
-      args.push('--model', req.modelId);
-    }
-    args.push('-');
-    return { args, input };
-  }
-
-  if (isClaudeCodeCli(commandOrPath, connectionConfig)) {
-    const args = [
-      '--print',
-      '--input-format',
-      'text',
-      '--output-format',
-      'text',
-      '--permission-mode',
-      'acceptEdits',
-    ];
-    if (req.modelId) {
-      args.push('--model', req.modelId);
-    }
-    return { args, input };
-  }
-
-  return {
-    args: [],
-    input: JSON.stringify({
-      prompt: req.prompt,
-      context: req.context,
-      workflows: req.workflows,
-    }),
-  };
-}
-
-async function* runLocalAgentCli(
-  commandOrPath: string,
-  connectionConfig: LocalAgentConfig | undefined,
-  req: StartAgentConnectionRunRequest,
-  cwd: string,
-): AsyncIterable<{ type: 'token' | 'diagnostic'; payload: string }> {
-  const { spawn } = await import('node:child_process');
-  const invocation = createLocalAgentInvocation(commandOrPath, connectionConfig, req, cwd);
-  const child = spawn(commandOrPath, invocation.args, {
-    cwd,
-    shell: false,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-  let output = '';
-  let stderr = '';
-  const closePromise = new Promise<number | null>((resolve, reject) => {
-    child.once('error', reject);
-    child.once('close', resolve);
-  });
-  const killChild = () => {
-    child.kill();
-  };
-
-  req.signal.addEventListener('abort', killChild, { once: true });
-  child.stderr.on('data', (chunk: Buffer) => {
-    stderr += chunk.toString();
-  });
-
-  try {
-    child.stdin.end(invocation.input);
-    for await (const chunk of child.stdout) {
-      if (req.signal.aborted) {
-        child.kill();
-        break;
-      }
-      const str = chunk.toString();
-      output += str;
-      yield { type: 'token', payload: str };
-    }
-
-    const exitCode = await closePromise;
-    if (stderr.trim()) {
-      yield { type: 'diagnostic', payload: stderr };
-    }
-    if (exitCode !== 0 && !req.signal.aborted) {
-      throw new Error(`Local agent CLI exited with code ${exitCode}. Output: ${output || stderr}`);
-    }
-  } finally {
-    req.signal.removeEventListener('abort', killChild);
-  }
 }
 
 export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext): void {
@@ -354,9 +340,19 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
             : 'interactive')) as RuntimeMode;
 
         const session = createSession(activeSlideId);
+        const activeRun = listRunSummaries(session.id).find(
+          (run) => !['completed', 'cancelled', 'failed'].includes(run.state),
+        );
+        session.currentRunId = activeRun?.runId;
 
         return json(res, 200, {
           session,
+          conversation: {
+            conversationId: session.id,
+            activeRunId: activeRun?.runId ?? null,
+            activeSlideId: session.activeSlideId,
+            messages: session.messages,
+          },
           activeConnection: connection,
           runtime: {
             mode: resolvedMode,
@@ -527,203 +523,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
                 return;
               }
 
-              // If there is no real config or we are simulating, run simulation
-              if (!connectionConfig) {
-                if (req.prompt === 'slow prompt' || req.prompt.startsWith('slow-')) {
-                  yield { type: 'progress', payload: 'Slow operation started...' };
-                  await new Promise((resolve, reject) => {
-                    const timer = setTimeout(resolve, 5000);
-                    req.signal.addEventListener('abort', () => {
-                      clearTimeout(timer);
-                      reject(new Error('aborted'));
-                    });
-                  });
-                  return;
-                }
-                yield { type: 'progress', payload: 'Analyzing slide layout...' };
-                await new Promise((r) => setTimeout(r, 50));
-                yield { type: 'token', payload: 'Here are the suggested edits for your slide:' };
-                await new Promise((r) => setTimeout(r, 50));
-                yield { type: 'completed', payload: null };
-                return;
-              }
-
-              // Real Connection Execution
-
-              if (activeConnection.type === 'api-provider') {
-                const adapter = createUserHomeCredentialStorageAdapter();
-                let apiKey: string | null = null;
-                if (connectionConfig?.credentialRef) {
-                  const storage =
-                    connectionConfig.credentialStorage ??
-                    (connectionConfig.credentialRef.startsWith('env:')
-                      ? 'environment-variable'
-                      : 'os-credential-store');
-                  apiKey = await resolveCredentialSecret(
-                    {
-                      ref: connectionConfig.credentialRef,
-                      provider: connectionConfig.provider as ApiProviderId,
-                      storage,
-                      displayHint: '',
-                      createdAt: '',
-                    },
-                    adapter,
-                  );
-                }
-
-                if (!apiKey) {
-                  throw new Error('API key is missing or secure storage is unavailable.');
-                }
-
-                const provider = connectionConfig?.provider;
-                const modelId =
-                  connectionConfig?.modelId ||
-                  (provider === 'openai'
-                    ? 'gpt-4o'
-                    : provider === 'anthropic'
-                      ? 'claude-3-5-sonnet-latest'
-                      : provider === 'deepseek'
-                        ? 'deepseek-chat'
-                        : provider === 'openrouter'
-                          ? 'openai/gpt-4o'
-                          : 'gemini-2.0-flash');
-
-                const fetchSignal = AbortSignal.any([req.signal, AbortSignal.timeout(120_000)]);
-
-                if (provider === 'openai') {
-                  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${apiKey}`,
-                    },
-                    body: JSON.stringify({
-                      model: modelId,
-                      messages: [{ role: 'user', content: req.prompt }],
-                      stream: false,
-                    }),
-                    signal: fetchSignal,
-                  });
-                  if (!response.ok) {
-                    throw new Error(
-                      `OpenAI API returned status ${response.status}: ${await response.text()}`,
-                    );
-                  }
-                  const data = (await response.json()) as any;
-                  const text = data.choices?.[0]?.message?.content || '';
-                  yield { type: 'token', payload: text };
-                } else if (provider === 'anthropic') {
-                  const response = await fetch('https://api.anthropic.com/v1/messages', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'x-api-key': apiKey,
-                      'anthropic-version': '2023-06-01',
-                    },
-                    body: JSON.stringify({
-                      model: modelId,
-                      messages: [{ role: 'user', content: req.prompt }],
-                      max_tokens: 4096,
-                      stream: false,
-                    }),
-                    signal: fetchSignal,
-                  });
-                  if (!response.ok) {
-                    throw new Error(
-                      `Anthropic API returned status ${response.status}: ${await response.text()}`,
-                    );
-                  }
-                  const data = (await response.json()) as any;
-                  const text = data.content?.[0]?.text || '';
-                  yield { type: 'token', payload: text };
-                } else if (provider === 'google') {
-                  const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
-                    {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        contents: [{ parts: [{ text: req.prompt }] }],
-                      }),
-                      signal: fetchSignal,
-                    },
-                  );
-                  if (!response.ok) {
-                    throw new Error(
-                      `Google API returned status ${response.status}: ${await response.text()}`,
-                    );
-                  }
-                  const data = (await response.json()) as any;
-                  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                  yield { type: 'token', payload: text };
-                } else if (provider === 'openrouter') {
-                  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${apiKey}`,
-                    },
-                    body: JSON.stringify({
-                      model: modelId,
-                      messages: [{ role: 'user', content: req.prompt }],
-                    }),
-                    signal: fetchSignal,
-                  });
-                  if (!response.ok) {
-                    throw new Error(
-                      `OpenRouter API returned status ${response.status}: ${await response.text()}`,
-                    );
-                  }
-                  const data = (await response.json()) as any;
-                  const text = data.choices?.[0]?.message?.content || '';
-                  yield { type: 'token', payload: text };
-                } else if (provider === 'deepseek') {
-                  const response = await fetch('https://api.deepseek.com/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${apiKey}`,
-                    },
-                    body: JSON.stringify({
-                      model: modelId,
-                      messages: [{ role: 'user', content: req.prompt }],
-                    }),
-                    signal: fetchSignal,
-                  });
-                  if (!response.ok) {
-                    throw new Error(
-                      `DeepSeek API returned status ${response.status}: ${await response.text()}`,
-                    );
-                  }
-                  const data = (await response.json()) as any;
-                  const text = data.choices?.[0]?.message?.content || '';
-                  yield { type: 'token', payload: text };
-                } else {
-                  throw new Error(`Unsupported API provider: ${provider}`);
-                }
-              } else {
-                const commandOrPath =
-                  connectionConfig?.type === 'manual-agent-path'
-                    ? connectionConfig.manualPathRef
-                    : connectionConfig?.agentCommandAlias;
-
-                if (!commandOrPath) {
-                  throw new Error('Local CLI command or path is not configured.');
-                }
-
-                for await (const event of runLocalAgentCli(
-                  commandOrPath,
-                  connectionConfig,
-                  req,
-                  ctx.userCwd,
-                )) {
-                  yield event;
-                }
-              }
-
-              yield { type: 'completed', payload: null };
+              yield* runConfiguredConnectionEvents(ctx, activeConnection, connectionConfig, req);
             };
 
             const adapterEvents = runAgentConnectionAdapter(runner, runRequest);
@@ -856,6 +656,12 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
         return;
       }
 
+      // GET /runs?conversationId=session
+      if (req.method === 'GET' && pathname === '/runs') {
+        const conversationId = urlObj.searchParams.get('conversationId') || undefined;
+        return json(res, 200, { runs: listRunSummaries(conversationId) });
+      }
+
       // GET /runs/:runId/events
       const eventsMatch = pathname.match(/^\/runs\/([^/]+)\/events$/);
       if (req.method === 'GET' && eventsMatch) {
@@ -873,6 +679,9 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
           'X-Accel-Buffering': 'no',
         });
 
+        const rawCursor =
+          urlObj.searchParams.get('after') || (req.headers['last-event-id'] as string | undefined);
+        const afterSequence = rawCursor ? Number.parseInt(rawCursor, 10) : 0;
         let closed = false;
         let unsubscribe: (() => void) | undefined;
         const closeStream = () => {
@@ -884,15 +693,21 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
           res.end();
         };
 
-        unsubscribe = subscribeRunEvents(runId, (event) => {
-          if (closed) {
-            return;
-          }
-          res.write(`data: ${JSON.stringify(event)}\n\n`);
-          if (['completed', 'cancelled', 'failed'].includes(event.type)) {
-            closeStream();
-          }
-        });
+        unsubscribe = subscribeRunEvents(
+          runId,
+          (event) => {
+            if (closed) {
+              return;
+            }
+            res.write(`id: ${event.sequence}\nevent: message\ndata: ${JSON.stringify(event)}\n\n`);
+            if (['completed', 'cancelled', 'failed'].includes(event.type)) {
+              closeStream();
+            }
+          },
+          {
+            afterSequence: Number.isFinite(afterSequence) ? afterSequence : 0,
+          },
+        );
 
         if (closed) {
           unsubscribe?.();
@@ -1047,203 +862,7 @@ export function registerAgentChatRoutes(server: ViteDevServer, ctx: ApiContext):
                 return;
               }
 
-              // If there is no real config or we are simulating, run simulation
-              if (!connectionConfig) {
-                if (req.prompt === 'slow prompt' || req.prompt.startsWith('slow-')) {
-                  yield { type: 'progress', payload: 'Slow operation started...' };
-                  await new Promise((resolve, reject) => {
-                    const timer = setTimeout(resolve, 5000);
-                    req.signal.addEventListener('abort', () => {
-                      clearTimeout(timer);
-                      reject(new Error('aborted'));
-                    });
-                  });
-                  return;
-                }
-                yield { type: 'progress', payload: 'Analyzing slide layout...' };
-                await new Promise((r) => setTimeout(r, 50));
-                yield { type: 'token', payload: 'Here are the suggested edits for your slide:' };
-                await new Promise((r) => setTimeout(r, 50));
-                yield { type: 'completed', payload: null };
-                return;
-              }
-
-              // Real Connection Execution
-
-              if (activeConnection.type === 'api-provider') {
-                const adapter = createUserHomeCredentialStorageAdapter();
-                let apiKey: string | null = null;
-                if (connectionConfig?.credentialRef) {
-                  const storage =
-                    connectionConfig.credentialStorage ??
-                    (connectionConfig.credentialRef.startsWith('env:')
-                      ? 'environment-variable'
-                      : 'os-credential-store');
-                  apiKey = await resolveCredentialSecret(
-                    {
-                      ref: connectionConfig.credentialRef,
-                      provider: connectionConfig.provider as ApiProviderId,
-                      storage,
-                      displayHint: '',
-                      createdAt: '',
-                    },
-                    adapter,
-                  );
-                }
-
-                if (!apiKey) {
-                  throw new Error('API key is missing or secure storage is unavailable.');
-                }
-
-                const provider = connectionConfig?.provider;
-                const modelId =
-                  connectionConfig?.modelId ||
-                  (provider === 'openai'
-                    ? 'gpt-4o'
-                    : provider === 'anthropic'
-                      ? 'claude-3-5-sonnet-latest'
-                      : provider === 'deepseek'
-                        ? 'deepseek-chat'
-                        : provider === 'openrouter'
-                          ? 'openai/gpt-4o'
-                          : 'gemini-2.0-flash');
-
-                const fetchSignal = AbortSignal.any([req.signal, AbortSignal.timeout(120_000)]);
-
-                if (provider === 'openai') {
-                  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${apiKey}`,
-                    },
-                    body: JSON.stringify({
-                      model: modelId,
-                      messages: [{ role: 'user', content: req.prompt }],
-                      stream: false,
-                    }),
-                    signal: fetchSignal,
-                  });
-                  if (!response.ok) {
-                    throw new Error(
-                      `OpenAI API returned status ${response.status}: ${await response.text()}`,
-                    );
-                  }
-                  const data = (await response.json()) as any;
-                  const text = data.choices?.[0]?.message?.content || '';
-                  yield { type: 'token', payload: text };
-                } else if (provider === 'anthropic') {
-                  const response = await fetch('https://api.anthropic.com/v1/messages', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'x-api-key': apiKey,
-                      'anthropic-version': '2023-06-01',
-                    },
-                    body: JSON.stringify({
-                      model: modelId,
-                      messages: [{ role: 'user', content: req.prompt }],
-                      max_tokens: 4096,
-                      stream: false,
-                    }),
-                    signal: fetchSignal,
-                  });
-                  if (!response.ok) {
-                    throw new Error(
-                      `Anthropic API returned status ${response.status}: ${await response.text()}`,
-                    );
-                  }
-                  const data = (await response.json()) as any;
-                  const text = data.content?.[0]?.text || '';
-                  yield { type: 'token', payload: text };
-                } else if (provider === 'google') {
-                  const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
-                    {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        contents: [{ parts: [{ text: req.prompt }] }],
-                      }),
-                      signal: fetchSignal,
-                    },
-                  );
-                  if (!response.ok) {
-                    throw new Error(
-                      `Google API returned status ${response.status}: ${await response.text()}`,
-                    );
-                  }
-                  const data = (await response.json()) as any;
-                  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                  yield { type: 'token', payload: text };
-                } else if (provider === 'openrouter') {
-                  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${apiKey}`,
-                    },
-                    body: JSON.stringify({
-                      model: modelId,
-                      messages: [{ role: 'user', content: req.prompt }],
-                    }),
-                    signal: fetchSignal,
-                  });
-                  if (!response.ok) {
-                    throw new Error(
-                      `OpenRouter API returned status ${response.status}: ${await response.text()}`,
-                    );
-                  }
-                  const data = (await response.json()) as any;
-                  const text = data.choices?.[0]?.message?.content || '';
-                  yield { type: 'token', payload: text };
-                } else if (provider === 'deepseek') {
-                  const response = await fetch('https://api.deepseek.com/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${apiKey}`,
-                    },
-                    body: JSON.stringify({
-                      model: modelId,
-                      messages: [{ role: 'user', content: req.prompt }],
-                    }),
-                    signal: fetchSignal,
-                  });
-                  if (!response.ok) {
-                    throw new Error(
-                      `DeepSeek API returned status ${response.status}: ${await response.text()}`,
-                    );
-                  }
-                  const data = (await response.json()) as any;
-                  const text = data.choices?.[0]?.message?.content || '';
-                  yield { type: 'token', payload: text };
-                } else {
-                  throw new Error(`Unsupported API provider: ${provider}`);
-                }
-              } else {
-                const commandOrPath =
-                  connectionConfig?.type === 'manual-agent-path'
-                    ? connectionConfig.manualPathRef
-                    : connectionConfig?.agentCommandAlias;
-
-                if (!commandOrPath) {
-                  throw new Error('Local CLI command or path is not configured.');
-                }
-
-                for await (const event of runLocalAgentCli(
-                  commandOrPath,
-                  connectionConfig,
-                  req,
-                  ctx.userCwd,
-                )) {
-                  yield event;
-                }
-              }
-
-              yield { type: 'completed', payload: null };
+              yield* runConfiguredConnectionEvents(ctx, activeConnection, connectionConfig, req);
             };
 
             const adapterEvents = runAgentConnectionAdapter(runner, runRequest);

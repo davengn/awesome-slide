@@ -2,34 +2,7 @@
   "projectId": "demo",
   "connections": [
     {
-      "id": "conn_1780110216193",
-      "displayName": "Codex CLI",
-      "type": "auto-scanned-local-agent",
-      "provider": "codex",
-      "scope": "project-default",
-      "agentCommandAlias": "codex",
-      "capabilities": {
-        "streaming": true,
-        "cancellation": true,
-        "structuredProposals": true,
-        "toolCalls": true,
-        "localFileContext": true,
-        "writeCapable": true,
-        "supportedModalities": ["text", "image"],
-        "maxContextBytes": 262144
-      },
-      "status": {
-        "state": "ready",
-        "message": "Command accepted and passed validation.",
-        "recoveryActions": [],
-        "checkedAt": "2026-05-30T04:09:00.704Z"
-      },
-      "lastTestedAt": "2026-05-30T04:09:00.704Z",
-      "createdAt": "2026-05-30T03:03:36.193Z",
-      "updatedAt": "2026-05-30T03:03:36.193Z"
-    },
-    {
-      "id": "conn_1780114144489",
+      "id": "conn_1780133210337",
       "displayName": "Claude Code",
       "type": "auto-scanned-local-agent",
       "provider": "claude-code",
@@ -42,22 +15,25 @@
         "toolCalls": true,
         "localFileContext": true,
         "writeCapable": true,
-        "supportedModalities": ["text", "image"],
+        "supportedModalities": [
+          "text",
+          "image"
+        ],
         "maxContextBytes": 262144
       },
       "status": {
         "state": "ready",
-        "message": "Command accepted and passed validation.",
+        "message": "Prompt: \"Respond with exactly: ok\"\nResponse: \"ok\"",
         "recoveryActions": [],
-        "checkedAt": "2026-05-30T04:19:30.215Z"
+        "checkedAt": "2026-05-30T09:27:00.245Z"
       },
-      "lastTestedAt": "2026-05-30T04:19:30.215Z",
-      "createdAt": "2026-05-30T04:09:04.489Z",
-      "updatedAt": "2026-05-30T04:19:23.898Z"
+      "lastTestedAt": "2026-05-30T09:27:00.245Z",
+      "createdAt": "2026-05-30T09:26:50.337Z",
+      "updatedAt": "2026-05-30T09:26:50.337Z"
     }
   ],
-  "activeConnectionId": "conn_1780114144489",
-  "projectDefaultConnectionId": "conn_1780114144489",
+  "activeConnectionId": "conn_1780133210337",
+  "projectDefaultConnectionId": "conn_1780133210337",
   "scanPreference": {
     "enabled": true,
     "approvedDirectories": [],

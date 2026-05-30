@@ -64,6 +64,10 @@ export function agentChatReducer(
     case 'RECEIVE_EVENT': {
       const event = action.payload;
       const { runId, type, payload } = event;
+      const lastSequence = state.eventCursors?.[runId] ?? 0;
+      if (event.sequence <= lastSequence) {
+        return state;
+      }
 
       const messageIndex = state.messages.findIndex(
         (m) => m.runId === runId && m.role === 'assistant',
@@ -80,24 +84,31 @@ export function agentChatReducer(
         case 'queued':
           message.state = 'queued';
           break;
+        case 'started':
         case 'progress':
           message.state = 'loading';
           if (payload && typeof payload === 'string') {
             message.content = [{ type: 'progress', text: payload }];
           }
           break;
+        case 'text_delta':
         case 'token':
           message.state = 'streaming';
-          if (payload && typeof payload === 'string') {
+          if (payload) {
+            const text =
+              typeof payload === 'string' ? payload : (payload as { text?: string }).text;
+            if (!text) {
+              break;
+            }
             const filteredContent = message.content.filter((p) => p.type !== 'progress');
             const textPartIndex = filteredContent.findIndex((p) => p.type === 'text');
             if (textPartIndex === -1) {
-              message.content = [...filteredContent, { type: 'text', text: payload }];
+              message.content = [...filteredContent, { type: 'text', text }];
             } else {
               const content = [...filteredContent];
               content[textPartIndex] = {
                 ...content[textPartIndex],
-                text: (content[textPartIndex].text || '') + payload,
+                text: (content[textPartIndex].text || '') + text,
               };
               message.content = content;
             }
@@ -116,6 +127,23 @@ export function agentChatReducer(
               { type: 'proposal-summary', text: prop.summary, data: prop },
             ];
           }
+          break;
+        case 'file_summary':
+          message.content = [
+            ...message.content.filter((p) => p.type !== 'progress'),
+            { type: 'file-summary', text: 'Generated files', data: payload },
+          ];
+          break;
+        case 'diagnostic':
+        case 'error':
+          message.content = [
+            ...message.content.filter((p) => p.type !== 'progress'),
+            {
+              type: 'diagnostic',
+              text: typeof payload === 'string' ? payload : undefined,
+              data: payload,
+            },
+          ];
           break;
         case 'completed':
           message.state = 'completed';
@@ -145,6 +173,10 @@ export function agentChatReducer(
       return {
         ...state,
         currentRunId,
+        eventCursors: {
+          ...state.eventCursors,
+          [runId]: event.sequence,
+        },
         messages,
         updatedAt: now,
       };

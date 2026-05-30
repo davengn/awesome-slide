@@ -98,6 +98,26 @@ export const AgentTurnCard: React.FC<AgentTurnCardProps> = ({
               </div>
             );
           }
+          if (part.type === 'diagnostic') {
+            return (
+              <pre
+                key={partKey}
+                className="overflow-x-auto text-[10px] font-mono bg-neutral-50/80 border border-neutral-200/40 p-2 rounded-lg text-neutral-600 leading-normal max-h-40"
+              >
+                {part.text ?? JSON.stringify(part.data, null, 2)}
+              </pre>
+            );
+          }
+          if (part.type === 'file-summary') {
+            return (
+              <div
+                key={partKey}
+                className="text-[10px] font-mono bg-emerald-50/60 border border-emerald-100/70 text-emerald-800 rounded-lg px-2.5 py-1.5"
+              >
+                {part.text ?? 'Generated files'}
+              </div>
+            );
+          }
           return null;
         })}
 
@@ -125,9 +145,10 @@ export const AgentTurnCard: React.FC<AgentTurnCardProps> = ({
         )}
 
         {/* Compact Run Status Card when loading or streaming */}
-        {!isUser && ['loading', 'streaming'].includes(message.state) && (
-          <RunStatusCard state={message.state as RunState} />
-        )}
+        {!isUser &&
+          ['loading', 'streaming', 'cancelled', 'failed', 'completed'].includes(message.state) && (
+            <RunStatusCard state={message.state as RunState} />
+          )}
       </div>
     </div>
   );

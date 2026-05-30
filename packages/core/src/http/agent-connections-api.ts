@@ -3,6 +3,11 @@ import type { ServerResponse } from 'node:http';
 import path from 'node:path';
 import type { ViteDevServer } from 'vite';
 import {
+  createLocalAgentInvocation,
+  IncompatibleLocalAgentError,
+  type LocalAgentConfig,
+} from '../agent-runtime/local-agents.ts';
+import {
   createDefaultAgentConnectionSettings,
   dismissFirstRunSetup,
   normalizeAgentConnectionSettings,
@@ -34,8 +39,6 @@ import {
 } from '../app/lib/agent-connections.ts';
 import type { ApiContext } from '../vite/routes/context.ts';
 import { json, readBody } from '../vite/routes/context.ts';
-import type { LocalAgentConfig } from './agent-chat-api.ts';
-import { createLocalAgentInvocation } from './agent-chat-api.ts';
 import type { StartAgentConnectionRunRequest } from './agent-connection-adapters.ts';
 import {
   addApprovedDirectory,
@@ -360,6 +363,13 @@ async function testProviderCredentials(
       checkedAt: new Date().toISOString(),
     });
   } catch (err) {
+    if (err instanceof IncompatibleLocalAgentError) {
+      return createConnectionStatus('failed', {
+        category: 'incompatible-protocol',
+        message: 'Local agent does not have an Awesome Slide runtime definition.',
+        checkedAt: new Date().toISOString(),
+      });
+    }
     const raw = err instanceof Error ? err.message : String(err);
     const isTimeout = err instanceof Error && err.name === 'TimeoutError';
     return createConnectionStatus('failed', {

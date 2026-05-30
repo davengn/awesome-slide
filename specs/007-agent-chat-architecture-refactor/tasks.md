@@ -53,21 +53,21 @@
 
 ### Tests for User Story 1
 
-- [ ] T021 [P] [US1] Add route contract tests for session bootstrap, run creation, read-only run creation blocking, SSE replay, pre-terminal stream failure reconciliation, 500ms queued/progress/failure emission, and terminal close behavior in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-chat-api.test.ts`
-- [ ] T022 [P] [US1] Add run service tests for create, emit, subscribe, finish, active-run discovery, one-active-run locking, pre-terminal disconnect failure or reattach, and 500ms accepted-run response guarantees in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/runs.test.ts`
-- [ ] T023 [P] [US1] Add browser client tests for create-run, event streaming, reconnect cursors, stream disconnect recovery, blocked connection errors, and terminal resolution in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/lib/agent-chat-client.test.ts`
-- [ ] T024 [P] [US1] Add reducer tests for 100ms visible user/assistant state, queued, text delta, proposal, completed, failed, blocked-connection prompt preservation, and composer release states in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/lib/agent-chat-state.test.ts`
+- [X] T021 [P] [US1] Add route contract tests for session bootstrap, run creation, read-only run creation blocking, SSE replay, pre-terminal stream failure reconciliation, 500ms queued/progress/failure emission, and terminal close behavior in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-chat-api.test.ts`
+- [X] T022 [P] [US1] Add run service tests for create, emit, subscribe, finish, active-run discovery, one-active-run locking, pre-terminal disconnect failure or reattach, and 500ms accepted-run response guarantees in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/runs.test.ts`
+- [X] T023 [P] [US1] Add browser client tests for create-run, event streaming, reconnect cursors, stream disconnect recovery, blocked connection errors, and terminal resolution in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/lib/agent-chat-client.test.ts`
+- [X] T024 [P] [US1] Add reducer tests for 100ms visible user/assistant state, queued, text delta, proposal, completed, failed, blocked-connection prompt preservation, and composer release states in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/lib/agent-chat-state.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T025 [US1] Implement runtime-owned run lifecycle, event fanout, replay cursors, pre-terminal disconnect reconciliation, active-run discovery, and terminal cleanup in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/runs.ts`
-- [ ] T026 [US1] Implement a deterministic runtime fixture adapter gated by `AWESOME_SLIDE_E2E=1` in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/e2e-fixture.ts`
-- [ ] T027 [US1] Refactor session, create-run, event-stream, and recent-run routes to delegate to `agent-runtime` in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-chat-api.ts`
-- [ ] T028 [US1] Update chat browser client methods for session bootstrap, create-run, SSE replay, blocked connection failures, terminal close, and categorized route errors in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/lib/agent-chat-client.ts`
-- [ ] T029 [US1] Update chat state reducer to consume runtime events and preserve editable prompts on blocked connection failures instead of browser-owned timers or local-only pending state in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/lib/agent-chat-state.ts`
-- [ ] T030 [US1] Update panel orchestration to use runtime sessions, active run ids, event cursors, blocked-connection recovery, and prompt preservation in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
-- [ ] T031 [US1] Update message rendering for normalized runtime event content in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/components/agent-chat/ChatMessageList.tsx`
-- [ ] T032 [US1] Update run status rendering for queued, progress, failed, cancelled, completed, and needs-review states in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/components/agent-chat/RunStatusCard.tsx`
+- [X] T025 [US1] Implement runtime-owned run lifecycle, event fanout, replay cursors, pre-terminal disconnect reconciliation, active-run discovery, and terminal cleanup in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/runs.ts`
+- [X] T026 [US1] Implement a deterministic runtime fixture adapter gated by `AWESOME_SLIDE_E2E=1` in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/e2e-fixture.ts`
+- [X] T027 [US1] Refactor session, create-run, event-stream, and recent-run routes to delegate to `agent-runtime` in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-chat-api.ts`
+- [X] T028 [US1] Update chat browser client methods for session bootstrap, create-run, SSE replay, blocked connection failures, terminal close, and categorized route errors in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/lib/agent-chat-client.ts`
+- [X] T029 [US1] Update chat state reducer to consume runtime events and preserve editable prompts on blocked connection failures instead of browser-owned timers or local-only pending state in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/lib/agent-chat-state.ts`
+- [X] T030 [US1] Update panel orchestration to use runtime sessions, active run ids, event cursors, blocked-connection recovery, and prompt preservation in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/components/agent-chat/AgentChatPanel.tsx`
+- [X] T031 [US1] Update message rendering for normalized runtime event content in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/components/agent-chat/ChatMessageList.tsx`
+- [X] T032 [US1] Update run status rendering for queued, progress, failed, cancelled, completed, and needs-review states in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/components/agent-chat/RunStatusCard.tsx`
 
 **Checkpoint**: User Story 1 is independently functional with fixture-backed run lifecycle and browser rendering through runtime contracts.
 
@@ -81,23 +81,23 @@
 
 ### Tests for User Story 2
 
-- [ ] T033 [P] [US2] Add executable connection tests for capability normalization, server-only secret refs, unsupported providers, and degraded status in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/connections.test.ts`
-- [ ] T034 [P] [US2] Add Codex CLI and Claude Code invocation tests for command, args, stdin mode, cwd, env redaction, and cancellation hooks in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/local-agents.test.ts`
-- [ ] T035 [P] [US2] Add local stream parser tests for text deltas, JSON frames, stderr diagnostics, malformed output, empty output, and nonzero exits in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/local-stream-parsers.test.ts`
-- [ ] T036 [P] [US2] Add provider adapter tests for OpenAI, Anthropic, Google, OpenRouter, and DeepSeek streaming normalization and HTTP error classification in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/provider-adapters.test.ts`
-- [ ] T037 [P] [US2] Add connection API tests for bootstrap payload redaction, active connection selection, test-run failures, and read-only blocking for local scanning and credential writes in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-connections-api.test.ts`
-- [ ] T038 [P] [US2] Add secret resolution tests for environment references and browser-safe display hints in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-secrets.test.ts`
+- [X] T033 [P] [US2] Add executable connection tests for capability normalization, server-only secret refs, unsupported providers, and degraded status in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/connections.test.ts`
+- [X] T034 [P] [US2] Add Codex CLI and Claude Code invocation tests for command, args, stdin mode, cwd, env redaction, and cancellation hooks in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/local-agents.test.ts`
+- [X] T035 [P] [US2] Add local stream parser tests for text deltas, JSON frames, stderr diagnostics, malformed output, empty output, and nonzero exits in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/local-stream-parsers.test.ts`
+- [X] T036 [P] [US2] Add provider adapter tests for OpenAI, Anthropic, Google, OpenRouter, and DeepSeek streaming normalization and HTTP error classification in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/provider-adapters.test.ts`
+- [X] T037 [P] [US2] Add connection API tests for bootstrap payload redaction, active connection selection, test-run failures, and read-only blocking for local scanning and credential writes in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-connections-api.test.ts`
+- [X] T038 [P] [US2] Add secret resolution tests for environment references and browser-safe display hints in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-secrets.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T039 [US2] Implement Codex CLI and Claude Code runtime definitions with explicit capabilities and no generic fallback in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/local-agents.ts`
-- [ ] T040 [US2] Implement local agent stream parsers and exit-status normalization in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/local-stream-parsers.ts`
-- [ ] T041 [US2] Implement server-side BYOK provider adapters with streaming normalization and categorized errors in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/provider-adapters.ts`
-- [ ] T042 [US2] Wire runtime execution dispatch across fixture, local-agent, and provider adapters in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/index.ts`
-- [ ] T043 [US2] Refactor connection bootstrap, settings, active connection, and test-run routes to delegate execution checks to the runtime in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-connections-api.ts`
-- [ ] T044 [US2] Convert existing connection adapter utilities into discovery and compatibility helpers without production generic execution fallback in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-connection-adapters.ts`
-- [ ] T045 [US2] Ensure credential reads and display hints flow through the existing safe secret helper in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-secrets.ts`
-- [ ] T046 [US2] Update browser connection client handling for runtime capability flags, categorized failures, and secret-free payloads in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/lib/agent-connection-client.ts`
+- [X] T039 [US2] Implement Codex CLI and Claude Code runtime definitions with explicit capabilities and no generic fallback in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/local-agents.ts`
+- [X] T040 [US2] Implement local agent stream parsers and exit-status normalization in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/local-stream-parsers.ts`
+- [X] T041 [US2] Implement server-side BYOK provider adapters with streaming normalization and categorized errors in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/provider-adapters.ts`
+- [X] T042 [US2] Wire runtime execution dispatch across fixture, local-agent, and provider adapters in `/Users/ducduy/Projects/awesome-slide/packages/core/src/agent-runtime/index.ts`
+- [X] T043 [US2] Refactor connection bootstrap, settings, active connection, and test-run routes to delegate execution checks to the runtime in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-connections-api.ts`
+- [X] T044 [US2] Convert existing connection adapter utilities into discovery and compatibility helpers without production generic execution fallback in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-connection-adapters.ts`
+- [X] T045 [US2] Ensure credential reads and display hints flow through the existing safe secret helper in `/Users/ducduy/Projects/awesome-slide/packages/core/src/http/agent-secrets.ts`
+- [X] T046 [US2] Update browser connection client handling for runtime capability flags, categorized failures, and secret-free payloads in `/Users/ducduy/Projects/awesome-slide/packages/core/src/app/lib/agent-connection-client.ts`
 
 **Checkpoint**: User Story 2 is independently functional with executable connection snapshots and no raw credentials in browser or persisted runtime state.
 

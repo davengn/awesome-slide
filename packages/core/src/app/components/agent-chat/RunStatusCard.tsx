@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react';
+import { Ban, CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import type React from 'react';
 import type { RunState } from '../../lib/agent-chat-types.ts';
 import { cn } from '../../lib/utils.ts';
@@ -19,10 +19,24 @@ export const RunStatusCard: React.FC<RunStatusCardProps> = ({ state, className }
         return 'Streaming agent edits...';
       case 'needs-review':
         return 'Changes proposed. Ready for review.';
+      case 'completed':
+        return 'Run completed.';
+      case 'cancelled':
+        return 'Run cancelled.';
+      case 'failed':
+        return 'Run failed.';
       default:
         return 'Processing...';
     }
   };
+  const Icon =
+    state === 'completed'
+      ? CheckCircle2
+      : state === 'cancelled'
+        ? Ban
+        : state === 'failed'
+          ? XCircle
+          : Loader2;
 
   return (
     <div
@@ -33,11 +47,15 @@ export const RunStatusCard: React.FC<RunStatusCardProps> = ({ state, className }
         className,
       )}
     >
-      <Loader2
+      <Icon
         className={cn(
-          'h-3.5 w-3.5 animate-spin text-neutral-400',
+          'h-3.5 w-3.5 text-neutral-400',
+          !['completed', 'cancelled', 'failed'].includes(state) && 'animate-spin',
           state === 'streaming' && 'text-indigo-500',
           state === 'loading' && 'text-amber-500',
+          state === 'completed' && 'text-emerald-600',
+          state === 'cancelled' && 'text-neutral-500',
+          state === 'failed' && 'text-red-600',
         )}
       />
       <span className="font-semibold">{getStatusText()}</span>

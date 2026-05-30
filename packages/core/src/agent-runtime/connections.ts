@@ -1,6 +1,7 @@
 import type {
   ActiveConnectionSnapshot,
   AgentConnectionSettings,
+  ConnectionStatus,
 } from '../app/lib/agent-connection-types.ts';
 import {
   createConnectionStatus,
@@ -48,6 +49,7 @@ function connectionError(input: {
 
 function toRuntimeConnectionSnapshot(
   snapshot: ActiveConnectionSnapshot,
+  statusDetails?: ConnectionStatus,
 ): RuntimeConnectionSnapshot {
   return {
     connectionId: snapshot.connectionId,
@@ -59,6 +61,7 @@ function toRuntimeConnectionSnapshot(
     reasoningEffort: snapshot.reasoningEffort,
     capabilities: normalizeCapabilities(snapshot.capabilities),
     status: snapshot.status,
+    statusDetails,
     settingsTarget: 'execution-model',
     isProjectDefault: snapshot.isProjectDefault,
   };
@@ -114,7 +117,7 @@ export function resolveRuntimeConnectionSnapshot(
   }
 
   const status = selected.status.state;
-  const allowDegraded = options.allowDegraded ?? true;
+  const allowDegraded = options.allowDegraded ?? false;
   if (status !== 'ready' && !(allowDegraded && status === 'degraded')) {
     return connectionError({
       status: 503,
@@ -130,20 +133,25 @@ export function resolveRuntimeConnectionSnapshot(
     });
   }
 
+  const safeStatus = {
+    ...selected.status,
+    message:
+      typeof selected.status.message === 'string'
+        ? (redactJsonValue(selected.status.message) as string)
+        : undefined,
+    diagnostics:
+      typeof selected.status.diagnostics === 'string'
+        ? (redactJsonValue(selected.status.diagnostics) as string)
+        : undefined,
+  };
   const browserSnapshot = toActiveConnectionSnapshot(
     {
       ...selected,
-      status: {
-        ...selected.status,
-        diagnostics:
-          typeof selected.status.diagnostics === 'string'
-            ? (redactJsonValue(selected.status.diagnostics) as string)
-            : undefined,
-      },
+      status: safeStatus,
     },
     settings.projectDefaultConnectionId === selected.id,
   );
-  return { ok: true, snapshot: toRuntimeConnectionSnapshot(browserSnapshot) };
+  return { ok: true, snapshot: toRuntimeConnectionSnapshot(browserSnapshot, safeStatus) };
 }
 
 export function createMissingConnectionStatus(message: string = 'No connection selected.') {

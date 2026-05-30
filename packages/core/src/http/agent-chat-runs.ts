@@ -38,6 +38,33 @@ export function getRunEvents(runId: string): AgentChatEvent[] {
   return activeRuns.get(runId)?.events || [];
 }
 
+export function listRunSummaries(sessionId?: string): Array<{
+  runId: string;
+  conversationId: string;
+  state: RunState;
+  lastSequence: number;
+  startedAt: string;
+  finishedAt?: string;
+  connection: Pick<AgentChatRun['connection'], 'displayName' | 'type'>;
+}> {
+  return [...activeRuns.values()]
+    .map((entry) => entry.run)
+    .filter((run) => !sessionId || run.sessionId === sessionId)
+    .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
+    .map((run) => ({
+      runId: run.id,
+      conversationId: run.sessionId,
+      state: run.state,
+      lastSequence: activeRuns.get(run.id)?.events.at(-1)?.sequence ?? 0,
+      startedAt: run.startedAt,
+      finishedAt: run.finishedAt,
+      connection: {
+        displayName: run.connection.displayName,
+        type: run.connection.type,
+      },
+    }));
+}
+
 export function startRunWatchdog(runId: string, timeoutMs?: number): void {
   const entry = activeRuns.get(runId);
   if (!entry) return;
@@ -121,6 +148,7 @@ export function addRunEvent(runId: string, type: AgentChatEvent['type'], payload
 export function subscribeRunEvents(
   runId: string,
   listener: (event: AgentChatEvent) => void,
+  opts: { afterSequence?: number } = {},
 ): (() => void) | undefined {
   const entry = activeRuns.get(runId);
   if (!entry) {
@@ -130,7 +158,9 @@ export function subscribeRunEvents(
   entry.listeners.add(listener);
 
   // Replay existing events for reconnection
-  for (const event of entry.events) {
+  for (const event of entry.events.filter((entryEvent) => {
+    return entryEvent.sequence > (opts.afterSequence ?? 0);
+  })) {
     listener(event);
   }
 

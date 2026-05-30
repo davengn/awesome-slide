@@ -73,29 +73,65 @@ describe('agent-runtime connection snapshots', () => {
     }
   });
 
-  it('returns safe ready and degraded snapshots without secret references', () => {
+  it('returns safe ready snapshots without secret references', () => {
     const ready = resolveRuntimeConnectionSnapshot(
       settings({ activeConnectionId: 'conn_ready', connections: [readyConnection] }),
     );
-    const degraded = resolveRuntimeConnectionSnapshot(
+
+    expect(ready.ok).toBe(true);
+    if (ready.ok) {
+      expect(JSON.stringify(ready.snapshot)).not.toContain('cred_should_not_escape');
+      expect(ready.snapshot.type).toBe('local-agent');
+      expect(ready.snapshot.capabilities.streaming).toBe(true);
+    }
+  });
+
+  it('requires explicit opt-in for degraded connection snapshots', () => {
+    const degradedSettings = settings({
+      activeConnectionId: 'conn_degraded',
+      connections: [
+        {
+          ...readyConnection,
+          id: 'conn_degraded',
+          status: createConnectionStatus('degraded', { message: 'Limited model list.' }),
+        },
+      ],
+    });
+    const blocked = resolveRuntimeConnectionSnapshot(degradedSettings);
+    const allowed = resolveRuntimeConnectionSnapshot(degradedSettings, { allowDegraded: true });
+
+    expect(blocked.ok).toBe(false);
+    expect(allowed.ok).toBe(true);
+    if (allowed.ok) {
+      expect(allowed.snapshot.status).toBe('degraded');
+    }
+  });
+
+  it('normalizes executable connection capabilities and keeps status details secret-free', () => {
+    const result = resolveRuntimeConnectionSnapshot(
       settings({
-        activeConnectionId: 'conn_degraded',
+        activeConnectionId: 'conn_ready',
         connections: [
           {
             ...readyConnection,
-            id: 'conn_degraded',
-            status: createConnectionStatus('degraded', { message: 'Limited model list.' }),
+            capabilities: normalizeCapabilities({ streaming: true }),
+            status: createConnectionStatus('ready', {
+              message: 'Ready token=secretvalue123',
+              diagnostics: 'path=/Users/ducduy/.agent key=supersecret123',
+            }),
           },
         ],
       }),
     );
 
-    expect(ready.ok).toBe(true);
-    expect(degraded.ok).toBe(true);
-    if (ready.ok) {
-      expect(JSON.stringify(ready.snapshot)).not.toContain('cred_should_not_escape');
-      expect(ready.snapshot.type).toBe('local-agent');
-      expect(ready.snapshot.capabilities.streaming).toBe(true);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.snapshot.capabilities.streaming).toBe(true);
+      expect(result.snapshot.capabilities.supportedModalities).toEqual(['text']);
+      expect(result.snapshot.statusDetails?.state).toBe('ready');
+      expect(JSON.stringify(result.snapshot)).not.toContain('supersecret123');
+      expect(JSON.stringify(result.snapshot)).not.toContain('secretvalue123');
+      expect(JSON.stringify(result.snapshot)).not.toContain('/Users/ducduy');
     }
   });
 

@@ -479,6 +479,58 @@ process.stdin.on('end', () => {
     });
   });
 
+  it('GET /__agent-chat/runs lists active/recent run summaries for reattach', async () => {
+    await withAgentChatServer(async (baseUrl) => {
+      const runRes = await fetch(`${baseUrl}/__agent-chat/runs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: 'session_reattach', prompt: 'Hello' }),
+      });
+      const { runId } = await runRes.json();
+
+      const listRes = await fetch(`${baseUrl}/__agent-chat/runs?conversationId=session_reattach`);
+      const listBody = await listRes.json();
+
+      expect(listRes.status).toBe(200);
+      expect(listBody.runs[0].runId).toBe(runId);
+      expect(listBody.runs[0].lastSequence).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  it('GET /__agent-chat/runs/:runId/events replays after the requested cursor', async () => {
+    const runId = 'run_replay_test';
+    const mockRun = {
+      id: runId,
+      sessionId: 'session_replay',
+      prompt: 'Replay',
+      context: { project: {} },
+      connection: {
+        connectionId: 'local-codex',
+        displayName: 'Codex',
+        type: 'local-agent',
+        modelOrAgent: 'codex',
+        status: 'ready',
+      },
+      state: 'queued',
+      events: [],
+      startedAt: new Date().toISOString(),
+    } as unknown as AgentChatRun;
+    registerRun(mockRun, new AbortController());
+    addRunEvent(runId, 'progress', 'first');
+    addRunEvent(runId, 'completed', null);
+
+    await withAgentChatServer(async (baseUrl) => {
+      const eventRes = await fetch(`${baseUrl}/__agent-chat/runs/${runId}/events?after=1`);
+      const text = await eventRes.text();
+
+      expect(eventRes.status).toBe(200);
+      expect(text).toContain('id: 2');
+      expect(text).toContain('event: message');
+      expect(text).toContain('completed');
+      expect(text).not.toContain('first');
+    });
+  });
+
   it('POST /__agent-chat/proposals/:proposalId/apply returns 404 for unknown proposal', async () => {
     await withAgentChatServer(async (baseUrl) => {
       const res = await fetch(`${baseUrl}/__agent-chat/proposals/unknown_proposal/apply`, {
